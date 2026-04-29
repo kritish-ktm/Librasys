@@ -25,8 +25,6 @@ function App() {
       })
       .then((data) => {
         setBooks(data);
-
-        // Show message if no data
         setMessage(data.length === 0 ? "No books found" : "");
       })
       .catch((err) => {
@@ -42,23 +40,21 @@ function App() {
 
   // Handles Add Book button click
   const handleAddBook = () => {
-    // Simple validation
     if (!newBook.Title || !newBook.ISBN || !newBook.AvailableCopies) {
       alert("Please fill all fields");
       return;
     }
 
-    // Sending POST request to backend
     fetch("http://localhost:5000/books", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        CategoryID: 1, // Temporary value (we improve later)
+        CategoryID: 1, // Temporary value
         Title: newBook.Title,
         ISBN: newBook.ISBN,
-        PublicationDate: "2024-01-01", // Temporary
+        PublicationDate: "2024-01-01", // Temporary value
         AvailableCopies: parseInt(newBook.AvailableCopies),
         IsBorrowable: 1,
       }),
@@ -67,19 +63,48 @@ function App() {
       .then((data) => {
         console.log("Book added:", data);
 
-        // Clear form after adding
         setNewBook({
           Title: "",
           ISBN: "",
           AvailableCopies: "",
         });
 
-        // Refresh book list
         fetchBooks();
       })
       .catch((err) => {
         console.error("Error adding book:", err);
         alert("Failed to add book");
+      });
+  };
+
+  // Handles Delete Book button click
+  const handleDeleteBook = (bookId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this book?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    fetch(`http://localhost:5000/books/${bookId}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to delete book");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Book deleted:", data);
+
+        // Refresh table after deletion
+        fetchBooks();
+      })
+      .catch((err) => {
+        console.error("Error deleting book:", err);
+        alert("Failed to delete book");
       });
   };
 
@@ -91,7 +116,6 @@ function App() {
       <div style={styles.formBox}>
         <h2 style={styles.subHeading}>Add New Book</h2>
 
-        {/* Title Input */}
         <input
           style={styles.input}
           type="text"
@@ -102,7 +126,6 @@ function App() {
           }
         />
 
-        {/* ISBN Input */}
         <input
           style={styles.input}
           type="text"
@@ -113,7 +136,6 @@ function App() {
           }
         />
 
-        {/* Available Copies Input */}
         <input
           style={styles.input}
           type="number"
@@ -124,13 +146,11 @@ function App() {
           }
         />
 
-        {/* Add Book Button */}
         <button style={styles.button} onClick={handleAddBook}>
           Add Book
         </button>
       </div>
 
-      {/* Message display */}
       {message && <p style={styles.message}>{message}</p>}
 
       {/* Book Table */}
@@ -144,6 +164,7 @@ function App() {
               <th style={styles.th}>Publication Date</th>
               <th style={styles.th}>Available Copies</th>
               <th style={styles.th}>Borrowable</th>
+              <th style={styles.th}>Action</th>
             </tr>
           </thead>
 
@@ -154,7 +175,6 @@ function App() {
                 <td style={styles.td}>{book.Title}</td>
                 <td style={styles.td}>{book.ISBN}</td>
 
-                {/* Format date properly */}
                 <td style={styles.td}>
                   {book.PublicationDate
                     ? book.PublicationDate.substring(0, 10)
@@ -163,9 +183,17 @@ function App() {
 
                 <td style={styles.td}>{book.AvailableCopies}</td>
 
-                {/* Convert boolean to readable text */}
                 <td style={styles.td}>
                   {book.IsBorrowable === 1 ? "Yes" : "No"}
+                </td>
+
+                <td style={styles.td}>
+                  <button
+                    style={styles.deleteButton}
+                    onClick={() => handleDeleteBook(book.BookID)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
@@ -176,7 +204,6 @@ function App() {
   );
 }
 
-// Styling object (inline CSS)
 const styles = {
   page: {
     padding: "30px",
@@ -214,6 +241,13 @@ const styles = {
     border: "none",
     cursor: "pointer",
     fontSize: "16px",
+  },
+  deleteButton: {
+    padding: "8px 12px",
+    backgroundColor: "#c0392b",
+    color: "white",
+    border: "none",
+    cursor: "pointer",
   },
   message: {
     textAlign: "center",
