@@ -1,106 +1,113 @@
-const express = require('express');
-const mysql = require('mysql2');
+const express = require("express");
+const mysql = require("mysql2");
+const cors = require("cors");
 
 const app = express();
+const PORT = 5000;
+
+// MUST be before routes
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(express.json());
 
-// MySQL connection
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'librasys'
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "librasys"
 });
 
-connection.connect((err) => {
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
+  console.log("Connected to MySQL");
+});
+
+app.get("/", (req, res) => {
+  res.send("LibraSys backend is running");
+});
+
+app.get("/books", (req, res) => {
+  const sql = "SELECT * FROM book";
+
+  db.query(sql, (err, results) => {
     if (err) {
-        console.error('MySQL connection error:', err);
-    } else {
-        console.log('Connected to MySQL');
+      console.error("Error fetching books:", err);
+      return res.status(500).json({ error: "Database error" });
     }
+
+    res.json(results);
+  });
 });
 
-// Test route
-app.get('/', (req, res) => {
-    res.send('LibraSys Backend Running');
+app.post("/books", (req, res) => {
+  const { CategoryID, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable } = req.body;
+
+  const sql = `
+    INSERT INTO book 
+    (CategoryID, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    sql,
+    [CategoryID || null, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable],
+    (err, result) => {
+      if (err) {
+        console.error("Error adding book:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      res.json({ message: "Book added successfully", BookID: result.insertId });
+    }
+  );
 });
 
-// Get all books
-app.get('/books', (req, res) => {
-    const sql = 'SELECT * FROM book';
+app.put("/books/:id", (req, res) => {
+  const { id } = req.params;
+  const { CategoryID, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable } = req.body;
 
-    connection.query(sql, (err, result) => {
-        if (err) {
-            res.status(500).send('Error fetching books');
-        } else {
-            res.json(result);
-        }
-    });
+  const sql = `
+    UPDATE book
+    SET CategoryID = ?, Title = ?, ISBN = ?, PublicationDate = ?, AvailableCopies = ?, IsBorrowable = ?
+    WHERE BookID = ?
+  `;
+
+  db.query(
+    sql,
+    [CategoryID || null, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable, id],
+    (err) => {
+      if (err) {
+        console.error("Error updating book:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      res.json({ message: "Book updated successfully" });
+    }
+  );
 });
 
-// Add new book
-app.post('/books', (req, res) => {
-    const { Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable } = req.body;
+app.delete("/books/:id", (req, res) => {
+  const { id } = req.params;
 
-    const sql = `
-        INSERT INTO book (Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable)
-        VALUES (?, ?, ?, ?, ?)
-    `;
+  const sql = "DELETE FROM book WHERE BookID = ?";
 
-    connection.query(
-        sql,
-        [Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable],
-        (err, result) => {
-            if (err) {
-                res.status(500).send('Error inserting book');
-            } else {
-                res.send('Book added successfully');
-            }
-        }
-    );
+  db.query(sql, [id], (err) => {
+    if (err) {
+      console.error("Error deleting book:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json({ message: "Book deleted successfully" });
+  });
 });
 
-// Update book
-app.put('/books/:id', (req, res) => {
-    const bookId = req.params.id;
-    const { Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable } = req.body;
-
-    const sql = `
-        UPDATE book
-        SET Title = ?, ISBN = ?, PublicationDate = ?, AvailableCopies = ?, IsBorrowable = ?
-        WHERE BookID = ?
-    `;
-
-    connection.query(
-        sql,
-        [Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable, bookId],
-        (err, result) => {
-            if (err) {
-                res.status(500).send('Error updating book');
-            } else {
-                res.send('Book updated successfully');
-            }
-        }
-    );
-});
-
-// Delete book
-app.delete('/books/:id', (req, res) => {
-    const bookId = req.params.id;
-
-    const sql = 'DELETE FROM book WHERE BookID = ?';
-
-    connection.query(sql, [bookId], (err, result) => {
-        if (err) {
-            res.status(500).send('Error deleting book');
-        } else {
-            res.send('Book deleted successfully');
-        }
-    });
-});
-
-// Start server
-const PORT = 5000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
