@@ -1,48 +1,14 @@
- HEAD
-const express = require("express");
-const cors = require("cors");
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// TEST ROUTE
-app.get("/", (req, res) => {
-  res.send("Backend is running");
-});
-
-// USER ROUTES
-const userRoutes = require("./routes/userRoutes");
-app.use("/api/user", userRoutes);
-
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 const express = require('express');
-const cors    = require('cors');
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 
-// ── Middleware ──────────────────────────────────────────
-app.use(cors());          // Allow React frontend to connect
-app.use(express.json());  // Parse incoming JSON request bodies
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/userRoutes'));
 
-// ── Routes ──────────────────────────────────────────────
-const bookRoutes = require('./routes/books');
-app.use('/api/books', bookRoutes);
-
-// Add YOUR routes here:
-// const userRoutes = require('./routes/users');
-// app.use('/api/users', userRoutes);
-
-// ── Start Server ────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(process.env.PORT, () => {
+  console.log(`Server running on port ${process.env.PORT}`);
 });
-
