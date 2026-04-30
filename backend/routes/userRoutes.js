@@ -1,103 +1,52 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const jwt = require("jsonwebtoken");
 
-// =======================
-// GET ALL USERS
-// =======================
-router.get("/", (req, res) => {
-  const sql = "SELECT * FROM User";
+function auth(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token" });
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+}
 
-  db.query(sql, (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+router.get("/profile", auth, (req, res) => {
+  db.query("SELECT UserID, FullName, Email, Role, IsActive, DateRegistered FROM user WHERE UserID = ?",
+    [req.user.id], (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results[0]);
+    });
+});
+
+router.put("/profile", auth, (req, res) => {
+  const { fullName, email } = req.body;
+  db.query("UPDATE user SET FullName = ?, Email = ? WHERE UserID = ?",
+    [fullName, email, req.user.id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "Profile updated" });
+    });
+});
+
+router.get("/", auth, (req, res) => {
+  if (req.user.role !== "Librarian") return res.status(403).json({ error: "Access denied" });
+  db.query("SELECT UserID, FullName, Email, Role, IsActive, DateRegistered FROM user", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
 
-// =======================
-// GET USER BY ID
-// =======================
-router.get("/:id", (req, res) => {
-  const sql = "SELECT * FROM User WHERE UserID = ?";
-  const userId = req.params.id;
-
-  db.query(sql, [userId], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json(results[0]);
-  });
-});
-
-// =======================
-// CREATE USER
-// =======================
-router.post("/", (req, res) => {
-  const { FullName, Email, Role } = req.body;
-
-  const sql =
-    "INSERT INTO User (FullName, Email, Role) VALUES (?, ?, ?)";
-
-  db.query(sql, [FullName, Email, Role], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    res.json({
-      message: "User created successfully",
-      userId: result.insertId,
+router.put("/:id/status", auth, (req, res) => {
+  if (req.user.role !== "Librarian") return res.status(403).json({ error: "Access denied" });
+  const { isActive } = req.body;
+  db.query("UPDATE user SET IsActive = ? WHERE UserID = ?",
+    [isActive, req.params.id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "Status updated" });
     });
-  });
-});
-
-// =======================
-// UPDATE USER
-// =======================
-router.put("/:id", (req, res) => {
-  const { FullName, Email, Role } = req.body;
-  const userId = req.params.id;
-
-  const sql =
-    "UPDATE User SET FullName = ?, Email = ?, Role = ? WHERE UserID = ?";
-
-  db.query(sql, [FullName, Email, Role, userId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({ message: "User updated successfully" });
-  });
-});
-
-// =======================
-// DELETE USER
-// =======================
-router.delete("/:id", (req, res) => {
-  const sql = "DELETE FROM User WHERE UserID = ?";
-  const userId = req.params.id;
-
-  db.query(sql, [userId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({ message: "User deleted successfully" });
-  });
 });
 
 module.exports = router;
