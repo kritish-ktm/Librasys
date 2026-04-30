@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+ HEAD
 const express = require("express");
 const cors = require("cors");
 
@@ -21,7 +21,7 @@ const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-=======
+
 const express = require('express');
 const cors    = require('cors');
 require('dotenv').config();
@@ -45,4 +45,4 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
->>>>>>> 4fa1c559123efec0252996b68ac5e9533added17
+
