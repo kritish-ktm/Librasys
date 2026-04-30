@@ -5,20 +5,23 @@ const cors = require("cors");
 const app = express();
 const PORT = 5000;
 
-// MUST be before routes
-app.use(cors({
-  origin: "http://localhost:3000",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type"]
-}));
+// Allow React frontend from both CRA and Vite ports
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
 app.use(express.json());
 
+// MySQL connection
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "librasys"
+  database: "librasys",
 });
 
 db.connect((err) => {
@@ -26,13 +29,16 @@ db.connect((err) => {
     console.error("Database connection failed:", err);
     return;
   }
+
   console.log("Connected to MySQL");
 });
 
+// Test route
 app.get("/", (req, res) => {
   res.send("LibraSys backend is running");
 });
 
+// GET all books
 app.get("/books", (req, res) => {
   const sql = "SELECT * FROM book";
 
@@ -46,8 +52,16 @@ app.get("/books", (req, res) => {
   });
 });
 
+// ADD new book
 app.post("/books", (req, res) => {
-  const { CategoryID, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable } = req.body;
+  const {
+    CategoryID,
+    Title,
+    ISBN,
+    PublicationDate,
+    AvailableCopies,
+    IsBorrowable,
+  } = req.body;
 
   const sql = `
     INSERT INTO book 
@@ -57,31 +71,63 @@ app.post("/books", (req, res) => {
 
   db.query(
     sql,
-    [CategoryID || null, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable],
+    [
+      CategoryID,
+      Title,
+      ISBN,
+      PublicationDate,
+      AvailableCopies,
+      IsBorrowable,
+    ],
     (err, result) => {
       if (err) {
         console.error("Error adding book:", err);
         return res.status(500).json({ error: "Database error" });
       }
 
-      res.json({ message: "Book added successfully", BookID: result.insertId });
+      res.json({
+        message: "Book added successfully",
+        BookID: result.insertId,
+      });
     }
   );
 });
 
+// UPDATE book
 app.put("/books/:id", (req, res) => {
   const { id } = req.params;
-  const { CategoryID, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable } = req.body;
+
+  const {
+    CategoryID,
+    Title,
+    ISBN,
+    PublicationDate,
+    AvailableCopies,
+    IsBorrowable,
+  } = req.body;
 
   const sql = `
     UPDATE book
-    SET CategoryID = ?, Title = ?, ISBN = ?, PublicationDate = ?, AvailableCopies = ?, IsBorrowable = ?
+    SET CategoryID = ?, 
+        Title = ?, 
+        ISBN = ?, 
+        PublicationDate = ?, 
+        AvailableCopies = ?, 
+        IsBorrowable = ?
     WHERE BookID = ?
   `;
 
   db.query(
     sql,
-    [CategoryID || null, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable, id],
+    [
+      CategoryID,
+      Title,
+      ISBN,
+      PublicationDate,
+      AvailableCopies,
+      IsBorrowable,
+      id,
+    ],
     (err) => {
       if (err) {
         console.error("Error updating book:", err);
@@ -93,6 +139,7 @@ app.put("/books/:id", (req, res) => {
   );
 });
 
+// DELETE book
 app.delete("/books/:id", (req, res) => {
   const { id } = req.params;
 
@@ -108,6 +155,7 @@ app.delete("/books/:id", (req, res) => {
   });
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
