@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const db = require('../db');
+const db = require('../config/db');
 
 router.post('/register', async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -29,7 +29,8 @@ router.post('/login', (req, res) => {
     if (err || results.length === 0)
       return res.status(401).json({ error: 'Invalid credentials' });
     const user = results[0];
-    if (!user.IsActive || user.IsActive.toString() === '0') return res.status(403).json({ error: 'Account is deactivated' });
+    if (!user.IsActive || user.IsActive.toString() === '0')
+      return res.status(403).json({ error: 'Account is deactivated' });
     const match = await bcrypt.compare(password, user.PasswordHash);
     console.log('Password match:', match);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });

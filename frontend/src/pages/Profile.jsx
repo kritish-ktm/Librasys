@@ -39,7 +39,7 @@ function Profile() {
       <div style={styles.card}>
         <h2>My Profile</h2>
         <p><b>Role:</b> {profile.Role}</p>
-        <p><b>Registered:</b> {profile.DateRegistered}</p>
+        <p><b>Registered:</b> {profile.DateRegistered ? new Date(profile.DateRegistered).toLocaleDateString() : ''}</p>
         <input style={styles.input} value={form.fullName}
           onChange={e => setForm({ ...form, fullName: e.target.value })} />
         <input style={styles.input} value={form.email}

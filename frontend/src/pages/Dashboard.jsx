@@ -61,7 +61,7 @@ function Dashboard() {
               <td style={td}>{u.Email}</td>
               <td style={td}>{u.Role}</td>
               <td style={td}>{u.IsActive ? '✅ Active' : '❌ Inactive'}</td>
-              <td style={td}>{u.DateRegistered}</td>
+             <td style={td}>{u.DateRegistered ? new Date(u.DateRegistered).toLocaleDateString() : ''}</td>
               <td style={td}>
                 <button onClick={() => toggleStatus(u.UserID, u.IsActive)}
                   style={{ padding: '5px 10px', background: u.IsActive ? '#e74c3c' : '#2ecc71', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
