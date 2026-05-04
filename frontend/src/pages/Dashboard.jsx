@@ -9,13 +9,13 @@ function Dashboard() {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/users', {
+    axios.get('/api/users', {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => setUsers(res.data));
   }, []);
 
   const toggleStatus = async (id, current) => {
-    await axios.put(`http://localhost:5000/api/users/${id}/status`,
+    await axios.put(`/api/users/${id}/status`,
       { isActive: current ? 0 : 1 },
       { headers: { Authorization: `Bearer ${token}` } }
     );
