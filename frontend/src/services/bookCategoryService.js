@@ -22,9 +22,7 @@ export const deleteCategory = async (id) => {
   return response.data;
 };
 
-export const toggleCategoryStatus = async (id, currentStatus) => {
-  const response = await axios.put(`${API_URL}/${id}`, {
-    status: !currentStatus,
-  });
+export const toggleCategoryStatus = async (id, isActive) => {
+  const response = await axios.put(`${API_URL}/${id}/status`, { IsActive: isActive });
   return response.data;
 };

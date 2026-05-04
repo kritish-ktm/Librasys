@@ -10,6 +10,7 @@ app.use(express.json());
 app.use("/books", require("./routes/bookRoutes"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/userRoutes"));
+app.use("/categories", require("./modules/bookCategory/bookCategory.routes"));
 
 app.get("/", (req, res) => {
   res.send("LibraSys backend is running");
