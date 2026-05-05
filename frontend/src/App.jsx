@@ -8,7 +8,7 @@ import BookManagement from './pages/BookManagement';
 import BookCategoryManagement from './pages/BookCategoryManagement';
 import LoanedBookManagement from './pages/LoanedBookManagement';
 import FineManagement from './pages/FineManagement';
-
+import CustomerBookCategories from './pages/CustomerBookCategories';
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
@@ -28,6 +28,7 @@ function App() {
         <Route path="/users" element={<PrivateRoute role="Librarian"><UserManagement /></PrivateRoute>} />
         <Route path="/books" element={<PrivateRoute role="Librarian"><BookManagement /></PrivateRoute>} />
         <Route path="/categories" element={<PrivateRoute role="Librarian"><BookCategoryManagement /></PrivateRoute>} />
+        <Route path="/browse-categories" element={<PrivateRoute role="Member"><CustomerBookCategories /></PrivateRoute>} />
         <Route path="/loans" element={<PrivateRoute role="Librarian"><LoanedBookManagement /></PrivateRoute>} />
         <Route path="/fines" element={<PrivateRoute role="Librarian"><FineManagement /></PrivateRoute>} />
       </Routes>
