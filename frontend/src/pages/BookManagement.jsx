@@ -23,6 +23,8 @@ function BookManagement() {
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -32,7 +34,7 @@ function BookManagement() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  /* Loads Book records from the existing backend API. */
+  // Fetch books from the backend and store them in state.
   const fetchBooks = async () => {
     setIsLoading(true);
 
@@ -51,26 +53,23 @@ function BookManagement() {
     fetchBooks();
   }, []);
 
-  /* Dashboard summary values. */
-  const stats = useMemo(() => {
-    const totalCopies = books.reduce(
-      (sum, book) => sum + Number(book.AvailableCopies || 0),
-      0
-    );
+  // These stats are calculated from the live books array.
+  const totalTitles = books.length;
 
-    const borrowableCount = books.filter((book) =>
-      Boolean(book.IsBorrowable)
-    ).length;
+  const totalCopies = books.reduce(
+    (sum, book) => sum + Number(book.AvailableCopies || 0),
+    0
+  );
 
-    return {
-      totalTitles: books.length,
-      totalCopies,
-      borrowableCount,
-      lockedCount: books.length - borrowableCount,
-    };
-  }, [books]);
+  const borrowableCount = books.filter(
+    (book) => book.IsBorrowable === 1 || book.IsBorrowable === true
+  ).length;
 
-  /* Search, status filter, and table sorting. */
+  const nonBorrowableCount = books.filter(
+    (book) => book.IsBorrowable === 0 || book.IsBorrowable === false
+  ).length;
+
+  // Search, filter, and sort the book list shown in the table.
   const displayedBooks = useMemo(() => {
     const searchValue = search.toLowerCase().trim();
 
@@ -107,6 +106,7 @@ function BookManagement() {
     return String(dateValue).split("T")[0];
   };
 
+  // Update form state when the user types or changes the checkbox.
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
@@ -116,14 +116,25 @@ function BookManagement() {
     }));
   };
 
+  // Open a clean form for adding a new book.
+  const handleAddClick = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setMessage("");
+    setError("");
+    setIsFormOpen(true);
+  };
+
+  // Close the form and clear edit mode.
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
     setMessage("");
     setError("");
+    setIsFormOpen(false);
   };
 
-  /* Keeps validation aligned with the Book table requirements. */
+  // Validate Book form fields before sending data to the backend.
   const validateForm = () => {
     if (!form.Title.trim()) return "Book title is required.";
     if (!form.ISBN.trim()) return "ISBN is required.";
@@ -142,6 +153,7 @@ function BookManagement() {
     return "";
   };
 
+  // Add a new book or update the selected book.
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -174,7 +186,9 @@ function BookManagement() {
         setMessage("Book added successfully.");
       }
 
-      resetForm();
+      setForm(emptyForm);
+      setEditingId(null);
+      setIsFormOpen(false);
       await fetchBooks();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to save book.");
@@ -183,8 +197,10 @@ function BookManagement() {
     }
   };
 
+  // Load a book row into the form so it can be edited.
   const handleEdit = (book) => {
     setEditingId(book.BookID);
+    setIsFormOpen(true);
 
     setForm({
       CategoryID: book.CategoryID ?? "",
@@ -200,6 +216,7 @@ function BookManagement() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Delete a book after user confirmation.
   const handleDelete = async (book) => {
     const confirmed = window.confirm(`Delete "${book.Title}"?`);
     if (!confirmed) return;
@@ -215,6 +232,7 @@ function BookManagement() {
     }
   };
 
+  // Toggle table sorting when a column header is clicked.
   const handleSort = (key) => {
     if (sortKey === key) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
@@ -254,25 +272,27 @@ function BookManagement() {
       <section className="book-stats">
         <article>
           <span>Total Titles</span>
-          <strong>{stats.totalTitles}</strong>
-          <p>Registered book records</p>
+          <strong>{totalTitles}</strong>
         </article>
 
         <article>
           <span>Total Copies</span>
-          <strong>{stats.totalCopies}</strong>
-          <p>Available inventory units</p>
+          <strong>{totalCopies}</strong>
         </article>
 
         <article>
           <span>Borrowable</span>
-          <strong>{stats.borrowableCount}</strong>
-          <p>{stats.lockedCount} currently locked</p>
+          <strong>{borrowableCount}</strong>
+        </article>
+
+        <article>
+          <span>Non-Borrowable</span>
+          <strong>{nonBorrowableCount}</strong>
         </article>
       </section>
 
-      <section className="book-layout">
-        <aside className="book-panel book-form-panel">
+      <section className={isFormOpen ? "book-form-shell open" : "book-form-shell"}>
+        <div className="book-panel book-form-panel">
           <div className="book-section-title">
             <p>{editingId ? "Update Record" : "Create Record"}</p>
             <h2>{editingId ? "Edit Book" : "Add New Book"}</h2>
@@ -365,28 +385,28 @@ function BookManagement() {
                     : "Add Book"}
               </button>
 
-              {editingId && (
-                <button
-                  type="button"
-                  className="book-ghost-button"
-                  onClick={resetForm}
-                  disabled={isSaving}
-                >
-                  Cancel
-                </button>
-              )}
+              <button
+                type="button"
+                className="book-ghost-button"
+                onClick={resetForm}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
             </div>
           </form>
-        </aside>
+        </div>
+      </section>
 
-        <section className="book-panel book-table-panel">
-          <div className="book-table-header">
-            <div className="book-section-title">
-              <p>Library Records</p>
-              <h2>Book List</h2>
-            </div>
+      <section className="book-panel book-table-panel">
+        <div className="book-table-header">
+          <div className="book-section-title">
+            <p>Library Records</p>
+            <h2>Book List</h2>
+          </div>
 
-            <div className="book-table-tools">
+          <div className="book-table-tools">
+            <div className="book-toolbar-row">
               <input
                 className="book-search"
                 value={search}
@@ -394,110 +414,124 @@ function BookManagement() {
                 placeholder="Search title, ISBN, ID, category..."
               />
 
-              <div className="book-filter-tabs">
-                <button
-                  type="button"
-                  className={statusFilter === "all" ? "active" : ""}
-                  onClick={() => setStatusFilter("all")}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  className={statusFilter === "borrowable" ? "active" : ""}
-                  onClick={() => setStatusFilter("borrowable")}
-                >
-                  Borrowable
-                </button>
-                <button
-                  type="button"
-                  className={statusFilter === "locked" ? "active" : ""}
-                  onClick={() => setStatusFilter("locked")}
-                >
-                  Locked
-                </button>
-              </div>
+              <button
+                type="button"
+                className="book-add-button"
+                onClick={handleAddClick}
+              >
+                + Add Book
+              </button>
+            </div>
+
+            <div className="book-filter-tabs">
+              <button
+                type="button"
+                className={statusFilter === "all" ? "active" : ""}
+                onClick={() => setStatusFilter("all")}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={statusFilter === "borrowable" ? "active" : ""}
+                onClick={() => setStatusFilter("borrowable")}
+              >
+                Borrowable
+              </button>
+              <button
+                type="button"
+                className={statusFilter === "locked" ? "active" : ""}
+                onClick={() => setStatusFilter("locked")}
+              >
+                Locked
+              </button>
             </div>
           </div>
+        </div>
 
-          <div className="book-table-meta">
-            <span>
-              Showing {displayedBooks.length} of {books.length} books
-            </span>
-            {isLoading && <span>Refreshing records...</span>}
-          </div>
+        <div className="book-table-meta">
+          <span>
+            Showing {displayedBooks.length} of {books.length} books
+          </span>
+          {isLoading && <span>Refreshing records...</span>}
+        </div>
 
-          <div className="book-table-wrap">
-            <table className="book-table">
-              <thead>
-                <tr>
-                  <th onClick={() => handleSort("BookID")}>ID{sortLabel("BookID")}</th>
-                  <th onClick={() => handleSort("Title")}>Title{sortLabel("Title")}</th>
-                  <th onClick={() => handleSort("ISBN")}>ISBN{sortLabel("ISBN")}</th>
-                  <th onClick={() => handleSort("CategoryID")}>
-                    Category{sortLabel("CategoryID")}
-                  </th>
-                  <th onClick={() => handleSort("PublicationDate")}>
-                    Publication{sortLabel("PublicationDate")}
-                  </th>
-                  <th onClick={() => handleSort("AvailableCopies")}>
-                    Copies{sortLabel("AvailableCopies")}
-                  </th>
-                  <th onClick={() => handleSort("IsBorrowable")}>
-                    Status{sortLabel("IsBorrowable")}
-                  </th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+        <div className="book-table-wrap">
+          <table className="book-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleSort("BookID")}>
+                  ID{sortLabel("BookID")}
+                </th>
+                <th onClick={() => handleSort("Title")}>
+                  Title{sortLabel("Title")}
+                </th>
+                <th onClick={() => handleSort("ISBN")}>
+                  ISBN{sortLabel("ISBN")}
+                </th>
+                <th onClick={() => handleSort("CategoryID")}>
+                  Category{sortLabel("CategoryID")}
+                </th>
+                <th onClick={() => handleSort("PublicationDate")}>
+                  Publication{sortLabel("PublicationDate")}
+                </th>
+                <th onClick={() => handleSort("AvailableCopies")}>
+                  Copies{sortLabel("AvailableCopies")}
+                </th>
+                <th onClick={() => handleSort("IsBorrowable")}>
+                  Status{sortLabel("IsBorrowable")}
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
 
-              <tbody>
-                {displayedBooks.length > 0 ? (
-                  displayedBooks.map((book) => (
-                    <tr key={book.BookID}>
-                      <td className="book-id">#{book.BookID}</td>
-                      <td className="book-title">{book.Title}</td>
-                      <td>{book.ISBN}</td>
-                      <td>{book.CategoryID || "Not assigned"}</td>
-                      <td>{formatDateForDisplay(book.PublicationDate)}</td>
-                      <td>{book.AvailableCopies}</td>
-                      <td>
-                        <span
-                          className={
-                            book.IsBorrowable
-                              ? "book-status available"
-                              : "book-status locked"
-                          }
-                        >
-                          {book.IsBorrowable ? "Borrowable" : "Locked"}
-                        </span>
-                      </td>
-                      <td className="book-row-actions">
-                        <button type="button" onClick={() => handleEdit(book)}>
-                          Edit
-                        </button>
-                        <button type="button" onClick={() => handleDelete(book)}>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="book-empty" colSpan="8">
-                      No books match the current search or filter.
+            <tbody>
+              {displayedBooks.length > 0 ? (
+                displayedBooks.map((book) => (
+                  <tr key={book.BookID}>
+                    <td className="book-id">#{book.BookID}</td>
+                    <td className="book-title">{book.Title}</td>
+                    <td>{book.ISBN}</td>
+                    <td>{book.CategoryID || "Not assigned"}</td>
+                    <td>{formatDateForDisplay(book.PublicationDate)}</td>
+                    <td>{book.AvailableCopies}</td>
+                    <td>
+                      <span
+                        className={
+                          book.IsBorrowable
+                            ? "book-status available"
+                            : "book-status locked"
+                        }
+                      >
+                        {book.IsBorrowable ? "Borrowable" : "Locked"}
+                      </span>
+                    </td>
+                    <td className="book-row-actions">
+                      <button type="button" onClick={() => handleEdit(book)}>
+                        Edit
+                      </button>
+                      <button type="button" onClick={() => handleDelete(book)}>
+                        Delete
+                      </button>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                ))
+              ) : (
+                <tr>
+                  <td className="book-empty" colSpan="8">
+                    No books match the current search or filter.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   );
 }
 
-/* Converts table values into comparable values for sorting. */
+// Converts table values into comparable values for sorting.
 function getSortValue(book, key) {
   if (key === "Title" || key === "ISBN") {
     return String(book[key] || "").toLowerCase();

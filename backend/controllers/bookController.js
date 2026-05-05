@@ -1,6 +1,53 @@
 const db = require("../config/db");
 
-// GET all books
+// Converts empty optional fields into values MySQL can store.
+const prepareBookValues = (book) => {
+  const categoryId =
+    book.CategoryID === "" || book.CategoryID === undefined || book.CategoryID === null
+      ? null
+      : Number(book.CategoryID);
+
+  const publicationDate =
+    book.PublicationDate === "" ||
+    book.PublicationDate === undefined ||
+    book.PublicationDate === null
+      ? null
+      : book.PublicationDate;
+
+  return {
+    CategoryID: categoryId,
+    Title: book.Title.trim(),
+    ISBN: book.ISBN.trim(),
+    PublicationDate: publicationDate,
+    AvailableCopies: Number(book.AvailableCopies),
+    IsBorrowable: book.IsBorrowable ? 1 : 0,
+  };
+};
+
+// Backend validation protects the database from invalid Book records.
+const validateBook = (book) => {
+  if (!book.Title || book.Title.trim() === "") {
+    return "Book title is required";
+  }
+
+  if (!book.ISBN || book.ISBN.trim() === "") {
+    return "ISBN is required";
+  }
+
+  if (book.ISBN.trim().length > 13) {
+    return "ISBN cannot be longer than 13 characters";
+  }
+
+  const copies = Number(book.AvailableCopies);
+
+  if (Number.isNaN(copies) || copies < 0) {
+    return "Available copies must be 0 or more";
+  }
+
+  return "";
+};
+
+// List all books from the MySQL Book table.
 exports.getBooks = (req, res) => {
   const sql = `
     SELECT 
@@ -15,6 +62,7 @@ exports.getBooks = (req, res) => {
     ORDER BY BookID DESC
   `;
 
+  // db.query uses the shared MySQL connection pool from config/db.js.
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Get books error:", err);
@@ -27,38 +75,15 @@ exports.getBooks = (req, res) => {
   });
 };
 
-// ADD new book
+// Add a new book after validation passes.
 exports.addBook = (req, res) => {
-  const {
-    CategoryID,
-    Title,
-    ISBN,
-    PublicationDate,
-    AvailableCopies,
-    IsBorrowable,
-  } = req.body;
+  const validationError = validateBook(req.body);
 
-  if (!Title || Title.trim() === "") {
-    return res.status(400).json({ error: "Book title is required" });
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
-  if (!ISBN || ISBN.trim() === "") {
-    return res.status(400).json({ error: "ISBN is required" });
-  }
-
-  if (ISBN.trim().length > 13) {
-    return res.status(400).json({
-      error: "ISBN cannot be longer than 13 characters",
-    });
-  }
-
-  const copies = Number(AvailableCopies);
-
-  if (Number.isNaN(copies) || copies < 0) {
-    return res.status(400).json({
-      error: "Available copies must be 0 or more",
-    });
-  }
+  const book = prepareBookValues(req.body);
 
   const sql = `
     INSERT INTO book 
@@ -67,16 +92,12 @@ exports.addBook = (req, res) => {
   `;
 
   const values = [
-    CategoryID === "" || CategoryID === undefined || CategoryID === null
-      ? null
-      : Number(CategoryID),
-    Title.trim(),
-    ISBN.trim(),
-    PublicationDate === "" || PublicationDate === undefined || PublicationDate === null
-      ? null
-      : PublicationDate,
-    copies,
-    IsBorrowable ? 1 : 0,
+    book.CategoryID,
+    book.Title,
+    book.ISBN,
+    book.PublicationDate,
+    book.AvailableCopies,
+    book.IsBorrowable,
   ];
 
   db.query(sql, values, (err, result) => {
@@ -101,40 +122,16 @@ exports.addBook = (req, res) => {
   });
 };
 
-// UPDATE book
+// Update an existing book by its BookID.
 exports.updateBook = (req, res) => {
   const { id } = req.params;
+  const validationError = validateBook(req.body);
 
-  const {
-    CategoryID,
-    Title,
-    ISBN,
-    PublicationDate,
-    AvailableCopies,
-    IsBorrowable,
-  } = req.body;
-
-  if (!Title || Title.trim() === "") {
-    return res.status(400).json({ error: "Book title is required" });
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
-  if (!ISBN || ISBN.trim() === "") {
-    return res.status(400).json({ error: "ISBN is required" });
-  }
-
-  if (ISBN.trim().length > 13) {
-    return res.status(400).json({
-      error: "ISBN cannot be longer than 13 characters",
-    });
-  }
-
-  const copies = Number(AvailableCopies);
-
-  if (Number.isNaN(copies) || copies < 0) {
-    return res.status(400).json({
-      error: "Available copies must be 0 or more",
-    });
-  }
+  const book = prepareBookValues(req.body);
 
   const sql = `
     UPDATE book
@@ -149,16 +146,12 @@ exports.updateBook = (req, res) => {
   `;
 
   const values = [
-    CategoryID === "" || CategoryID === undefined || CategoryID === null
-      ? null
-      : Number(CategoryID),
-    Title.trim(),
-    ISBN.trim(),
-    PublicationDate === "" || PublicationDate === undefined || PublicationDate === null
-      ? null
-      : PublicationDate,
-    copies,
-    IsBorrowable ? 1 : 0,
+    book.CategoryID,
+    book.Title,
+    book.ISBN,
+    book.PublicationDate,
+    book.AvailableCopies,
+    book.IsBorrowable,
     id,
   ];
 
@@ -185,10 +178,9 @@ exports.updateBook = (req, res) => {
   });
 };
 
-// DELETE book
+// Delete a book if it is not linked to another record.
 exports.deleteBook = (req, res) => {
   const { id } = req.params;
-
   const sql = "DELETE FROM book WHERE BookID = ?";
 
   db.query(sql, [id], (err, result) => {
