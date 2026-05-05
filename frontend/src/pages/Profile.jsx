@@ -10,7 +10,7 @@ function Profile() {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/users/profile', {
+    axios.get('/api/users/profile', {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => {
       setProfile(res.data);
@@ -20,7 +20,7 @@ function Profile() {
 
   const handleUpdate = async () => {
     try {
-      await axios.put('http://localhost:5000/api/users/profile', form, {
+      await axios.put('/api/users/profile', form, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessage('Profile updated successfully!');

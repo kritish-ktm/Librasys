@@ -9,7 +9,7 @@ function UserManagement() {
   const token = localStorage.getItem('token');
 
   const fetchUsers = () => {
-    axios.get('http://localhost:5000/api/users', {
+    axios.get('/api/users', {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => setUsers(res.data));
   };
@@ -17,7 +17,7 @@ function UserManagement() {
   useEffect(() => { fetchUsers(); }, []);
 
   const toggleStatus = async (id, current) => {
-    await axios.put(`http://localhost:5000/api/users/${id}/status`,
+    await axios.put(`/api/users/${id}/status`,
       { isActive: current ? 0 : 1 },
       { headers: { Authorization: `Bearer ${token}` } }
     );
