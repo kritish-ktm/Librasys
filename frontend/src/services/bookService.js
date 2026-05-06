@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// All Book API requests go through this base route.
-// Vite forwards /books to the backend server using the proxy config.
-const API_URL = "/books";
+// Book API base URL.
+// The backend server runs on port 5000.
+const API_URL = "http://localhost:5000/books";
 
 // List all books from the backend.
 export const getBooks = async () => {

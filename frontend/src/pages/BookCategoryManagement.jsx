@@ -258,7 +258,7 @@ function BookCategoryManagement() {
             )}
           </div>
         </form>
-      </div>
+
 
       <div style={styles.card}>
         <div style={styles.tableHeader}>
