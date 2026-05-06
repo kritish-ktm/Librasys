@@ -27,14 +27,19 @@ function BookCategoryManagement() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchCategories = async () => {
-    try {
-      const data = await getCategories();
-      setCategories(data);
-      setError("");
-    } catch {
-      setError("Failed to load categories. Make sure the backend is running.");
-    }
-  };
+  try {
+    const res = await getCategories();
+
+    console.log("API response:", res); // 👈 ADD THIS
+
+    // Fix depending on response structure:
+    setCategories(Array.isArray(res) ? res : res.data || res.categories || []);
+
+    setError("");
+  } catch {
+    setError("Failed to load categories. Make sure the backend is running.");
+  }
+};
 
   useEffect(() => {
     fetchCategories();
