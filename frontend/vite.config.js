@@ -4,30 +4,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0',
+    host: 'localhost',
     port: 5001,
-    allowedHosts: true,
+    strictPort: true, // fail if port is taken instead of auto-switching
     proxy: {
+      // If your backend runs on a different port (e.g. Express on 5000)
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
-      },
-      '/books': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/categories': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/loans': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-      '/fines': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-    },
-  },
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
 })
