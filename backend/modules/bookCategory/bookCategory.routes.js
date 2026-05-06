@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("./bookCategory.controller");
+const { auth, requireLibrarian } = require("../../middleware/auth.middleware");
 
-router.get("/", controller.getCategories);
-router.get("/:id", controller.getCategoryById);
-router.post("/", controller.createCategory);
-router.put("/:id/status", controller.toggleStatus);
-router.put("/:id", controller.updateCategory);
-router.delete("/:id", controller.deleteCategory);
+router.get("/active", controller.getActiveCategories);
+router.get("/", auth, requireLibrarian, controller.getCategories);
+router.get("/:id", auth, requireLibrarian, controller.getCategoryById);
+router.post("/", auth, requireLibrarian, controller.createCategory);
+router.put("/:id/status", auth, requireLibrarian, controller.toggleStatus);
+router.put("/:id", auth, requireLibrarian, controller.updateCategory);
+router.delete("/:id", auth, requireLibrarian, controller.deleteCategory);
 
 module.exports = router;

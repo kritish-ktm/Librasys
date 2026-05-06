@@ -1,10 +1,22 @@
 const model = require("./bookCategory.model");
 
 exports.getCategories = (req, res) => {
-  model.getAll((err, results) => {
+  const { search = "", status = "all", sortBy = "CategoryName", sortDirection = "asc" } = req.query;
+
+  model.getAll({ search, status, sortBy, sortDirection }, (err, results) => {
     if (err) {
       console.error("Get categories error:", err);
       return res.status(500).json({ error: "Database error while fetching categories" });
+    }
+    res.json(results);
+  });
+};
+
+exports.getActiveCategories = (req, res) => {
+  model.getActive((err, results) => {
+    if (err) {
+      console.error("Get active categories error:", err);
+      return res.status(500).json({ error: "Database error while fetching active categories" });
     }
     res.json(results);
   });
@@ -54,7 +66,8 @@ exports.createCategory = (req, res) => {
     if (err) {
       console.error("Create category error:", err);
       if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "A category with this Dewey Code already exists" });
+        const duplicateField = err.sqlMessage?.includes("CategoryName") ? "name" : "Dewey Code";
+        return res.status(400).json({ error: `A category with this ${duplicateField} already exists` });
       }
       return res.status(500).json({ error: "Database error while creating category" });
     }
@@ -95,7 +108,8 @@ exports.updateCategory = (req, res) => {
     if (err) {
       console.error("Update category error:", err);
       if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "A category with this Dewey Code already exists" });
+        const duplicateField = err.sqlMessage?.includes("CategoryName") ? "name" : "Dewey Code";
+        return res.status(400).json({ error: `A category with this ${duplicateField} already exists` });
       }
       return res.status(500).json({ error: "Database error while updating category" });
     }
