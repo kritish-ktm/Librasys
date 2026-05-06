@@ -2,78 +2,46 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getCategories,
-  getCategoryById,
   addCategory,
   updateCategory,
   deleteCategory,
   toggleCategoryStatus,
 } from "../services/bookCategoryService";
-import heroImage from "../assets/hero.png";
-import "./BookCategoryManagement.css";
-
-const emptyForm = {
-  CategoryName: "",
-  Description: "",
-  DeweyCode: "",
-  IsActive: true,
-};
 
 function BookCategoryManagement() {
   const navigate = useNavigate();
 
+  const emptyForm = {
+    CategoryName: "",
+    Description: "",
+    DeweyCode: "",
+    IsActive: true,
+  };
+
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sortKey, setSortKey] = useState("CategoryName");
-  const [sortDirection, setSortDirection] = useState("asc");
-  const [findId, setFindId] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchCategories = async () => {
-    setIsLoading(true);
-
     try {
-      const data = await getCategories({
-        search,
-        status: statusFilter,
-        sortBy: sortKey,
-        sortDirection,
-      });
-      setCategories(Array.isArray(data) ? data : []);
+      const data = await getCategories();
+      setCategories(data);
       setError("");
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to load categories. Make sure you are logged in as a librarian.");
-    } finally {
-      setIsLoading(false);
+    } catch {
+      setError("Failed to load categories. Make sure the backend is running.");
     }
   };
 
   useEffect(() => {
     fetchCategories();
-  }, [search, statusFilter, sortKey, sortDirection]);
+  }, []);
 
-  const stats = useMemo(() => {
-    const activeCount = categories.filter((category) => Boolean(category.IsActive)).length;
-    const assignedBooks = categories.reduce(
-      (sum, category) => sum + Number(category.BookCount || 0),
-      0
-    );
-
-    return {
-      total: categories.length,
-      activeCount,
-      inactiveCount: categories.length - activeCount,
-      assignedBooks,
-    };
-  }, [categories]);
-
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target;
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
 
     setForm((currentForm) => ({
       ...currentForm,
@@ -82,76 +50,75 @@ function BookCategoryManagement() {
   };
 
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm(emptyBookForm);
     setEditingId(null);
     setMessage("");
     setError("");
   };
 
+  // Frontend validation gives quick feedback before calling the backend.
   const validateForm = () => {
     if (!form.CategoryName.trim()) return "Category name is required.";
-    if (form.CategoryName.trim().length > 100) {
+    if (form.CategoryName.trim().length > 100)
       return "Category name cannot be longer than 100 characters.";
-    }
-
     if (!form.DeweyCode.trim()) return "Dewey Code is required.";
-    if (form.DeweyCode.trim().length > 10) {
+    if (form.DeweyCode.trim().length > 10)
       return "Dewey Code cannot be longer than 10 characters.";
-    }
-
-    if (form.Description.trim().length > 200) {
+    if (form.Description && form.Description.length > 200)
       return "Description cannot be longer than 200 characters.";
-    }
-
     return "";
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     setMessage("");
     setError("");
 
     const validationError = validateForm();
+
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    const categoryData = {
-      CategoryName: form.CategoryName.trim(),
-      Description: form.Description.trim() || null,
-      DeweyCode: form.DeweyCode.trim(),
-      IsActive: form.IsActive,
+    const bookData = {
+      CategoryID: form.CategoryID === "" ? null : Number(form.CategoryID),
+      Title: form.Title.trim(),
+      ISBN: form.ISBN.trim(),
+      PublicationDate: form.PublicationDate || null,
+      AvailableCopies: Number(form.AvailableCopies),
+      IsBorrowable: form.IsBorrowable,
     };
 
     setIsSaving(true);
 
     try {
-      if (editingId) {
-        await updateCategory(editingId, categoryData);
-        setMessage("Category updated successfully.");
+      if (isEditing) {
+        await updateBook(editingId, bookData);
+        setMessage("Book updated successfully.");
       } else {
-        await addCategory(categoryData);
-        setMessage("Category added successfully.");
+        await addBook(bookData);
+        setMessage("Book added successfully.");
       }
 
-      setForm(emptyForm);
-      setEditingId(null);
-      await fetchCategories();
+      resetForm();
+      fetchCategories();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to save category.");
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const handleEdit = (category) => {
     setEditingId(category.CategoryID);
+
     setForm({
-      CategoryName: category.CategoryName ?? "",
-      Description: category.Description ?? "",
-      DeweyCode: category.DeweyCode ?? "",
-      IsActive: Boolean(category.IsActive),
+      CategoryID: book.CategoryID ?? "",
+      Title: book.Title ?? "",
+      ISBN: book.ISBN ?? "",
+      PublicationDate: formatDateForInput(book.PublicationDate),
+      AvailableCopies: book.AvailableCopies ?? 0,
+      IsBorrowable: Boolean(book.IsBorrowable),
     });
     setMessage("");
     setError("");
@@ -162,47 +129,19 @@ function BookCategoryManagement() {
     event.preventDefault();
     setMessage("");
     setError("");
-
-    if (!findId || Number(findId) <= 0) {
-      setError("Enter a valid Category ID to find.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const category = await getCategoryById(findId);
-      setCategories([category]);
-      setStatusFilter("all");
-      setSearch("");
-      setMessage(`Found category #${category.CategoryID}: ${category.CategoryName}.`);
-    } catch (err) {
-      setError(err.response?.data?.error || "Category not found.");
-      setMessage("");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleDelete = async (category) => {
-    const bookCount = Number(category.BookCount || 0);
-
-    if (bookCount > 0) {
-      setError(
-        `"${category.CategoryName}" has ${bookCount} assigned book(s). Deactivate it instead, or move those books first.`
-      );
-      setMessage("");
-      return;
-    }
-
-    const confirmed = window.confirm(`Delete category "${category.CategoryName}"?`);
+    const confirmed = window.confirm(
+      `Delete category "${category.CategoryName}"?\n\nNote: This will fail if any books are assigned to this category.`
+    );
     if (!confirmed) return;
 
     try {
-      await deleteCategory(category.CategoryID);
-      setMessage("Category deleted successfully.");
+      await deleteBook(book.BookID);
+      setMessage("Book deleted successfully.");
       setError("");
-      await fetchCategories();
+      fetchCategories();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to delete category.");
       setMessage("");
@@ -210,331 +149,421 @@ function BookCategoryManagement() {
   };
 
   const handleToggleStatus = async (category) => {
-    const nextStatus = !Boolean(category.IsActive);
-
     try {
-      await toggleCategoryStatus(category.CategoryID, nextStatus);
-      setMessage(`Category ${nextStatus ? "reactivated" : "deactivated"} successfully.`);
+      await toggleCategoryStatus(category.CategoryID, !category.IsActive);
+      setMessage(`Category ${!category.IsActive ? "activated" : "deactivated"} successfully.`);
       setError("");
-      await fetchCategories();
+      fetchCategories();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to update category status.");
       setMessage("");
     }
   };
 
-  const handleSort = (key) => {
-    if (sortKey === key) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
-      return;
-    }
-
-    setSortKey(key);
-    setSortDirection("asc");
-  };
-
-  const sortLabel = (key) => {
-    if (sortKey !== key) return "";
-    return sortDirection === "asc" ? " ↑" : " ↓";
-  };
+  const filteredCategories = categories.filter(
+    (cat) =>
+      cat.CategoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cat.DeweyCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cat.Description && cat.Description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   const formatDate = (dateValue) => {
-    if (!dateValue) return "Not set";
-    return new Date(dateValue).toLocaleDateString();
+    if (!dateValue) return "N/A";
+    return new Date(dateValue).toLocaleString();
   };
 
   return (
-    <main className="book-page">
-      <section className="book-hero">
+    <div style={styles.page}>
+      <div style={styles.header}>
         <div>
-          <p className="book-kicker">LibraSys Classification Console</p>
           <h1>Book Category Management</h1>
-          <p className="book-hero-text">
-            Maintain Dewey codes, category descriptions, catalogue visibility, and safe deletion
-            rules for librarian workflows and customer browsing.
+          <p>
+            Manage book categories using the Dewey Decimal Classification system. Categories organize
+            books by subject.
           </p>
         </div>
 
-        <div className="category-hero-art" aria-hidden="true">
-          <img src={heroImage} alt="" />
-          <div className="category-book-stack">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="book-glass-button"
-          onClick={() => navigate("/dashboard")}
-        >
+        <button style={styles.backButton} onClick={() => navigate("/dashboard")}>
           Back to Dashboard
         </button>
-      </section>
-
-      <section className="book-stats">
-        <article>
-          <span><i className="bi bi-collection"></i>Total Categories</span>
-          <strong>{stats.total}</strong>
-          <p>Matching current filters</p>
-        </article>
-
-        <article>
-          <span><i className="bi bi-eye"></i>Visible To Customers</span>
-          <strong>{stats.activeCount}</strong>
-          <p>{stats.inactiveCount} inactive categories hidden</p>
-        </article>
-
-        <article>
-          <span><i className="bi bi-journal-bookmark"></i>Assigned Books</span>
-          <strong>{stats.assignedBooks}</strong>
-          <p>Used for delete protection</p>
-        </article>
-      </section>
-
-      <section className="book-layout">
-        <aside className="book-panel book-form-panel">
-          <div className="book-section-title">
-            <p>{editingId ? "Update Category" : "Create Category"}</p>
-            <h2>{editingId ? "Edit Category" : "Add New Category"}</h2>
-          </div>
+      </div>
 
           {message && <div className="book-alert success">{message}</div>}
           {error && <div className="book-alert error">{error}</div>}
 
-          <form className="book-form" onSubmit={handleSubmit}>
-            <div className="book-field full">
-              <label htmlFor="CategoryName">Category Name</label>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.formRow}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Category Name *</label>
               <input
-                id="CategoryName"
                 name="CategoryName"
+                placeholder="e.g., Computer Science"
                 value={form.CategoryName}
                 onChange={handleChange}
-                placeholder="Example: Computer Science"
                 maxLength="100"
+                style={styles.input}
+                required
               />
             </div>
 
-            <div className="book-field full">
-              <label htmlFor="DeweyCode">Dewey Code</label>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Dewey Decimal Code *</label>
               <input
-                id="DeweyCode"
                 name="DeweyCode"
+                placeholder="e.g., 005"
                 value={form.DeweyCode}
                 onChange={handleChange}
-                placeholder="Example: 005"
                 maxLength="10"
-                className="book-mono"
+                style={styles.input}
+                required
               />
             </div>
+          </div>
 
-            <div className="book-field full">
-              <label htmlFor="Description">Description</label>
-              <textarea
-                id="Description"
-                name="Description"
-                value={form.Description}
-                onChange={handleChange}
-                placeholder="Short category description"
-                maxLength="200"
-              />
-              <small>{form.Description.length}/200 characters</small>
-            </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Description</label>
+            <textarea
+              name="Description"
+              placeholder="Brief description of this category (optional)"
+              value={form.Description}
+              onChange={handleChange}
+              maxLength="200"
+              style={{ ...styles.input, minHeight: "80px", resize: "vertical" }}
+              rows="3"
+            />
+            <small style={{ color: "#6b7280", fontSize: "12px" }}>
+              {form.Description.length}/200 characters
+            </small>
+          </div>
 
-            <label className="book-toggle-row">
-              <input
-                type="checkbox"
-                name="IsActive"
-                checked={form.IsActive}
-                onChange={handleChange}
-              />
-              <span className="book-toggle"></span>
-              <span><i className="bi bi-globe2"></i> Show category to customers</span>
-            </label>
+          <label style={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              name="IsActive"
+              checked={form.IsActive}
+              onChange={handleChange}
+            />
+            <span>Active (category is available for use)</span>
+          </label>
 
-            <div className="book-actions">
-              <button
-                type="submit"
-                className="book-glass-button primary"
-                disabled={isSaving}
-              >
-                <i className={editingId ? "bi bi-check2-square" : "bi bi-plus-lg"}></i>
-                {isSaving
-                  ? "Saving..."
-                  : editingId
-                    ? "Update Category"
-                    : "Add Category"}
+          <div style={styles.buttonRow}>
+            <button type="submit" style={styles.primaryButton}>
+              {editingId ? "Update Category" : "Add Category"}
+            </button>
+
+            {editingId && (
+              <button type="button" onClick={resetForm} style={styles.cancelButton}>
+                Cancel
               </button>
-
-              {editingId && (
-                <button
-                  type="button"
-                  className="book-glass-button muted"
-                  onClick={resetForm}
-                  disabled={isSaving}
-                >
-                  <i className="bi bi-x-lg"></i>
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
-        </aside>
-
-        <section className="book-panel book-table-panel">
-          <div className="book-table-header">
-            <div className="book-section-title">
-              <p>Catalogue Structure</p>
-              <h2>Category List</h2>
-            </div>
-
-            <div className="book-table-tools">
-              <input
-                className="book-search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search name, Dewey code, description..."
-              />
-
-              <div className="book-filter-tabs">
-                <button
-                  type="button"
-                  className={statusFilter === "all" ? "active" : ""}
-                  onClick={() => setStatusFilter("all")}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  className={statusFilter === "active" ? "active" : ""}
-                  onClick={() => setStatusFilter("active")}
-                >
-                  Active
-                </button>
-                <button
-                  type="button"
-                  className={statusFilter === "inactive" ? "active" : ""}
-                  onClick={() => setStatusFilter("inactive")}
-                >
-                  Inactive
-                </button>
-              </div>
-
-              <form className="category-find-form" onSubmit={handleFindById}>
-                <label htmlFor="FindCategoryID">Find</label>
-                <input
-                  id="FindCategoryID"
-                  type="number"
-                  min="1"
-                  value={findId}
-                  onChange={(event) => setFindId(event.target.value)}
-                  placeholder="Category ID"
-                />
-                <button type="submit">
-                  <i className="bi bi-search"></i>
-                  Find
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFindId("");
-                    fetchCategories();
-                  }}
-                >
-                  <i className="bi bi-list-ul"></i>
-                  List
-                </button>
-              </form>
-            </div>
+            )}
           </div>
+        </form>
+      </div>
 
-          <div className="book-table-meta">
-            <span>Showing {categories.length} categories</span>
-            {isLoading && <span>Refreshing records...</span>}
-          </div>
+      <div style={styles.card}>
+        <div style={styles.tableHeader}>
+          <h2>Category List ({filteredCategories.length})</h2>
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.searchInput}
+          />
+        </div>
 
-          <div className="book-table-wrap">
-            <table className="book-table">
-              <colgroup>
-                <col className="category-col-id" />
-                <col className="category-col-name" />
-                <col className="category-col-dewey" />
-                <col className="category-col-description" />
-                <col className="category-col-books" />
-                <col className="category-col-status" />
-                <col className="category-col-updated" />
-                <col className="category-col-actions" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th onClick={() => handleSort("CategoryID")}>ID{sortLabel("CategoryID")}</th>
-                  <th onClick={() => handleSort("CategoryName")}>
-                    Category{sortLabel("CategoryName")}
-                  </th>
-                  <th onClick={() => handleSort("DeweyCode")}>
-                    Dewey{sortLabel("DeweyCode")}
-                  </th>
-                  <th>Description</th>
-                  <th onClick={() => handleSort("BookCount")}>Books{sortLabel("BookCount")}</th>
-                  <th onClick={() => handleSort("IsActive")}>Status{sortLabel("IsActive")}</th>
-                  <th onClick={() => handleSort("UpdatedAt")}>Updated{sortLabel("UpdatedAt")}</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>ID</th>
+                <th style={styles.th}>Category Name</th>
+                <th style={styles.th}>Dewey Code</th>
+                <th style={styles.th}>Description</th>
+                <th style={styles.th}>Status</th>
+                <th style={styles.th}>Last Updated</th>
+                <th style={styles.th}>Actions</th>
+              </tr>
+            </thead>
 
-              <tbody>
-                {categories.length > 0 ? (
-                  categories.map((category) => (
-                    <tr key={category.CategoryID}>
-                      <td className="book-id">#{category.CategoryID}</td>
-                      <td className="book-title">{category.CategoryName}</td>
-                      <td className="book-mono"><i className="bi bi-bookmark"></i>{category.DeweyCode}</td>
-                      <td>{category.Description || "No description"}</td>
-                      <td>{category.BookCount || 0}</td>
-                      <td>
-                        <span
-                          className={
-                            category.IsActive
-                              ? "book-status available"
-                              : "book-status locked"
-                          }
+            <tbody>
+              {filteredCategories.length > 0 ? (
+                filteredCategories.map((category) => (
+                  <tr key={category.CategoryID} style={styles.tr}>
+                    <td style={styles.td}>{category.CategoryID}</td>
+                    <td style={styles.td}>
+                      <strong>{category.CategoryName}</strong>
+                    </td>
+                    <td style={styles.td}>
+                      <code style={styles.code}>{category.DeweyCode}</code>
+                    </td>
+                    <td style={styles.td}>
+                      {category.Description || <em style={{ color: "#9ca3af" }}>No description</em>}
+                    </td>
+                    <td style={styles.td}>
+                      <span
+                        style={{
+                          ...styles.badge,
+                          ...(category.IsActive ? styles.badgeActive : styles.badgeInactive),
+                        }}
+                      >
+                        {category.IsActive ? "✓ Active" : "○ Inactive"}
+                      </span>
+                    </td>
+                    <td style={styles.td}>{formatDate(category.UpdatedAt)}</td>
+                    <td style={styles.td}>
+                      <div style={styles.actionButtons}>
+                        <button
+                          style={styles.editButton}
+                          onClick={() => handleEdit(category)}
+                          title="Edit category"
                         >
-                          <span></span>
-                          {category.IsActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td>{formatDate(category.UpdatedAt)}</td>
-                      <td className="book-row-actions category-row-actions">
-                        <button type="button" onClick={() => handleEdit(category)}>
-                          <i className="bi bi-pencil-square"></i>
                           Edit
                         </button>
-                        <button type="button" onClick={() => handleToggleStatus(category)}>
-                          <i className={category.IsActive ? "bi bi-eye-slash" : "bi bi-eye"}></i>
-                          {category.IsActive ? "Deactivate" : "Reactivate"}
+                        <button
+                          style={
+                            category.IsActive ? styles.deactivateButton : styles.activateButton
+                          }
+                          onClick={() => handleToggleStatus(category)}
+                          title={category.IsActive ? "Deactivate" : "Activate"}
+                        >
+                          {category.IsActive ? "Deactivate" : "Activate"}
                         </button>
-                        <button type="button" onClick={() => handleDelete(category)}>
-                          <i className="bi bi-trash3"></i>
+                        <button
+                          style={styles.deleteButton}
+                          onClick={() => handleDelete(category)}
+                          title="Delete category"
+                        >
                           Delete
                         </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td className="book-empty" colSpan="8">
-                      No categories match the current search or filter.
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-    </main>
+                ))
+              ) : (
+                <tr>
+                  <td style={styles.emptyCell} colSpan="7">
+                    {searchTerm
+                      ? `No categories found matching "${searchTerm}"`
+                      : "No categories found. Add your first category above."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }
+
+const styles = {
+  page: {
+    padding: "2rem",
+    background: "#f5f7fb",
+    minHeight: "100vh",
+    fontFamily: "Arial, sans-serif",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "1.5rem",
+  },
+  backButton: {
+    padding: "10px 16px",
+    background: "#4a90e2",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+  },
+  card: {
+    background: "white",
+    padding: "1.5rem",
+    borderRadius: "8px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+    marginBottom: "1.5rem",
+  },
+  form: {
+    display: "grid",
+    gap: "16px",
+    maxWidth: "800px",
+  },
+  formRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "16px",
+  },
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  label: {
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "#374151",
+  },
+  input: {
+    padding: "10px",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    fontSize: "14px",
+    fontFamily: "inherit",
+  },
+  checkboxRow: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    cursor: "pointer",
+  },
+  buttonRow: {
+    display: "flex",
+    gap: "10px",
+    marginTop: "8px",
+  },
+  primaryButton: {
+    padding: "10px 20px",
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+  },
+  cancelButton: {
+    padding: "10px 20px",
+    background: "#6b7280",
+    color: "white",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "500",
+  },
+  success: {
+    background: "#dcfce7",
+    color: "#166534",
+    padding: "12px",
+    borderRadius: "5px",
+    marginBottom: "12px",
+  },
+  error: {
+    background: "#fee2e2",
+    color: "#991b1b",
+    padding: "12px",
+    borderRadius: "5px",
+    marginBottom: "12px",
+  },
+  tableHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "16px",
+  },
+  searchInput: {
+    padding: "8px 12px",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    width: "300px",
+    fontSize: "14px",
+  },
+  tableWrapper: {
+    overflowX: "auto",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  th: {
+    background: "#4a90e2",
+    color: "white",
+    padding: "12px",
+    textAlign: "left",
+    fontSize: "14px",
+    fontWeight: "500",
+  },
+  tr: {
+    borderBottom: "1px solid #e5e7eb",
+  },
+  td: {
+    padding: "12px",
+    fontSize: "14px",
+    verticalAlign: "middle",
+  },
+  code: {
+    background: "#f3f4f6",
+    padding: "2px 6px",
+    borderRadius: "3px",
+    fontSize: "13px",
+    fontFamily: "monospace",
+  },
+  badge: {
+    display: "inline-block",
+    padding: "4px 10px",
+    borderRadius: "12px",
+    fontSize: "12px",
+    fontWeight: "500",
+  },
+  badgeActive: {
+    background: "#dcfce7",
+    color: "#166534",
+  },
+  badgeInactive: {
+    background: "#fee2e2",
+    color: "#991b1b",
+  },
+  actionButtons: {
+    display: "flex",
+    gap: "6px",
+    flexWrap: "wrap",
+  },
+  editButton: {
+    padding: "6px 12px",
+    background: "#f59e0b",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+  activateButton: {
+    padding: "6px 12px",
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+  deactivateButton: {
+    padding: "6px 12px",
+    background: "#6b7280",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+  deleteButton: {
+    padding: "6px 12px",
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+  emptyCell: {
+    padding: "32px",
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: "14px",
+  },
+};
 
 export default BookCategoryManagement;
