@@ -51,3 +51,31 @@ INSERT INTO Book (CategoryID, Title, ISBN, PublicationDate, AvailableCopies, IsB
 (6, 'Oxford English Dictionary', '9780198611868', '1989-01-01', 2, FALSE),
 (6, 'World Atlas', '9780756698195', '2012-01-01', 3, FALSE),
 (6, 'Library Archive Records', '9780000000002', '1900-01-01', 1, FALSE);
+
+-- =============================================================================
+-- LoanedBook seed (Arun)
+-- These records test active, returned, and overdue borrowing states.
+-- =============================================================================
+INSERT INTO LoanedBook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
+SELECT u.UserID, b.BookID, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, 0
+FROM user u
+JOIN book b
+WHERE u.Email = 'member@librasys.test'
+  AND b.ISBN = '9780132350884'
+LIMIT 1;
+
+INSERT INTO LoanedBook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
+SELECT u.UserID, b.BookID, DATE_SUB(CURDATE(), INTERVAL 20 DAY), DATE_SUB(CURDATE(), INTERVAL 6 DAY), NULL, 1
+FROM user u
+JOIN book b
+WHERE u.Email = 'member@librasys.test'
+  AND b.ISBN = '9780262033848'
+LIMIT 1;
+
+INSERT INTO LoanedBook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
+SELECT u.UserID, b.BookID, DATE_SUB(CURDATE(), INTERVAL 10 DAY), DATE_ADD(CURDATE(), INTERVAL 4 DAY), CURDATE(), 0
+FROM user u
+JOIN book b
+WHERE u.Email = 'member@librasys.test'
+  AND b.ISBN = '9781491904244'
+LIMIT 1;

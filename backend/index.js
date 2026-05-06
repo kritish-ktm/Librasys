@@ -14,6 +14,7 @@ app.use("/books", require("./routes/bookRoutes"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/categories", require("./modules/bookCategory/bookCategory.routes"));
+app.use("/loans", require("./modules/loan/loand.routes"));
 
 // Test route
 app.get("/", (req, res) => {
