@@ -1,199 +1,241 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCategories } from "../services/bookCategoryService";
+import { getActiveCategories } from "../services/bookCategoryService";
+import { getBooks } from "../services/bookService";
+import heroImage from "../assets/hero.png";
+import "./CustomerBookCategories.css";
 
-const DEWEY_META = {
-  "0": { label: "General Works",      color: "#636e72", gradient: "135deg, #636e72, #b2bec3", icon: "bi-globe" },
-  "1": { label: "Philosophy",         color: "#6c5ce7", gradient: "135deg, #6c5ce7, #a29bfe", icon: "bi-lightbulb" },
-  "2": { label: "Religion",           color: "#fdcb6e", gradient: "135deg, #fdcb6e, #e17055", icon: "bi-star" },
-  "3": { label: "Social Sciences",    color: "#0984e3", gradient: "135deg, #0984e3, #74b9ff", icon: "bi-people" },
-  "4": { label: "Language",           color: "#00cec9", gradient: "135deg, #00cec9, #81ecec", icon: "bi-translate" },
-  "5": { label: "Natural Science",    color: "#00b894", gradient: "135deg, #00b894, #55efc4", icon: "bi-flower1" },
-  "6": { label: "Technology",         color: "#e17055", gradient: "135deg, #e17055, #fab1a0", icon: "bi-gear" },
-  "7": { label: "Arts",               color: "#fd79a8", gradient: "135deg, #fd79a8, #fdcfe8", icon: "bi-palette" },
-  "8": { label: "Literature",         color: "#d63031", gradient: "135deg, #d63031, #ff7675", icon: "bi-book" },
-  "9": { label: "History",            color: "#2d3436", gradient: "135deg, #2d3436, #636e72", icon: "bi-hourglass-split" },
+const DEWEY_GROUPS = {
+  "0": "General Works",
+  "1": "Philosophy",
+  "2": "Religion",
+  "3": "Social Sciences",
+  "4": "Language",
+  "5": "Natural Science",
+  "6": "Technology",
+  "7": "Arts",
+  "8": "Literature",
+  "9": "History",
 };
 
-function getDeweyMeta(code) {
-  const first = String(code || "0")[0];
-  return DEWEY_META[first] || DEWEY_META["0"];
+function getDeweyGroup(code) {
+  return DEWEY_GROUPS[String(code || "0")[0]] || DEWEY_GROUPS["0"];
 }
 
-function CategoryCard({ cat, index }) {
-  const meta = getDeweyMeta(cat.DeweyCode);
-  return (
-    <div className="col-12 col-sm-6 col-lg-4 col-xl-3 fade-in-up"
-      style={{ animationDelay: `${index * 0.07}s` }}>
-      <div className="category-card-glow shadow h-100"
-        style={{ background: `linear-gradient(${meta.gradient})` }}>
-        <div className="card-body p-4 d-flex flex-column h-100">
-          <div className="d-flex justify-content-between align-items-start mb-3">
-            <div className="rounded-3 d-flex align-items-center justify-content-center float-anim"
-              style={{ width: 52, height: 52, background: "rgba(255,255,255,0.2)", backdropFilter: "blur(4px)" }}>
-              <i className={`bi ${meta.icon} text-white fs-4`}></i>
-            </div>
-            <span className="badge rounded-pill"
-              style={{ background: "rgba(255,255,255,0.25)", color: "white", backdropFilter: "blur(4px)", fontSize: "0.75rem" }}>
-              {meta.label}
-            </span>
-          </div>
-
-          <div className="mb-2">
-            <code className="dewey-badge px-2 py-1 rounded"
-              style={{ background: "rgba(0,0,0,0.2)", color: "rgba(255,255,255,0.9)", fontSize: "0.85rem" }}>
-              {cat.DeweyCode}
-            </code>
-          </div>
-
-          <h5 className="fw-bold text-white mb-2">{cat.CategoryName}</h5>
-
-          <p className="text-white-50 small flex-grow-1 mb-3">
-            {cat.Description || "Explore books in this collection."}
-          </p>
-
-          <div className="d-flex align-items-center justify-content-between mt-auto">
-            <span className="badge rounded-pill"
-              style={{ background: "rgba(255,255,255,0.2)", color: "white", padding: "6px 12px" }}>
-              <i className="bi bi-circle-fill me-1 pulse-active" style={{ fontSize: 8 }}></i>
-              Available
-            </span>
-            <i className="bi bi-arrow-right-circle text-white fs-5" style={{ opacity: 0.7 }}></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function CustomerBookCategories() {
+function CustomerBookCategories() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
   const role = localStorage.getItem("role");
+  const [categories, setCategories] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    getCategories()
-      .then(data => setCategories(data.filter(c => c.IsActive)))
-      .catch(() => {})
+    Promise.all([getActiveCategories(), getBooks()])
+      .then(([categoryData, bookData]) => {
+        const activeCategories = Array.isArray(categoryData) ? categoryData : [];
+        setCategories(activeCategories);
+        setBooks(Array.isArray(bookData) ? bookData : bookData?.data || []);
+        setSelectedCategoryId(activeCategories[0]?.CategoryID ?? null);
+      })
+      .catch(() => {
+        setError("Unable to load the library catalogue right now.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = categories.filter(c => {
-    const q = search.toLowerCase();
-    return (
-      c.CategoryName.toLowerCase().includes(q) ||
-      c.DeweyCode.toLowerCase().includes(q) ||
-      (c.Description || "").toLowerCase().includes(q)
-    );
-  });
+  const categoryGroups = useMemo(() => {
+    return [...new Set(categories.map((category) => String(category.DeweyCode || "0")[0]))].sort();
+  }, [categories]);
 
-  const deweyGroups = [...new Set(categories.map(c => String(c.DeweyCode || "0")[0]))];
+  const visibleCategories = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return categories.filter((category) => {
+      const matchesSearch = `${category.CategoryName} ${category.DeweyCode} ${category.Description || ""}`
+        .toLowerCase()
+        .includes(query);
+      const matchesGroup =
+        groupFilter === "all" || String(category.DeweyCode || "0")[0] === groupFilter;
+
+      return matchesSearch && matchesGroup;
+    });
+  }, [categories, groupFilter, search]);
+
+  const selectedCategory =
+    categories.find((category) => category.CategoryID === selectedCategoryId) ||
+    visibleCategories[0] ||
+    null;
+
+  const selectedBooks = useMemo(() => {
+    if (!selectedCategory) return [];
+    return books.filter((book) => Number(book.CategoryID) === Number(selectedCategory.CategoryID));
+  }, [books, selectedCategory]);
+
+  const goBack = () => {
+    if (role === "Librarian") {
+      navigate("/dashboard");
+    } else if (role === "Member") {
+      navigate("/profile");
+    } else {
+      navigate("/");
+    }
+  };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0f0f23" }}>
-
-      {/* Hero */}
-      <div className="gradient-hero text-white py-5 px-4 text-center position-relative overflow-hidden">
-        <div className="position-absolute top-0 start-0 w-100 h-100" style={{
-          background: "radial-gradient(ellipse at 30% 50%, rgba(108,92,231,0.3), transparent 60%), radial-gradient(ellipse at 70% 50%, rgba(0,184,148,0.2), transparent 60%)",
-          pointerEvents: "none"
-        }}></div>
-
-        <div className="position-relative">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <button className="btn btn-outline-light btn-sm btn-animate"
-              onClick={() => navigate(role === "Librarian" ? "/dashboard" : "/profile")}>
-              <i className="bi bi-arrow-left me-1"></i> Back
+    <main className="customer-category-page">
+      <section className="customer-category-hero">
+        <div className="customer-category-actions">
+          <button type="button" onClick={goBack}>
+            <i className="bi bi-arrow-left"></i>
+            Back
+          </button>
+          {role === "Librarian" && (
+            <button type="button" onClick={() => navigate("/categories")}>
+              <i className="bi bi-sliders"></i>
+              Manage Categories
             </button>
-            {role === "Librarian" && (
-              <button className="btn btn-warning btn-sm btn-animate fw-semibold"
-                onClick={() => navigate("/categories")}>
-                <i className="bi bi-gear me-1"></i> Manage Categories
-              </button>
-            )}
-          </div>
-
-          <div className="float-anim d-inline-block mb-3">
-            <i className="bi bi-collection-fill text-warning" style={{ fontSize: 64 }}></i>
-          </div>
-          <h1 className="display-5 fw-bold animate__animated animate__fadeInDown mb-2">
-            Explore Our Library Collections
-          </h1>
-          <p className="lead text-white-50 animate__animated animate__fadeInUp mb-4">
-            Browse {categories.length} curated categories using the Dewey Decimal System
-          </p>
-
-          {/* Search */}
-          <div className="mx-auto animate__animated animate__fadeInUp" style={{ maxWidth: 520, animationDelay: "0.2s" }}>
-            <div className="input-group input-group-lg shadow-lg">
-              <span className="input-group-text bg-white border-0">
-                <i className="bi bi-search text-muted"></i>
-              </span>
-              <input type="text" className="form-control border-0 search-animated"
-                placeholder="Search by name, Dewey code, or description..."
-                value={search} onChange={e => setSearch(e.target.value)} />
-              {search && (
-                <button className="btn btn-light border-0" onClick={() => setSearch("")}>
-                  <i className="bi bi-x"></i>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Filter Badges */}
-          {deweyGroups.length > 0 && (
-            <div className="d-flex flex-wrap justify-content-center gap-2 mt-4 animate__animated animate__fadeIn">
-              <button className={`btn btn-sm btn-animate rounded-pill px-3 ${filter === "all" ? "btn-warning" : "btn-outline-light"}`}
-                onClick={() => setFilter("all")}>All</button>
-              {deweyGroups.map(g => {
-                const m = getDeweyMeta(g + "00");
-                return (
-                  <button key={g}
-                    className={`btn btn-sm btn-animate rounded-pill px-3 ${filter === g ? "btn-warning" : "btn-outline-light"}`}
-                    onClick={() => setFilter(g)}>
-                    <i className={`bi ${m.icon} me-1`}></i>{g}xx
-                  </button>
-                );
-              })}
-            </div>
           )}
         </div>
-      </div>
 
-      {/* Cards */}
-      <div className="container-fluid px-4 py-5">
-        {loading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-warning" style={{ width: 56, height: 56 }}></div>
-            <p className="mt-3 text-white-50">Loading collections...</p>
+        <p className="customer-kicker">LibraSys Catalogue</p>
+        <h1>Browse Book Categories</h1>
+        <p>
+          Search active library categories by subject, Dewey code, or description, then open a
+          collection to see books filed under it.
+        </p>
+
+        <div className="customer-hero-visual" aria-hidden="true">
+          <img src={heroImage} alt="" />
+          <div className="customer-shelf">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-5 animate__animated animate__fadeIn">
-            <i className="bi bi-search text-white-50" style={{ fontSize: 64 }}></i>
-            <p className="mt-3 text-white-50 fs-5">No categories found for "{search}"</p>
-            <button className="btn btn-outline-light btn-animate mt-2" onClick={() => setSearch("")}>Clear Search</button>
-          </div>
-        ) : (
-          <>
-            <p className="text-white-50 mb-4 text-center">
-              Showing <span className="text-warning fw-bold">{filtered.length}</span> collection{filtered.length !== 1 ? "s" : ""}
-            </p>
-            <div className="row g-4">
-              {filtered
-                .filter(c => filter === "all" || String(c.DeweyCode || "0")[0] === filter)
-                .map((cat, i) => <CategoryCard key={cat.CategoryID} cat={cat} index={i} />)}
+        </div>
+      </section>
+
+      <section className="customer-category-toolbar" aria-label="Category filters">
+        <label>
+          <span>Search Catalogue</span>
+          <i className="bi bi-search"></i>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search category, Dewey code, or description"
+          />
+        </label>
+
+        <div className="customer-group-tabs">
+          <button
+            type="button"
+            className={groupFilter === "all" ? "active" : ""}
+            onClick={() => setGroupFilter("all")}
+          >
+            All
+          </button>
+          {categoryGroups.map((group) => (
+            <button
+              type="button"
+              key={group}
+              className={groupFilter === group ? "active" : ""}
+              onClick={() => setGroupFilter(group)}
+              title={getDeweyGroup(`${group}00`)}
+            >
+              <i className="bi bi-bookshelf"></i>
+              {group}xx
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {error && <div className="customer-category-message error">{error}</div>}
+
+      {loading ? (
+        <section className="customer-category-message">Loading collections...</section>
+      ) : (
+        <section className="customer-category-layout">
+          <aside className="customer-category-list" aria-label="Active book categories">
+            <div className="customer-section-title">
+              <p>Active Collections</p>
+              <h2><i className="bi bi-collection"></i>{visibleCategories.length} Categories</h2>
             </div>
-          </>
-        )}
-      </div>
 
-      {/* Footer */}
-      <div className="text-center py-4 text-white-50 small border-top" style={{ borderColor: "rgba(255,255,255,0.1) !important" }}>
-        <i className="bi bi-book me-1"></i> LibraSys — Dewey Decimal Classification System
-      </div>
-    </div>
+            {visibleCategories.length === 0 ? (
+              <div className="customer-empty">No active categories match your search.</div>
+            ) : (
+              visibleCategories.map((category) => (
+                <button
+                  type="button"
+                  key={category.CategoryID}
+                  className={
+                    Number(selectedCategory?.CategoryID) === Number(category.CategoryID)
+                      ? "customer-category-item active"
+                      : "customer-category-item"
+                  }
+                  onClick={() => setSelectedCategoryId(category.CategoryID)}
+                >
+                  <span className="customer-dewey">{category.DeweyCode}</span>
+                  <span>
+                    <strong>{category.CategoryName}</strong>
+                    <small>{getDeweyGroup(category.DeweyCode)}</small>
+                  </span>
+                  <em><i className="bi bi-journal-bookmark"></i>{category.BookCount || 0}</em>
+                </button>
+              ))
+            )}
+          </aside>
+
+          <section className="customer-category-detail">
+            {selectedCategory ? (
+              <>
+                <div className="customer-detail-header">
+                  <div>
+                    <p className="customer-kicker">{getDeweyGroup(selectedCategory.DeweyCode)}</p>
+                    <h2>{selectedCategory.CategoryName}</h2>
+                    <p>{selectedCategory.Description || "Explore books in this collection."}</p>
+                  </div>
+                  <code><i className="bi bi-bookmark"></i>{selectedCategory.DeweyCode}</code>
+                </div>
+
+                <div className="customer-book-panel">
+                  <div className="customer-section-title">
+                    <p>Books In This Category</p>
+                    <h3><i className="bi bi-book"></i>{selectedBooks.length} Book{selectedBooks.length === 1 ? "" : "s"}</h3>
+                  </div>
+
+                  {selectedBooks.length === 0 ? (
+                    <div className="customer-empty">
+                      No books are currently assigned to this category.
+                    </div>
+                  ) : (
+                    <div className="customer-book-list">
+                      {selectedBooks.map((book) => (
+                        <article key={book.BookID} className="customer-book-row">
+                          <div>
+                            <h4>{book.Title}</h4>
+                            <p><i className="bi bi-upc-scan"></i> ISBN {book.ISBN}</p>
+                          </div>
+                          <span><i className="bi bi-layers"></i>{Number(book.AvailableCopies || 0)} copies</span>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="customer-empty">Select a category to view its books.</div>
+            )}
+          </section>
+        </section>
+      )}
+    </main>
   );
 }
+
+export default CustomerBookCategories;

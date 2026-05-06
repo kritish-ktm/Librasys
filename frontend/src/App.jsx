@@ -28,7 +28,7 @@ function App() {
         <Route path="/users" element={<PrivateRoute role="Librarian"><UserManagement /></PrivateRoute>} />
         <Route path="/books" element={<PrivateRoute role="Librarian"><BookManagement /></PrivateRoute>} />
         <Route path="/categories" element={<PrivateRoute role="Librarian"><BookCategoryManagement /></PrivateRoute>} />
-        <Route path="/browse-categories" element={<PrivateRoute role="Member"><CustomerBookCategories /></PrivateRoute>} />
+        <Route path="/browse-categories" element={<CustomerBookCategories />} />
         <Route path="/loans" element={<PrivateRoute role="Librarian"><LoanedBookManagement /></PrivateRoute>} />
         <Route path="/fines" element={<PrivateRoute role="Librarian"><FineManagement /></PrivateRoute>} />
       </Routes>
