@@ -46,6 +46,12 @@ function Profile() {
           onChange={e => setForm({ ...form, email: e.target.value })} />
         {message && <p style={{ color: 'green' }}>{message}</p>}
         <button style={styles.btn} onClick={handleUpdate}>Update Profile</button>
+        {profile.Role === 'Member' && (
+          <button style={{ ...styles.btn, background: '#556046', marginTop: '10px' }} onClick={() => navigate('/my-loans')}>My Loans</button>
+        )}
+        {profile.Role === 'Member' && (
+          <button style={{ ...styles.btn, background: '#f4a64a', color: '#2b2218', marginTop: '10px' }} onClick={() => navigate('/browse-categories')}>Browse Books</button>
+        )}
         <button style={{ ...styles.btn, background: '#e74c3c', marginTop: '10px' }} onClick={handleLogout}>Logout</button>
       </div>
     </div>

@@ -1,0 +1,258 @@
+.my-loans-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #afa08b;
+  color: #2b2218;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.my-loans-page * {
+  box-sizing: border-box;
+}
+
+.my-loans-header,
+.my-loans-stats,
+.my-loans-panel {
+  width: 100%;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.my-loans-header {
+  margin-bottom: 24px;
+  padding: 22px 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-radius: 6px;
+  background: #d9cfc3;
+  border-left: 6px solid #6b7455;
+  box-shadow: 0 6px 16px rgba(43, 34, 24, 0.14);
+}
+
+.my-loans-kicker {
+  margin: 0 0 6px;
+  color: #556046;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.my-loans-header h1,
+.my-loans-toolbar h2 {
+  margin: 0;
+  color: #2b2218;
+  line-height: 1.15;
+}
+
+.my-loans-header h1 {
+  font-size: 34px;
+}
+
+.my-loans-header p {
+  margin: 8px 0 0;
+  color: #5f5549;
+}
+
+.my-loans-actions,
+.my-loans-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.my-loans-actions button,
+.my-loans-tabs button,
+.my-loans-return {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #556046;
+  color: #f3eee8;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.my-loans-actions button:first-child,
+.my-loans-tabs button.active,
+.my-loans-return {
+  background: #f4a64a;
+  color: #2b2218;
+}
+
+.my-loans-stats {
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  overflow: hidden;
+  border-radius: 6px;
+  background: #f3eee8;
+  border: 1px solid rgba(85, 96, 70, 0.25);
+}
+
+.my-loans-stats article {
+  min-height: 88px;
+  padding: 18px;
+  border-right: 1px solid rgba(85, 96, 70, 0.25);
+}
+
+.my-loans-stats article:last-child {
+  border-right: none;
+}
+
+.my-loans-stats span {
+  display: block;
+  color: #556046;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.my-loans-stats strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.my-loans-panel {
+  padding: 22px;
+  border-radius: 6px;
+  background: #f3eee8;
+  border: 1px solid rgba(85, 96, 70, 0.22);
+  box-shadow: 0 4px 12px rgba(43, 34, 24, 0.1);
+}
+
+.my-loans-toolbar {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.my-loans-alert,
+.my-loans-empty {
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.my-loans-alert.success {
+  color: #2f5d3c;
+  background: #e1efdd;
+}
+
+.my-loans-alert.error {
+  color: #7a2b25;
+  background: #f2d9d5;
+}
+
+.my-loans-empty {
+  color: #6b5e52;
+  background: #fffaf4;
+}
+
+.my-loans-list {
+  display: grid;
+  gap: 14px;
+}
+
+.my-loan-card {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(300px, 1.3fr) auto;
+  gap: 18px;
+  align-items: center;
+  border-radius: 6px;
+  background: #fffaf4;
+  border: 1px solid #ded3c7;
+}
+
+.my-loan-card h3 {
+  margin: 8px 0 4px;
+  color: #2b2218;
+}
+
+.my-loan-card p {
+  margin: 0;
+  color: #5f5549;
+  font-size: 13px;
+}
+
+.my-loan-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.my-loan-card dt {
+  color: #6b7455;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-loan-card dd {
+  margin: 4px 0 0;
+  color: #2b2218;
+  font-weight: 700;
+}
+
+.my-loan-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.my-loan-status.active {
+  color: #2f5d3c;
+  background: #e1efdd;
+}
+
+.my-loan-status.overdue {
+  color: #7a2b25;
+  background: #f2d9d5;
+}
+
+.my-loan-status.returned {
+  color: #2b2218;
+  background: #d9cfc3;
+}
+
+.my-loans-return:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 840px) {
+  .my-loans-header,
+  .my-loans-toolbar,
+  .my-loan-card {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-loans-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .my-loan-card dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .my-loans-page {
+    padding: 18px;
+  }
+
+  .my-loans-stats {
+    grid-template-columns: 1fr;
+  }
+}
