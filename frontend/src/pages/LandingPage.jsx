@@ -81,9 +81,18 @@ export default function LandingPage() {
 
             <button
               className="lp-nav-cta"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/member-login")}
+              >
+                Member Login
+            </button>
+            
+
+                <button
+              className="lp-nav-cta"
+              onClick={() => navigate("/admin-login")}
             >
-              Login
+Admin Login
+            
             </button>
           </nav>
         </div>
@@ -115,10 +124,17 @@ export default function LandingPage() {
           <div className="lp-hero-actions">
             <button
               className="lp-btn-primary"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/member-login")}
             >
-              Login to Get Started
+              Member Login
               <ChevronRight size={18} />
+            </button>
+
+            <button
+              className="lp-btn-secondary"
+              onClick={() => navigate("/admin-login")}
+            >
+              Admin Login
             </button>
 
             <button

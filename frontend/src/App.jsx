@@ -11,6 +11,8 @@ import LoanedBookManagement from './pages/LoanedBookManagement';
 import FineManagement from './pages/FineManagement';
 import CustomerBookCategories from './pages/CustomerBookCategories';
 import LandingPage from './pages/LandingPage';
+import MemberLogin from './pages/MemberLogin';
+import AdminLogin from './pages/AdminLogin';
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
@@ -33,6 +35,8 @@ function App() {
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/member-login" element={<MemberLogin />} />
+        <Route path="/admin-login" element={<AdminLogin />} />      
         <Route path="/register" element={<Register />} />
         <Route
           path="/browse-categories"
