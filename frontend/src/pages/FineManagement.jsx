@@ -1,394 +1,443 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-// ==========================
-// Fine Data
-// ==========================
+const FineManagement = () => {
 
-const fineList = [
+  const navigate = useNavigate();
 
-  { id: 1, member: 'Ramesh Oli', book: 'Atomic Habits', amount: 25, status: 'Unpaid' },
-  { id: 2, member: 'Emily Johnson', book: 'Ikigai', amount: 15, status: 'Paid' },
-  { id: 3, member: 'Sophia Williams', book: 'Deep Work', amount: 30, status: 'Unpaid' },
-  { id: 4, member: 'David Miller', book: 'Zero to One', amount: 18, status: 'Paid' },
-  { id: 5, member: 'Olivia Davis', book: 'The Alchemist', amount: 22, status: 'Unpaid' },
-  { id: 6, member: 'James Wilson', book: 'Mindset', amount: 12, status: 'Paid' },
-  { id: 7, member: 'Emma Taylor', book: 'Rework', amount: 28, status: 'Unpaid' },
-  { id: 8, member: 'Daniel Brown', book: 'Hooked', amount: 20, status: 'Paid' },
-  { id: 9, member: 'Mia Thomas', book: 'The One Thing', amount: 17, status: 'Unpaid' },
-  { id: 10, member: 'Lucas Martin', book: 'Do Epic Shit', amount: 19, status: 'Paid' },
-  { id: 11, member: 'Charlotte White', book: 'Grit', amount: 24, status: 'Unpaid' },
-  { id: 12, member: 'Benjamin Harris', book: 'The Subtle Art', amount: 14, status: 'Paid' },
-  { id: 13, member: 'Amelia Garcia', book: 'Think and Grow Rich', amount: 27, status: 'Unpaid' },
-  { id: 14, member: 'Henry Martinez', book: 'Start With Why', amount: 16, status: 'Paid' },
-  { id: 15, member: 'Isabella Anderson', book: 'Rich Dad Poor Dad', amount: 21, status: 'Unpaid' }
+  const [fines, setFines] = useState([]);
 
-];
+  const [search, setSearch] = useState("");
 
-// ==========================
-// Main Component
-// ==========================
+  useEffect(() => {
 
-function Fines() {
+    axios
+      .get("http://localhost:5000/api/fines")
 
-  // Store fines
-  const [fines, setFines] = useState(fineList);
+      .then((res) => {
 
-  // Search text
-  const [search, setSearch] = useState('');
+        setFines(res.data);
+      })
+
+      .catch((err) => {
+
+        console.log(err);
+      });
+
+  }, []);
 
   // ==========================
-  // Change Status
+  // Toggle Paid / Unpaid
   // ==========================
 
   const toggleStatus = (id) => {
 
-    setFines(
+    const updated = fines.map((fine) => {
 
-      fines.map(fine =>
+      if (fine.id === id) {
 
-        fine.id === id
+        return {
 
-          ? {
-              ...fine,
+          ...fine,
 
-              status:
-                fine.status === 'Paid'
-                  ? 'Unpaid'
-                  : 'Paid'
-            }
+          status:
+            fine.status === "Paid"
+              ? "Unpaid"
+              : "Paid",
+        };
+      }
 
-          : fine
-      )
-    );
+      return fine;
+    });
+
+    setFines(updated);
   };
 
   // ==========================
   // Search Filter
   // ==========================
 
-  const filtered = fines.filter(fine =>
+  const filteredFines = fines.filter((fine) =>
 
-    fine.member.toLowerCase().includes(search.toLowerCase()) ||
+    fine.member
+      .toLowerCase()
+      .includes(search.toLowerCase())
 
-    fine.book.toLowerCase().includes(search.toLowerCase())
+    ||
+
+    fine.book
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   // ==========================
-  // Statistics
+  // Summary
   // ==========================
 
-  const totalPaid =
-    fines
-      .filter(f => f.status === 'Paid')
-      .reduce((a, b) => a + b.amount, 0);
+  const totalPaid = fines
 
-  const totalUnpaid =
-    fines
-      .filter(f => f.status === 'Unpaid')
-      .reduce((a, b) => a + b.amount, 0);
+    .filter((fine) => fine.status === "Paid")
 
-  const paidUsers =
-    fines.filter(f => f.status === 'Paid').length;
+    .reduce(
+      (sum, fine) => sum + Number(fine.amount),
+      0
+    );
 
-  const unpaidUsers =
-    fines.filter(f => f.status === 'Unpaid').length;
+  const totalUnpaid = fines
 
-  // ==========================
-  // UI
-  // ==========================
+    .filter((fine) => fine.status === "Unpaid")
+
+    .reduce(
+      (sum, fine) => sum + Number(fine.amount),
+      0
+    );
+
+  const membersPaid =
+    fines.filter(
+      (fine) => fine.status === "Paid"
+    ).length;
+
+  const membersUnpaid =
+    fines.filter(
+      (fine) => fine.status === "Unpaid"
+    ).length;
 
   return (
 
     <div
       style={{
-        minHeight: '100vh',
-        padding: 30,
-
-        background:
-          'linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb)',
-
-        fontFamily: 'Arial',
-        color: 'white'
+        minHeight: "100vh",
+        backgroundColor: "#b8ab97",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
       }}
     >
 
-      {/* ==========================
-          Back Button
-      ========================== */}
-
-      <button
-
-        // Go back to dashboard
-        onClick={() => window.history.back()}
-
-        style={{
-          position: 'absolute',
-
-          top: 20,
-          right: 20,
-
-          background: 'white',
-
-          color: '#1e3a8a',
-
-          border: 'none',
-
-          padding: '10px 18px',
-
-          borderRadius: 10,
-
-          fontWeight: 'bold',
-
-          cursor: 'pointer',
-
-          boxShadow:
-            '0 5px 15px rgba(0,0,0,0.3)'
-        }}
-      >
-
-        ← Back To Dashboard
-
-      </button>
-
-      {/* ==========================
-          Header
-      ========================== */}
-
       <div
         style={{
-          textAlign: 'center',
-          marginBottom: 40
+          maxWidth: "1200px",
+          margin: "0 auto",
         }}
       >
 
-        <h1
+        {/* HEADER */}
+
+        <div
           style={{
-            fontSize: 70,
-            animation: 'bounce 2s infinite'
+            backgroundColor: "#e8e0d5",
+            borderLeft: "6px solid #66704d",
+            borderRadius: "10px",
+            padding: "30px",
+            marginBottom: "25px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          LibraSys 📚
-        </h1>
 
-        <h2>Fine Management System</h2>
+          <div>
 
-      </div>
+            <p
+              style={{
+                color: "#66704d",
+                fontWeight: "bold",
+                letterSpacing: "2px",
+                marginBottom: "10px",
+              }}
+            >
+              LIBRASYS COMPONENT
+            </p>
 
-      {/* ==========================
-          Animation
-      ========================== */}
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "48px",
+                color: "#1f1f1f",
+              }}
+            >
+              Fine Management
+            </h1>
 
-      <style>
-        {`
-          @keyframes bounce {
+            <p
+              style={{
+                color: "#555",
+                marginTop: "10px",
+              }}
+            >
+              Manage paid and unpaid library fines.
+            </p>
 
-            0%,100% {
-              transform: translateY(0);
-            }
+          </div>
 
-            50% {
-              transform: translateY(-10px);
-            }
-          }
-        `}
-      </style>
+          {/* BACK BUTTON */}
 
-      {/* ==========================
-          Summary Cards
-      ========================== */}
+          <button
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 20,
-          flexWrap: 'wrap',
-          marginBottom: 30
-        }}
-      >
+            onClick={() => navigate("/dashboard")}
 
-        <div style={card('green')}>
-          <h3>Total Paid</h3>
-          <h1>${totalPaid}</h1>
-        </div>
-
-        <div style={card('red')}>
-          <h3>Total Unpaid</h3>
-          <h1>${totalUnpaid}</h1>
-        </div>
-
-        <div style={card('#2563eb')}>
-          <h3>Members Paid</h3>
-          <h1>{paidUsers}</h1>
-        </div>
-
-        <div style={card('#f59e0b')}>
-          <h3>Members Unpaid</h3>
-          <h1>{unpaidUsers}</h1>
-        </div>
-
-      </div>
-
-      {/* ==========================
-          Search Box
-      ========================== */}
-
-      <input
-
-        type="text"
-
-        placeholder="Search member or book..."
-
-        value={search}
-
-        onChange={(e) =>
-          setSearch(e.target.value)
-        }
-
-        style={{
-          padding: 12,
-          width: 300,
-          border: 'none',
-          borderRadius: 10,
-          marginBottom: 25,
-          fontSize: 16
-        }}
-      />
-
-      {/* ==========================
-          Table
-      ========================== */}
-
-      <table
-        style={{
-          width: '100%',
-          background: 'white',
-          color: 'black',
-          borderCollapse: 'collapse',
-          borderRadius: 10,
-          overflow: 'hidden'
-        }}
-      >
-
-        {/* Table Header */}
-
-        <thead>
-
-          <tr
             style={{
-              background: '#3498db',
-              color: 'white'
+              backgroundColor: "#66704d",
+              color: "white",
+              border: "none",
+              padding: "14px 22px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            ← Back To Dashboard
+          </button>
+
+        </div>
+
+        {/* CARDS */}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "20px",
+            marginBottom: "25px",
+          }}
+        >
+
+          <div style={card}>
+            <p style={cardTitle}>Total Paid</p>
+            <h1>${totalPaid}</h1>
+          </div>
+
+          <div style={card}>
+            <p style={cardTitle}>Total Unpaid</p>
+            <h1>${totalUnpaid}</h1>
+          </div>
+
+          <div style={card}>
+            <p style={cardTitle}>Members Paid</p>
+            <h1>{membersPaid}</h1>
+          </div>
+
+          <div style={card}>
+            <p style={cardTitle}>Members Unpaid</p>
+            <h1>{membersUnpaid}</h1>
+          </div>
+
+        </div>
+
+        {/* TABLE SECTION */}
+
+        <div
+          style={{
+            backgroundColor: "#e8e0d5",
+            borderRadius: "10px",
+            padding: "25px",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+          }}
+        >
+
+          {/* SEARCH */}
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "20px",
+              alignItems: "center",
             }}
           >
 
-            <th style={th}>ID</th>
-            <th style={th}>Member</th>
-            <th style={th}>Book</th>
-            <th style={th}>Amount</th>
-            <th style={th}>Status</th>
+            <div>
 
-          </tr>
+              <p
+                style={{
+                  color: "#66704d",
+                  fontWeight: "bold",
+                  letterSpacing: "2px",
+                  marginBottom: "10px",
+                }}
+              >
+                FIND, FILTER, LIST
+              </p>
 
-        </thead>
+              <h2 style={{ margin: 0 }}>
+                Fine Table
+              </h2>
 
-        {/* Table Body */}
+            </div>
 
-        <tbody>
+            {/* SEARCH BAR */}
 
-          {filtered.map(fine => (
+            <input
 
-            <tr
-              key={fine.id}
+              type="text"
+
+              placeholder="Search member or book..."
+
+              value={search}
+
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
 
               style={{
-                textAlign: 'center',
-                height: 55
+                width: "350px",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+                fontSize: "15px",
+              }}
+            />
+
+          </div>
+
+          {/* TABLE */}
+
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              overflow: "hidden",
+              borderRadius: "8px",
+            }}
+          >
+
+            <thead
+              style={{
+                backgroundColor: "#66704d",
+                color: "white",
               }}
             >
 
-              <td>{fine.id}</td>
+              <tr>
 
-              <td>{fine.member}</td>
+                <th style={th}>ID</th>
 
-              <td>{fine.book}</td>
+                <th style={th}>Member</th>
 
-              <td>${fine.amount}</td>
+                <th style={th}>Book</th>
 
-              {/* Status Button */}
+                <th style={th}>Amount</th>
 
-              <td>
+                <th style={th}>Status</th>
 
-                <button
+              </tr>
 
-                  onClick={() =>
-                    toggleStatus(fine.id)
-                  }
+            </thead>
+
+            <tbody>
+
+              {filteredFines.map((fine, index) => (
+
+                <tr
+                  key={fine.id}
 
                   style={{
-                    background:
-                      fine.status === 'Paid'
-                        ? 'green'
-                        : 'red',
-
-                    color: 'white',
-
-                    border: 'none',
-
-                    padding: '8px 15px',
-
-                    borderRadius: 6,
-
-                    cursor: 'pointer'
+                    backgroundColor:
+                      index % 2 === 0
+                        ? "#f5f0e8"
+                        : "#ffffff",
                   }}
                 >
 
-                  {fine.status}
+                  <td style={td}>
+                    {fine.id}
+                  </td>
 
-                </button>
+                  <td style={td}>
+                    {fine.member}
+                  </td>
 
-              </td>
+                  <td style={td}>
+                    {fine.book}
+                  </td>
 
-            </tr>
+                  <td style={td}>
+                    ${fine.amount}
+                  </td>
 
-          ))}
+                  {/* TOGGLE BUTTON */}
 
-        </tbody>
+                  <td style={td}>
 
-      </table>
+                    <button
+
+                      onClick={() =>
+                        toggleStatus(fine.id)
+                      }
+
+                      style={{
+                        backgroundColor:
+                          fine.status === "Paid"
+                            ? "green"
+                            : "#c0392b",
+
+                        color: "white",
+
+                        border: "none",
+
+                        padding: "10px 16px",
+
+                        borderRadius: "8px",
+
+                        cursor: "pointer",
+
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {fine.status}
+                    </button>
+
+                  </td>
+
+                </tr>
+
+              ))}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
 
     </div>
   );
-}
-
-// ==========================
-// Card Style
-// ==========================
-
-const card = (color) => ({
-
-  background: color,
-
-  padding: 20,
-
-  borderRadius: 12,
-
-  width: 220,
-
-  textAlign: 'center',
-
-  boxShadow:
-    '0 5px 15px rgba(0,0,0,0.3)'
-});
-
-// ==========================
-// Table Header Style
-// ==========================
-
-const th = {
-  padding: 15
 };
 
 // ==========================
-// Export
+// STYLES
 // ==========================
 
-export default Fines;
+const card = {
+
+  backgroundColor: "#e8e0d5",
+
+  padding: "25px",
+
+  borderRadius: "10px",
+
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+};
+
+const cardTitle = {
+
+  color: "#66704d",
+
+  fontWeight: "bold",
+};
+
+const th = {
+
+  padding: "14px",
+
+  textAlign: "left",
+};
+
+const td = {
+
+  padding: "14px",
+};
+
+export default FineManagement;

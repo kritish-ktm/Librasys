@@ -79,3 +79,98 @@ JOIN book b
 WHERE u.Email = 'member@librasys.test'
   AND b.ISBN = '9781491904244'
 LIMIT 1;
+
+
+-- =============================================================================
+-- fine seed (Nitish)
+-- fine management.
+-- =============================================================================
+-- =====================================
+-- INSERT ADMIN USER
+-- =====================================
+
+INSERT INTO users
+(name, email, password, role)
+
+VALUES
+(
+    'Admin Librarian',
+    'admin@librasys.com',
+    'admin123',
+    'librarian'
+);
+
+-- =====================================
+-- INSERT SAMPLE MEMBERS
+-- =====================================
+
+INSERT INTO users
+(name, email, password, role)
+
+VALUES
+
+(
+    'Ramesh Oli',
+    'ramesh@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'Emily Johnson',
+    'emily@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'Sophia Williams',
+    'sophia@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'David Miller',
+    'david@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'Olivia Davis',
+    'olivia@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'James Wilson',
+    'james@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'Emma Taylor',
+    'emma@gmail.com',
+    '123456',
+    'member'
+),
+
+(
+    'Daniel Brown',
+    'daniel@gmail.com',
+    '123456',
+    'member'
+);
+
+-- =====================================
+-- SHOW ALL USERS
+-- =====================================
+
+SELECT * FROM users;
+
+
+
+
