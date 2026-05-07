@@ -6,13 +6,11 @@ export default defineConfig({
   server: {
     host: 'localhost',
     port: 5001,
-    strictPort: true, // fail if port is taken instead of auto-switching
+    strictPort: true,
     proxy: {
-      // If your backend runs on a different port (e.g. Express on 5000)
       '/api': {
         target: 'http://localhost:5000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        changeOrigin: true
       }
     }
   }
