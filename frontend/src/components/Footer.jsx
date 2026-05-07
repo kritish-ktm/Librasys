@@ -10,7 +10,7 @@ export default function Footer() {
           <span className="lp-footer-name">LibraSys</span>
         </div>
         <p className="lp-footer-copy">
-          © 2025 LibraSys — Agile Development Team Project
+          © 2026 LibraSys — Agile Development Team Project
         </p>
         <p className="lp-footer-note">
           A role-based Library Management System built with React, Node.js &amp; MySQL.
