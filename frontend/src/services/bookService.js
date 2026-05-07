@@ -10,6 +10,11 @@ export const getBooks = async () => {
   return response.data;
 };
 
+export const getBookById = async (id) => {
+  const response = await axios.get(`${API_URL}/${id}`);
+  return response.data;
+};
+
 // Add a new book record.
 export const addBook = async (bookData) => {
   const response = await axios.post(API_URL, bookData);

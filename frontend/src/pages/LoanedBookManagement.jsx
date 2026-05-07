@@ -75,7 +75,7 @@ function LoanedBookManagement() {
 
   const stats = useMemo(() => {
     const active = loans.filter((loan) => !loan.ReturnDate && !loan.IsOverdue).length;
-    const overdue = loans.filter((loan) => Boolean(loan.IsOverdue)).length;
+    const overdue = loans.filter((loan) => !loan.ReturnDate && Boolean(loan.IsOverdue)).length;
     const returned = loans.filter((loan) => Boolean(loan.ReturnDate)).length;
 
     return { total: loans.length, active, overdue, returned };

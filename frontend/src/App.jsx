@@ -14,6 +14,8 @@ import LandingPage from './pages/LandingPage';
 import MemberLogin from './pages/MemberLogin';
 import AdminLogin from './pages/AdminLogin';
 import MemberDashboard from './pages/MemberDashboard';
+import MyLoans from './pages/MyLoans';
+import BookDetail from './pages/BookDetail';
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
@@ -44,6 +46,7 @@ function App() {
           path="/browse-categories"
           element={<CustomerBookCategories />}
         />
+        <Route path="/book/:id" element={<BookDetail />} />
 
         {/* USER ROUTES */}
         <Route
@@ -51,6 +54,15 @@ function App() {
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/my-loans"
+          element={
+            <PrivateRoute role="Member">
+              <MyLoans />
             </PrivateRoute>
           }
         />

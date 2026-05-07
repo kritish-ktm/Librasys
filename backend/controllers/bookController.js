@@ -75,6 +75,38 @@ exports.getBooks = (req, res) => {
   });
 };
 
+exports.getBookById = (req, res) => {
+  const sql = `
+    SELECT
+      b.BookID,
+      b.CategoryID,
+      b.Title,
+      b.ISBN,
+      b.PublicationDate,
+      b.AvailableCopies,
+      b.IsBorrowable,
+      c.CategoryName
+    FROM book b
+    LEFT JOIN BookCategory c ON c.CategoryID = b.CategoryID
+    WHERE b.BookID = ?
+  `;
+
+  db.query(sql, [req.params.id], (err, results) => {
+    if (err) {
+      console.error("Get book error:", err);
+      return res.status(500).json({
+        error: "Database error while fetching book",
+      });
+    }
+
+    if (!results.length) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    res.json(results[0]);
+  });
+};
+
 // Add a new book after validation passes.
 exports.addBook = (req, res) => {
   const validationError = validateBook(req.body);

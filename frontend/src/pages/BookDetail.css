@@ -1,0 +1,128 @@
+.book-detail-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #afa08b;
+  color: #2b2218;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.book-detail-page * {
+  box-sizing: border-box;
+}
+
+.book-detail-header,
+.book-detail-panel {
+  width: 100%;
+  max-width: 920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.book-detail-header {
+  margin-bottom: 24px;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-radius: 6px;
+  background: #d9cfc3;
+  border-left: 6px solid #6b7455;
+  box-shadow: 0 6px 16px rgba(43, 34, 24, 0.14);
+}
+
+.book-detail-back {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #556046;
+  color: #f3eee8;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.book-detail-kicker {
+  margin: 0 0 6px;
+  color: #556046;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.book-detail-header h1,
+.book-detail-main h2 {
+  margin: 0;
+  color: #2b2218;
+  line-height: 1.15;
+}
+
+.book-detail-header h1 {
+  font-size: 32px;
+}
+
+.book-detail-main h2 {
+  font-size: 28px;
+}
+
+.book-detail-panel {
+  padding: 24px;
+  border-radius: 6px;
+  background: #f3eee8;
+  border: 1px solid rgba(85, 96, 70, 0.22);
+  box-shadow: 0 4px 12px rgba(43, 34, 24, 0.1);
+}
+
+.book-detail-panel.error {
+  color: #7a2b25;
+  background: #f2d9d5;
+}
+
+.book-detail-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: start;
+}
+
+.book-detail-list {
+  margin: 22px 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+.book-detail-list div {
+  padding: 12px;
+  border-radius: 6px;
+  background: #fffaf4;
+  border: 1px solid #ded3c7;
+}
+
+.book-detail-list dt {
+  color: #6b7455;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.book-detail-list dd {
+  margin: 4px 0 0;
+  color: #2b2218;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .book-detail-page {
+    padding: 18px;
+  }
+
+  .book-detail-header,
+  .book-detail-main {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .book-detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

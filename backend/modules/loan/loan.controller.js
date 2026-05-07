@@ -31,6 +31,43 @@ exports.getLoan = (req, res) => {
   });
 };
 
+exports.getLoansByUser = (req, res) => {
+  LoanManager.listLoansByUser(req.params.userid, (err, results) => {
+    if (err) {
+      console.error("Get user loans error:", err);
+      return res.status(err.statusCode || 500).json({
+        error: err.statusCode ? err.message : "Database error while fetching user loans",
+      });
+    }
+
+    res.json(results);
+  });
+};
+
+exports.getMyLoans = (req, res) => {
+  LoanManager.listLoansByUser(req.user.id, (err, results) => {
+    if (err) {
+      console.error("Get my loans error:", err);
+      return res.status(err.statusCode || 500).json({
+        error: err.statusCode ? err.message : "Database error while fetching your loans",
+      });
+    }
+
+    res.json(results);
+  });
+};
+
+exports.getUserOverdueLoans = (req, res) => {
+  LoanManager.listUserOverdueLoans((err, results) => {
+    if (err) {
+      console.error("Get overdue loans error:", err);
+      return res.status(500).json({ error: "Database error while fetching overdue loans" });
+    }
+
+    res.json(results);
+  });
+};
+
 exports.getLoanOptions = (req, res) => {
   LoanManager.getOptions((err, options) => {
     if (err) {
@@ -59,6 +96,22 @@ exports.addLoan = (req, res) => {
   });
 };
 
+exports.borrowBookForMember = (req, res) => {
+  LoanManager.createLoanForMember(req.user.id, req.body, (err, result) => {
+    if (err) {
+      console.error("Member borrow error:", err);
+      return res.status(err.statusCode || 500).json({
+        error: err.statusCode ? err.message : "Database error while borrowing book",
+      });
+    }
+
+    res.status(201).json({
+      message: "Book borrowed successfully",
+      LoanID: result.insertId,
+    });
+  });
+};
+
 exports.updateLoan = (req, res) => {
   LoanManager.updateLoan(req.params.id, req.body, (err, result) => {
     if (err) {
@@ -81,6 +134,22 @@ exports.returnLoan = (req, res) => {
   LoanManager.returnLoan(req.params.id, (err, result) => {
     if (err) {
       console.error("Return loan error:", err);
+      return res.status(err.statusCode || 500).json({
+        error: err.statusCode ? err.message : "Database error while returning loan",
+      });
+    }
+
+    res.json({
+      message: "Book returned successfully",
+      affectedRows: result.affectedRows,
+    });
+  });
+};
+
+exports.returnMyLoan = (req, res) => {
+  LoanManager.returnMemberLoan(req.user.id, req.params.id, (err, result) => {
+    if (err) {
+      console.error("Return my loan error:", err);
       return res.status(err.statusCode || 500).json({
         error: err.statusCode ? err.message : "Database error while returning loan",
       });

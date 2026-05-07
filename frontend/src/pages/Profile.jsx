@@ -95,6 +95,26 @@ function Profile() {
           Update Profile
         </button>
 
+        {profile.Role === 'Member' && (
+          <button
+            className="member-browse-btn"
+            style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
+            onClick={() => navigate('/my-loans')}
+          >
+            My Loans
+          </button>
+        )}
+
+        {profile.Role === 'Member' && (
+          <button
+            className="member-browse-btn"
+            style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
+            onClick={() => navigate('/browse-categories')}
+          >
+            Browse Books
+          </button>
+        )}
+
         <button
           className="dashboard-logout-btn"
           style={{ width: '100%', padding: '14px' }}

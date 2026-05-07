@@ -227,6 +227,14 @@ function CustomerBookCategories() {
                         <article
                           key={book.BookID}
                           className="customer-book-row"
+                          role="button"
+                          tabIndex="0"
+                          onClick={() => navigate(`/book/${book.BookID}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              navigate(`/book/${book.BookID}`);
+                            }
+                          }}
                         >
                           <div>
                             <h4>{book.Title}</h4>

@@ -6,14 +6,21 @@ const LOAN_SELECT = `
     l.UserID,
     l.BookID,
     l.BorrowDate,
+    l.BorrowDate AS LoanDate,
     l.DueDate,
     l.ReturnDate,
     CASE
       WHEN l.ReturnDate IS NULL AND CURDATE() > l.DueDate THEN 1
-      ELSE l.IsOverdue
+      ELSE 0
     END AS IsOverdue,
+    CASE
+      WHEN l.ReturnDate IS NOT NULL THEN 'Returned'
+      WHEN CURDATE() > l.DueDate THEN 'Overdue'
+      ELSE 'Active'
+    END AS Status,
     u.FullName AS BorrowerName,
     u.Email AS BorrowerEmail,
+    b.Title AS Title,
     b.Title AS BookTitle,
     b.ISBN
   FROM LoanedBook l
@@ -60,6 +67,24 @@ const getAll = ({ search = "", status = "all" }, callback) => {
 
 const getById = (id, callback) => {
   db.query(`${LOAN_SELECT} WHERE l.LoanID = ?`, [id], callback);
+};
+
+const getByUser = (userId, callback) => {
+  db.query(
+    `${LOAN_SELECT} WHERE l.UserID = ? ORDER BY l.LoanID DESC`,
+    [userId],
+    callback
+  );
+};
+
+const getUserOverdue = (callback) => {
+  const sql = `
+    ${LOAN_SELECT}
+    WHERE l.ReturnDate IS NULL AND CURDATE() > l.DueDate
+    ORDER BY l.DueDate ASC
+  `;
+
+  db.query(sql, callback);
 };
 
 const getBorrowableBooks = (callback) => {
@@ -179,6 +204,10 @@ const create = ({ UserID, BookID }, callback) => {
   });
 };
 
+const createForUser = (UserID, BookID, callback) => {
+  create({ UserID, BookID }, callback);
+};
+
 const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callback) => {
   const sql = `
     UPDATE LoanedBook
@@ -263,6 +292,80 @@ const markReturned = (id, callback) => {
   });
 };
 
+const markReturnedForUser = (id, userId, callback) => {
+  db.getConnection((connectionError, connection) => {
+    if (connectionError) {
+      callback(connectionError);
+      return;
+    }
+
+    connection.beginTransaction((transactionError) => {
+      if (transactionError) {
+        connection.release();
+        callback(transactionError);
+        return;
+      }
+
+      const loanSql = `
+        SELECT LoanID, BookID, ReturnDate
+        FROM LoanedBook
+        WHERE LoanID = ? AND UserID = ?
+        FOR UPDATE
+      `;
+
+      connection.query(loanSql, [id, userId], (loanError, loans) => {
+        if (loanError) {
+          rollback(connection, loanError, callback);
+          return;
+        }
+
+        if (!loans.length) {
+          rollback(connection, notFoundError("Loan record not found for this member"), callback);
+          return;
+        }
+
+        if (loans[0].ReturnDate) {
+          rollback(connection, validationError("This loan has already been returned"), callback);
+          return;
+        }
+
+        connection.query(
+          "UPDATE LoanedBook SET ReturnDate = CURDATE(), IsOverdue = 0 WHERE LoanID = ?",
+          [id],
+          (returnError, result) => {
+            if (returnError) {
+              rollback(connection, returnError, callback);
+              return;
+            }
+
+            connection.query(
+              "UPDATE book SET AvailableCopies = AvailableCopies + 1 WHERE BookID = ?",
+              [loans[0].BookID],
+              (bookError) => {
+                if (bookError) {
+                  rollback(connection, bookError, callback);
+                  return;
+                }
+
+                connection.commit((commitError) => {
+                  connection.release();
+
+                  if (commitError) {
+                    callback(commitError);
+                    return;
+                  }
+
+                  callback(null, result);
+                });
+              }
+            );
+          }
+        );
+      });
+    });
+  });
+};
+
 const updateOverdueFlags = (callback) => {
   const sql = `
     UPDATE LoanedBook
@@ -301,11 +404,15 @@ function notFoundError(message) {
 module.exports = {
   getAll,
   getById,
+  getByUser,
+  getUserOverdue,
   getBorrowableBooks,
   getActiveUsers,
   create,
+  createForUser,
   update,
   markReturned,
+  markReturnedForUser,
   updateOverdueFlags,
   remove,
 };

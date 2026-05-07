@@ -412,7 +412,14 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(251, 247, 240, 0.62);
+  cursor: pointer;
   animation: customerCategoryEnter 360ms ease both;
+}
+
+.customer-book-row:hover,
+.customer-book-row:focus {
+  border-color: var(--orange);
+  outline: none;
 }
 
 .customer-book-row h4 {
