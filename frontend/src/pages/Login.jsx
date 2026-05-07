@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
 
 function Login() {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({
+    email: '',
+    password: ''
+  });
+
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -26,82 +31,82 @@ function Login() {
       } else {
         navigate('/profile');
       }
+
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Login failed');
+
+      setError(
+        err.response?.data?.message || 'Login failed'
+      );
     }
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2>LibraSys Login</h2>
+    <div className="login-page">
 
-        {error && <p style={styles.error}>{error}</p>}
+      <div className="login-card">
+
+        <h1 className="login-title">
+          LibraSys
+        </h1>
+
+        <p className="login-subtitle">
+          Library Management System
+        </p>
+
+        {error && (
+          <p className="login-error">
+            {error}
+          </p>
+        )}
 
         <input
-          style={styles.input}
+          className="login-input"
           placeholder="Email"
           value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              email: e.target.value
+            })
+          }
         />
 
         <input
-          style={styles.input}
+          className="login-input"
           placeholder="Password"
           type="password"
           value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              password: e.target.value
+            })
+          }
         />
 
-        <button style={styles.btn} onClick={handleSubmit}>
+        <button
+          className="login-button"
+          onClick={handleSubmit}
+        >
           Login
         </button>
 
-        <p>
-          No account? <Link to="/register">Register</Link>
+        <p className="login-register-text">
+          No account?{' '}
+
+          <Link
+            to="/register"
+            className="login-register-link"
+          >
+            Register
+          </Link>
         </p>
+
       </div>
+
     </div>
   );
 }
-
-const styles = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    background: '#f0f2f5'
-  },
-  card: {
-    background: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    width: '350px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-  },
-  input: {
-    display: 'block',
-    width: '100%',
-    padding: '10px',
-    margin: '10px 0',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-    boxSizing: 'border-box'
-  },
-  btn: {
-    width: '100%',
-    padding: '10px',
-    background: '#4a90e2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  error: {
-    color: 'red'
-  }
-};
 
 export default Login;
