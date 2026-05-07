@@ -13,6 +13,7 @@ import CustomerBookCategories from './pages/CustomerBookCategories';
 import LandingPage from './pages/LandingPage';
 import MemberLogin from './pages/MemberLogin';
 import AdminLogin from './pages/AdminLogin';
+import MemberDashboard from './pages/MemberDashboard';
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
@@ -36,7 +37,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/member-login" element={<MemberLogin />} />
-        <Route path="/admin-login" element={<AdminLogin />} />      
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/MemberDashboard" element={<MemberDashboard />} />      
         <Route path="/register" element={<Register />} />
         <Route
           path="/browse-categories"

@@ -1,0 +1,49 @@
+.member-topbar-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.member-browse-btn {
+  border: none;
+  padding: 12px 22px;
+  border-radius: 12px;
+  background: #556046;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.member-browse-btn:hover {
+  background: #6b7455;
+}
+
+.member-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.member-status-badge.active,
+.member-status-badge.borrowed {
+  background: #27ae60;
+}
+
+.member-status-badge.returned {
+  background: #7f8c8d;
+}
+
+.member-status-badge.overdue {
+  background: #e74c3c;
+}
+
+.member-status-badge.paid {
+  background: #27ae60;
+}
+
+.member-status-badge.unpaid {
+  background: #e74c3c;
+}
