@@ -11,6 +11,22 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true
+      },
+      '/books': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      '/categories': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      '/loans': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      '/fines': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
       }
     }
   }
