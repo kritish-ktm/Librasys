@@ -87,7 +87,7 @@ function Dashboard() {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/login");
+    navigate("/");
   };
 
   const filtered = users.filter((user) => {
