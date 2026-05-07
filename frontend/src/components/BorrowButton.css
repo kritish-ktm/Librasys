@@ -1,0 +1,60 @@
+.borrow-box {
+  display: grid;
+  gap: 10px;
+}
+
+.borrow-button {
+  width: fit-content;
+  min-width: 150px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #f4a64a;
+  color: #2b2218;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.borrow-button:hover {
+  background: #d4883a;
+}
+
+.borrow-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.borrow-stock {
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.borrow-stock.available {
+  color: #2f5d3c;
+  background: #e1efdd;
+}
+
+.borrow-stock.unavailable {
+  color: #7a2b25;
+  background: #f2d9d5;
+}
+
+.borrow-message {
+  margin: 0;
+  max-width: 420px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.borrow-message.success {
+  color: #2f5d3c;
+}
+
+.borrow-message.error {
+  color: #7a2b25;
+}

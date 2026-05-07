@@ -17,6 +17,33 @@ class LoanManager {
     loanModel.getById(id, callback);
   }
 
+  static listLoansByUser(userId, callback) {
+    if (!isValidId(userId)) {
+      callback(validationError("A valid user ID is required"));
+      return;
+    }
+
+    loanModel.updateOverdueFlags((updateError) => {
+      if (updateError) {
+        callback(updateError);
+        return;
+      }
+
+      loanModel.getByUser(Number(userId), callback);
+    });
+  }
+
+  static listUserOverdueLoans(callback) {
+    loanModel.updateOverdueFlags((updateError) => {
+      if (updateError) {
+        callback(updateError);
+        return;
+      }
+
+      loanModel.getUserOverdue(callback);
+    });
+  }
+
   static getOptions(callback) {
     loanModel.getActiveUsers((userError, users) => {
       if (userError) {
@@ -49,6 +76,16 @@ class LoanManager {
     );
   }
 
+  static createLoanForMember(userId, data, callback) {
+    const validationError = validateCreate({ UserID: userId, BookID: data.BookID });
+    if (validationError) {
+      callback(validationError);
+      return;
+    }
+
+    loanModel.createForUser(Number(userId), Number(data.BookID), callback);
+  }
+
   // Allows librarians to correct loan dates while keeping date rules valid.
   static updateLoan(id, data, callback) {
     const validationError = validateUpdate(data);
@@ -72,6 +109,20 @@ class LoanManager {
 
   static returnLoan(id, callback) {
     loanModel.markReturned(id, callback);
+  }
+
+  static returnMemberLoan(userId, loanId, callback) {
+    if (!isValidId(userId)) {
+      callback(validationError("A valid member account is required"));
+      return;
+    }
+
+    if (!isValidId(loanId)) {
+      callback(validationError("A valid loan ID is required"));
+      return;
+    }
+
+    loanModel.markReturnedForUser(Number(loanId), Number(userId), callback);
   }
 
   static deleteLoan(id, callback) {
