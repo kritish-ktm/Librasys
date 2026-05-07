@@ -24,7 +24,7 @@ function MemberLogin() {
       localStorage.setItem('role', res.data.role);
       localStorage.setItem('name', res.data.name);
 
-      navigate('/MemberDashboard');
+      navigate('/MemberDashboard', { replace: true });
 
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './Dashboard.css';
+import './MemberDashboard.css';
 
 function Profile() {
   const [profile, setProfile] = useState({});
@@ -35,34 +37,95 @@ function Profile() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2>My Profile</h2>
-        <p><b>Role:</b> {profile.Role}</p>
-        <p><b>Registered:</b> {profile.DateRegistered ? new Date(profile.DateRegistered).toLocaleDateString() : ''}</p>
-        <input style={styles.input} value={form.fullName}
-          onChange={e => setForm({ ...form, fullName: e.target.value })} />
-        <input style={styles.input} value={form.email}
-          onChange={e => setForm({ ...form, email: e.target.value })} />
-        {message && <p style={{ color: 'green' }}>{message}</p>}
-        <button style={styles.btn} onClick={handleUpdate}>Update Profile</button>
-        {profile.Role === 'Member' && (
-          <button style={{ ...styles.btn, background: '#556046', marginTop: '10px' }} onClick={() => navigate('/my-loans')}>My Loans</button>
-        )}
-        {profile.Role === 'Member' && (
-          <button style={{ ...styles.btn, background: '#f4a64a', color: '#2b2218', marginTop: '10px' }} onClick={() => navigate('/browse-categories')}>Browse Books</button>
-        )}
-        <button style={{ ...styles.btn, background: '#e74c3c', marginTop: '10px' }} onClick={handleLogout}>Logout</button>
+    <div className="dashboard-page">
+
+      {/* TOP BAR */}
+      <div className="dashboard-topbar">
+        <div>
+          <h1 className="dashboard-title">My Profile</h1>
+          <p className="dashboard-welcome">
+            <b>Role:</b> {profile.Role} &nbsp;|&nbsp;
+            <b>Registered:</b> {profile.DateRegistered ? new Date(profile.DateRegistered).toLocaleDateString() : ''}
+          </p>
+        </div>
+        <div className="member-topbar-actions">
+          <button
+            className="member-browse-btn"
+            onClick={() => navigate('/MemberDashboard')}
+          >
+            ← Back to Dashboard
+          </button>
+          <button className="dashboard-logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </div>
+
+      {/* PROFILE FORM */}
+      <div className="dashboard-section" style={{ maxWidth: '500px', margin: '0 auto' }}>
+        <h2 className="dashboard-section-title">Edit Profile</h2>
+
+        <input
+          className="dashboard-search"
+          style={{ maxWidth: '100%', marginBottom: '16px' }}
+          placeholder="Full Name"
+          value={form.fullName}
+          onChange={e => setForm({ ...form, fullName: e.target.value })}
+        />
+
+        <input
+          className="dashboard-search"
+          style={{ maxWidth: '100%', marginBottom: '16px' }}
+          placeholder="Email"
+          value={form.email}
+          onChange={e => setForm({ ...form, email: e.target.value })}
+        />
+
+        {message && (
+          <p style={{ color: '#27ae60', fontWeight: '600', marginBottom: '12px' }}>
+            {message}
+          </p>
+        )}
+
+        <button
+          className="member-browse-btn"
+          style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
+          onClick={handleUpdate}
+        >
+          Update Profile
+        </button>
+
+        {profile.Role === 'Member' && (
+          <button
+            className="member-browse-btn"
+            style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
+            onClick={() => navigate('/my-loans')}
+          >
+            My Loans
+          </button>
+        )}
+
+        {profile.Role === 'Member' && (
+          <button
+            className="member-browse-btn"
+            style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
+            onClick={() => navigate('/browse-categories')}
+          >
+            Browse Books
+          </button>
+        )}
+
+        <button
+          className="dashboard-logout-btn"
+          style={{ width: '100%', padding: '14px' }}
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
+
     </div>
   );
 }
-
-const styles = {
-  container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' },
-  card: { background: 'white', padding: '2rem', borderRadius: '8px', width: '350px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
-  input: { display: 'block', width: '100%', padding: '10px', margin: '10px 0', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' },
-  btn: { width: '100%', padding: '10px', background: '#4a90e2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }
-};
 
 export default Profile;
