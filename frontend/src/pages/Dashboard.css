@@ -1,13 +1,13 @@
 /* ==========================================
-   DASHBOARD PAGE - Library Style
+   DASHBOARD PAGE - LibraSys Style
 ========================================== */
 
 .dashboard-page {
   min-height: 100vh;
   padding: 32px;
-  background: linear-gradient(135deg, #f8f1e9 0%, #ede4d5 100%);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #2c2118;
+  background: #f5f0e8;
+  font-family: 'Georgia', serif;
+  color: #2c2416;
 }
 
 /* ==================== TOP BAR ==================== */
@@ -15,23 +15,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: white;
+  background: #4e5c33;
   padding: 24px 32px;
   border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(44, 33, 24, 0.1);
+  box-shadow: 0 8px 25px rgba(44, 36, 22, 0.15);
   margin-bottom: 32px;
-  border-left: 8px solid #8c6f4e;
 }
 
 .dashboard-title {
   font-size: 36px;
   font-weight: 700;
-  color: #2c2118;
+  color: #f5f0e8;
   margin: 0;
 }
 
 .dashboard-welcome {
-  color: #6b5a4a;
+  color: #d4c9b0;
   font-size: 17px;
   margin-top: 6px;
 }
@@ -39,19 +38,20 @@
 /* Logout Button */
 .dashboard-logout-btn {
   padding: 12px 28px;
-  background: #c56a4a;
+  background: #d46a2e;
   color: white;
   border: none;
   border-radius: 10px;
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
+  font-family: 'Georgia', serif;
   transition: all 0.3s ease;
 }
 
 .dashboard-logout-btn:hover {
-  background: #b55a3a;
-  transform: translateY(-3px);
+  background: #e8843e;
+  transform: translateY(-2px);
 }
 
 /* ==================== NAVIGATION GRID ==================== */
@@ -64,13 +64,13 @@
 }
 
 .dashboard-nav-card {
-  background: white;
+  background: #ffffff;
   padding: 32px 20px;
   border-radius: 16px;
-  border: 1px solid #e8d9c2;
-  box-shadow: 0 6px 20px rgba(44, 33, 24, 0.08);
+  border: 1px solid #e8dfc8;
+  box-shadow: 0 6px 20px rgba(44, 36, 22, 0.08);
   text-align: center;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -79,26 +79,26 @@
 }
 
 .dashboard-nav-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 20px 40px rgba(44, 33, 24, 0.15);
-  border-color: #d97757;
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(44, 36, 22, 0.15);
+  border-color: #d46a2e;
 }
 
 .dashboard-nav-icon {
   width: 78px;
   height: 78px;
-  background: #f8f1e9;
+  background: #f5f0e8;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 34px;
-  color: #8c6f4e;
-  transition: all 0.4s ease;
+  color: #6b7c4a;
+  transition: all 0.3s ease;
 }
 
 .dashboard-nav-card:hover .dashboard-nav-icon {
-  background: #d97757;
+  background: #d46a2e;
   color: white;
   transform: scale(1.12);
 }
@@ -106,7 +106,7 @@
 .dashboard-nav-label {
   font-size: 18px;
   font-weight: 700;
-  color: #2c2118;
+  color: #2c2416;
   margin-top: 8px;
 }
 
@@ -115,14 +115,14 @@
   background: white;
   padding: 28px;
   border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(44, 33, 24, 0.1);
+  box-shadow: 0 6px 20px rgba(44, 36, 22, 0.08);
   margin-top: 32px;
 }
 
 .dashboard-section-title {
   font-size: 26px;
   font-weight: 700;
-  color: #2c2118;
+  color: #2c2416;
   margin-bottom: 20px;
 }
 
@@ -130,16 +130,17 @@
 .dashboard-search {
   width: 100%;
   padding: 14px 18px;
-  border: 2px solid #e8d9c2;
+  border: 2px solid #e8dfc8;
   border-radius: 12px;
-  background: #fffaf0;
+  background: #faf7f0;
   font-size: 16px;
+  font-family: 'Georgia', serif;
   transition: all 0.3s;
 }
 
 .dashboard-search:focus {
-  border-color: #d97757;
-  box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.15);
+  border-color: #6b7c4a;
+  box-shadow: 0 0 0 4px rgba(107, 124, 74, 0.15);
   outline: none;
 }
 
@@ -154,24 +155,27 @@
 }
 
 .dashboard-table thead {
-  background: #6b5a4a;
+  background: #4e5c33;
 }
 
 .dashboard-table th {
   padding: 16px 14px;
-  color: #f8f1e9;
+  color: #f5f0e8;
   text-align: left;
   font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .dashboard-table td {
   padding: 16px 14px;
-  border-bottom: 1px solid #f0e6d9;
-  color: #4a3728;
+  border-bottom: 1px solid #e8dfc8;
+  color: #2c2416;
 }
 
 .dashboard-table tbody tr:hover {
-  background: #fffaf0;
+  background: #faf7f0;
 }
 
 /* Status Buttons */
@@ -185,21 +189,22 @@
 }
 
 .activate {
-  background: #86efac;
-  color: #166534;
+  background: #d4edda;
+  color: #1a5c2a;
 }
 
 .deactivate {
-  background: #fda4af;
-  color: #991b1b;
+  background: #fde8e8;
+  color: #c0392b;
 }
 
 /* Empty State */
 .dashboard-empty {
   text-align: center;
   padding: 60px 20px;
-  color: #8c6f4e;
+  color: #7a6e5f;
   font-size: 17px;
+  font-style: italic;
 }
 
 /* ==================== RESPONSIVE ==================== */
