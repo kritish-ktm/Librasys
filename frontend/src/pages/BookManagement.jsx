@@ -199,6 +199,7 @@ function BookManagement() {
 
   // Load a book row into the form so it can be edited.
   const handleEdit = (book) => {
+    setcategoryName(book.CategoryName || "Unassigned");
     setEditingId(book.BookID);
     setIsFormOpen(true);
 
