@@ -34,6 +34,15 @@ function AdminLogin() {
   return (
     <div className="login-page">
       <div className="login-card">
+
+        <button
+          className="login-back-button"
+          onClick={() => navigate('/')}
+          type="button"
+        >
+          ← Back
+        </button>
+
         <h1 className="login-title">LibraSys</h1>
         <p className="login-subtitle">Admin Login</p>
 
@@ -64,6 +73,7 @@ function AdminLogin() {
             Member Login
           </Link>
         </p>
+
       </div>
     </div>
   );
