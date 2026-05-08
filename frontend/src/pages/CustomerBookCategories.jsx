@@ -35,10 +35,7 @@ function CustomerBookCategories() {
   useEffect(() => {
     Promise.all([getActiveCategories(), getBooks()])
       .then(([categoryData, bookData]) => {
-        const activeCategories = Array.isArray(categoryData)
-          ? categoryData
-          : [];
-
+        const activeCategories = Array.isArray(categoryData) ? categoryData : [];
         setCategories(activeCategories);
         setBooks(Array.isArray(bookData) ? bookData : bookData?.data || []);
         setSelectedCategoryId(activeCategories[0]?.CategoryID ?? null);
@@ -51,7 +48,6 @@ function CustomerBookCategories() {
 
   const visibleCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return categories.filter((category) =>
       `${category.CategoryName} ${category.DeweyCode} ${category.Description || ""}`
         .toLowerCase()
@@ -59,130 +55,94 @@ function CustomerBookCategories() {
     );
   }, [categories, search]);
 
-  const selectedCategory =
-    categories.find((category) => category.CategoryID === selectedCategoryId) ||
-    visibleCategories[0] ||
-    null;
+  const selectedCategory = categories.find(
+    (category) => category.CategoryID === selectedCategoryId
+  ) || visibleCategories[0] || null;
 
   const selectedBooks = useMemo(() => {
     if (!selectedCategory) return [];
-
     return books.filter(
       (book) => Number(book.CategoryID) === Number(selectedCategory.CategoryID)
     );
   }, [books, selectedCategory]);
 
   const goBack = () => {
-    if (role === "Librarian") {
-      navigate("/dashboard");
-    } else if (role === "Member") {
-      navigate("/profile");
-    } else {
-      navigate("/");
-    }
+    if (role === "Librarian") navigate("/dashboard");
+    else if (role === "Member") navigate("/profile");
+    else navigate("/");
   };
 
   return (
-    <main className="customer-category-page">
-      <section className="customer-category-hero">
+    <div className="customer-category-page">
+      {/* Hero Header */}
+      <div className="customer-category-hero">
         <div className="customer-category-actions">
-          <button type="button" onClick={goBack}>
-            <i className="bi bi-arrow-left"></i>
-            Back
+          <button onClick={goBack}>
+            <i className="bi bi-arrow-left"></i> Back
           </button>
 
           {role === "Librarian" && (
-            <button type="button" onClick={() => navigate("/categories")}>
-              <i className="bi bi-sliders"></i>
-              Manage Categories
+            <button onClick={() => navigate("/categories")}>
+              <i className="bi bi-gear"></i> Manage Categories
             </button>
           )}
         </div>
 
-        <p className="customer-kicker">LibraSys Catalogue</p>
+        <p className="customer-kicker">LIBRASYS CATALOGUE</p>
+        <h1>Browse by Category</h1>
+        <p>Discover books by subject and Dewey classification</p>
+      </div>
 
-        <h1>Browse Book Categories</h1>
-
-        <p>
-          Search active library categories by subject, Dewey code, or description,
-          then open a collection to see books filed under it.
-        </p>
-      </section>
-
-      <section className="customer-category-toolbar" aria-label="Category search">
-        <label>
-          <span>Search Catalogue</span>
-
+      {/* Search Bar */}
+      <div className="customer-category-toolbar">
+        <div className="search-container">
           <i className="bi bi-search"></i>
-
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search category, Dewey code, or description"
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search categories, Dewey code, or description..."
           />
-        </label>
-      </section>
-
-      {error && (
-        <div className="customer-category-message error">
-          {error}
         </div>
-      )}
+      </div>
+
+      {error && <div className="customer-alert error">{error}</div>}
 
       {loading ? (
-        <section className="customer-category-message">
-          Loading collections...
-        </section>
+        <div className="customer-alert">Loading collections...</div>
       ) : (
-        <section className="customer-category-layout">
-          <aside
-            className="customer-category-list"
-            aria-label="Active book categories"
-          >
+        <div className="customer-category-layout">
+          {/* Left Sidebar - Categories */}
+          <aside className="customer-category-list">
             <div className="customer-section-title">
-              <p>Active Collections</p>
-
-              <h2>
-                <i className="bi bi-collection"></i>
-                {visibleCategories.length} Categories
-              </h2>
+              <h2>Active Categories ({visibleCategories.length})</h2>
             </div>
 
             {visibleCategories.length === 0 ? (
-              <div className="customer-empty">
-                No active categories match your search.
-              </div>
+              <div className="customer-empty">No categories found.</div>
             ) : (
               visibleCategories.map((category) => (
                 <button
-                  type="button"
                   key={category.CategoryID}
-                  className={
-                    Number(selectedCategory?.CategoryID) ===
-                    Number(category.CategoryID)
-                      ? "customer-category-item active"
-                      : "customer-category-item"
-                  }
+                  className={`customer-category-item ${
+                    selectedCategoryId === category.CategoryID ? "active" : ""
+                  }`}
                   onClick={() => setSelectedCategoryId(category.CategoryID)}
                 >
-                  <span className="customer-dewey">
-                    {category.DeweyCode}
-                  </span>
-
-                  <span>
+                  <span className="customer-dewey">{category.DeweyCode}</span>
+                  <div>
                     <strong>{category.CategoryName}</strong>
                     <small>{getDeweyGroup(category.DeweyCode)}</small>
-                  </span>
-
-                  <em>
-                    <i className="bi bi-journal-bookmark"></i>
+                  </div>
+                  <span className="customer-book-count">
+                    <i className="bi bi-journal-text"></i>
                     {category.BookCount || 0}
-                  </em>
+                  </span>
                 </button>
               ))
             )}
           </aside>
 
+          {/* Right Side - Category Details + Books */}
           <section className="customer-category-detail">
             {selectedCategory ? (
               <>
@@ -191,35 +151,27 @@ function CustomerBookCategories() {
                     <p className="customer-kicker">
                       {getDeweyGroup(selectedCategory.DeweyCode)}
                     </p>
-
                     <h2>{selectedCategory.CategoryName}</h2>
-
                     <p>
                       {selectedCategory.Description ||
-                        "Explore books in this collection."}
+                        "No description available for this category."}
                     </p>
                   </div>
-
-                  <code>
-                    <i className="bi bi-bookmark"></i>
-                    {selectedCategory.DeweyCode}
+                  <code className="dewey-code">
+                    <i className="bi bi-bookmark-fill"></i> {selectedCategory.DeweyCode}
                   </code>
                 </div>
 
                 <div className="customer-book-panel">
                   <div className="customer-section-title">
-                    <p>Books In This Category</p>
-
                     <h3>
-                      <i className="bi bi-book"></i>
-                      {selectedBooks.length} Book
-                      {selectedBooks.length === 1 ? "" : "s"}
+                      <i className="bi bi-book"></i> Books in this Category ({selectedBooks.length})
                     </h3>
                   </div>
 
                   {selectedBooks.length === 0 ? (
                     <div className="customer-empty">
-                      No books are currently assigned to this category.
+                      No books available in this category yet.
                     </div>
                   ) : (
                     <div className="customer-book-list">
@@ -227,27 +179,17 @@ function CustomerBookCategories() {
                         <article
                           key={book.BookID}
                           className="customer-book-row"
-                          role="button"
-                          tabIndex="0"
                           onClick={() => navigate(`/book/${book.BookID}`)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              navigate(`/book/${book.BookID}`);
-                            }
-                          }}
                         >
                           <div>
                             <h4>{book.Title}</h4>
-
                             <p>
-                              <i className="bi bi-upc-scan"></i>
-                              ISBN {book.ISBN}
+                              <i className="bi bi-upc-scan"></i> ISBN {book.ISBN}
                             </p>
                           </div>
-
                           <span>
                             <i className="bi bi-layers"></i>
-                            {Number(book.AvailableCopies || 0)} copies
+                            {book.AvailableCopies || 0} copies
                           </span>
                         </article>
                       ))}
@@ -256,14 +198,12 @@ function CustomerBookCategories() {
                 </div>
               </>
             ) : (
-              <div className="customer-empty">
-                Select a category to view its books.
-              </div>
+              <div className="customer-empty">Select a category to view books.</div>
             )}
           </section>
-        </section>
+        </div>
       )}
-    </main>
+    </div>
   );
 }
 

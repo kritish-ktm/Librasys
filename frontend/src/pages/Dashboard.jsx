@@ -9,27 +9,27 @@ const navItems = [
   {
     label: "Users",
     path: "/users",
-    icon: "👤",
+    icon: "bi-people-fill",
   },
   {
     label: "Books",
     path: "/books",
-    icon: "📚",
+    icon: "bi-book-fill",
   },
   {
     label: "Book Categories",
     path: "/categories",
-    icon: "🗂️",
+    icon: "bi-folder-fill",
   },
   {
     label: "Loaned Books",
     path: "/loans",
-    icon: "📖",
+    icon: "bi-list-check",
   },
   {
     label: "Fines",
     path: "/fines",
-    icon: "💰",
+    icon: "bi-currency-dollar",
   },
 ];
 
@@ -108,12 +108,12 @@ function Dashboard() {
 
         <div>
           <h1 className="dashboard-title">
-            LibraSys Dashboard
+            Dashboard
           </h1>
 
           {name && (
             <p className="dashboard-welcome">
-              Welcome, {name}
+              Hii, {name} Have a nice day!
             </p>
           )}
         </div>
@@ -137,7 +137,7 @@ function Dashboard() {
             className="dashboard-nav-card"
           >
             <span className="dashboard-nav-icon">
-              {item.icon}
+              <i className={`bi ${item.icon} dashboard-nav-icon-svg`}></i>
             </span>
 
             <span className="dashboard-nav-label">
@@ -148,101 +148,9 @@ function Dashboard() {
 
       </div>
 
-      {/* USER SECTION */}
-      <div className="dashboard-section">
+      
 
-        <h2 className="dashboard-section-title">
-          User Overview
-        </h2>
-
-        <input
-          className="dashboard-search"
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <div className="dashboard-table-wrapper">
-
-          <table className="dashboard-table">
-
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Registered</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="dashboard-empty">
-                    No users found.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((user) => (
-                  <tr key={user.UserID}>
-
-                    <td>{user.UserID}</td>
-
-                    <td>{user.FullName}</td>
-
-                    <td>{user.Email}</td>
-
-                    <td>{user.Role}</td>
-
-                    <td>
-                      {user.IsActive
-                        ? "Active"
-                        : "Inactive"}
-                    </td>
-
-                    <td>
-                      {user.DateRegistered
-                        ? new Date(
-                            user.DateRegistered
-                          ).toLocaleDateString()
-                        : ""}
-                    </td>
-
-                    <td>
-                      <button
-                        onClick={() =>
-                          toggleStatus(
-                            user.UserID,
-                            user.IsActive
-                          )
-                        }
-                        className={
-                          user.IsActive
-                            ? "dashboard-status-btn deactivate"
-                            : "dashboard-status-btn activate"
-                        }
-                      >
-                        {user.IsActive
-                          ? "Deactivate"
-                          : "Activate"}
-                      </button>
-                    </td>
-
-                  </tr>
-                ))
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </div>
+      
 
     </div>
   );

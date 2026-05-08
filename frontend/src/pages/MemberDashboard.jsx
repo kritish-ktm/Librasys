@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import './Dashboard.css';
 import './MemberDashboard.css';
 
 const API_BASE_URL = 'http://localhost:5000';
@@ -34,30 +33,35 @@ function MemberDashboard() {
   };
 
   return (
-    <div className="dashboard-page">
+    <div className="member-dashboard-page">
 
       {/* TOP BAR */}
       <div className="dashboard-topbar">
         <div>
           <h1 className="dashboard-title">Member Dashboard</h1>
-          {name && <p className="dashboard-welcome">Welcome, {name}</p>}
+          {name && <p className="dashboard-welcome">Welcome back, {name}!</p>}
         </div>
         <div className="member-topbar-actions">
           <button
             className="member-browse-btn"
             onClick={() => navigate('/browse-categories')}
           >
-            📚 Browse Books
+            <i className="bi bi-book me-2"></i>
+            Browse Books
           </button>
           <button onClick={handleLogout} className="dashboard-logout-btn">
+            <i className="bi bi-box-arrow-right me-2"></i>
             Logout
           </button>
         </div>
       </div>
 
-      {/* LOANED BOOKS */}
-      <div className="dashboard-section" style={{ marginBottom: '28px' }}>
-        <h2 className="dashboard-section-title">📖 My Loaned Books</h2>
+      {/* LOANED BOOKS SECTION */}
+      <div className="dashboard-section">
+        <h2 className="dashboard-section-title">
+          <i className="bi bi-book me-3"></i>
+          My Loaned Books
+        </h2>
         <div className="dashboard-table-wrapper">
           <table className="dashboard-table">
             <thead>
@@ -72,7 +76,7 @@ function MemberDashboard() {
               {loans.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="dashboard-empty">
-                    No loaned books found.
+                    You have no loaned books at the moment.
                   </td>
                 </tr>
               ) : (
@@ -82,8 +86,8 @@ function MemberDashboard() {
                     <td>{loan.LoanDate ? new Date(loan.LoanDate).toLocaleDateString() : ''}</td>
                     <td>{loan.DueDate ? new Date(loan.DueDate).toLocaleDateString() : ''}</td>
                     <td>
-                      <span className={`member-status-badge ${loan.Status?.toLowerCase()}`}>
-                        {loan.Status}
+                      <span className={`member-status-badge ${loan.Status?.toLowerCase() || 'active'}`}>
+                        {loan.Status || 'Active'}
                       </span>
                     </td>
                   </tr>
@@ -94,9 +98,12 @@ function MemberDashboard() {
         </div>
       </div>
 
-      {/* FINES */}
+      {/* FINES SECTION */}
       <div className="dashboard-section">
-        <h2 className="dashboard-section-title">💰 My Fines</h2>
+        <h2 className="dashboard-section-title">
+          <i className="bi bi-currency-dollar me-3"></i>
+          My Fines
+        </h2>
         <div className="dashboard-table-wrapper">
           <table className="dashboard-table">
             <thead>
@@ -111,17 +118,17 @@ function MemberDashboard() {
               {fines.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="dashboard-empty">
-                    No fines found.
+                    You currently have no fines.
                   </td>
                 </tr>
               ) : (
                 fines.map((fine, i) => (
                   <tr key={i}>
                     <td>{fine.Title || fine.BookTitle}</td>
-                    <td>${fine.Amount}</td>
+                    <td className="fine-amount">${fine.Amount}</td>
                     <td>
-                      <span className={`member-status-badge ${fine.Status?.toLowerCase()}`}>
-                        {fine.Status}
+                      <span className={`member-status-badge ${fine.Status?.toLowerCase() || 'pending'}`}>
+                        {fine.Status || 'Pending'}
                       </span>
                     </td>
                     <td>{fine.FineDate ? new Date(fine.FineDate).toLocaleDateString() : ''}</td>
