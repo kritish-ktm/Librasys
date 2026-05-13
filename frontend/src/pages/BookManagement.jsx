@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   getBooks,
   addBook,
   updateBook,
   deleteBook,
 } from "../services/bookService";
+import Sidebar from "../components/Sidebar";
 import "./BookManagement.css";
 
 const emptyForm = {
@@ -18,8 +18,6 @@ const emptyForm = {
 };
 
 function BookManagement() {
-  const navigate = useNavigate();
-
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
@@ -249,7 +247,10 @@ function BookManagement() {
   };
 
   return (
-    <main className="book-page">
+    <div className="app-shell">
+      <Sidebar />
+
+      <main className="book-page">
       <section className="book-hero">
         <div>
           <p className="book-kicker">LibraSys Inventory Console</p>
@@ -260,13 +261,6 @@ function BookManagement() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="book-back-button"
-          onClick={() => navigate("/dashboard")}
-        >
-          Back to Dashboard
-        </button>
       </section>
 
       <section className="book-stats">
@@ -527,7 +521,8 @@ function BookManagement() {
           </table>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }
 

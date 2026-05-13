@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
 
 const FineManagement = () => {
-
-  const navigate = useNavigate();
-
   const [fines, setFines] = useState([]);
 
   const [search, setSearch] = useState("");
@@ -106,18 +103,19 @@ const FineManagement = () => {
   return (
 
     <div
+      className="app-shell"
       style={{
         minHeight: "100vh",
-        backgroundColor: "#b8ab97",
-        padding: "40px",
+        backgroundColor: "#f6f1e8",
         fontFamily: "Arial, sans-serif",
       }}
     >
+      <Sidebar />
 
       <div
         style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
+          minWidth: 0,
+          padding: "32px",
         }}
       >
 
@@ -125,12 +123,11 @@ const FineManagement = () => {
 
         <div
           style={{
-            backgroundColor: "#e8e0d5",
-            borderLeft: "6px solid #66704d",
-            borderRadius: "10px",
-            padding: "30px",
+            backgroundColor: "transparent",
+            borderLeft: "0",
+            borderRadius: "0",
+            padding: "0",
             marginBottom: "25px",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -153,7 +150,7 @@ const FineManagement = () => {
             <h1
               style={{
                 margin: 0,
-                fontSize: "48px",
+                fontSize: "34px",
                 color: "#1f1f1f",
               }}
             >
@@ -170,25 +167,6 @@ const FineManagement = () => {
             </p>
 
           </div>
-
-          {/* BACK BUTTON */}
-
-          <button
-
-            onClick={() => navigate("/dashboard")}
-
-            style={{
-              backgroundColor: "#66704d",
-              color: "white",
-              border: "none",
-              padding: "14px 22px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            ← Back To Dashboard
-          </button>
 
         </div>
 

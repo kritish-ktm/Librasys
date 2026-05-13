@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
 import './Dashboard.css';
 import './MemberDashboard.css';
 
@@ -18,7 +18,6 @@ function UserManagement() {
   const [editError, setEditError] = useState('');
   const [pageError, setPageError] = useState('');
 
-  const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
   const authHeader = {
@@ -195,9 +194,12 @@ function UserManagement() {
   });
 
   return (
-    <div className="dashboard-page">
+    <div className="app-shell">
+      <Sidebar />
 
-      <div className="dashboard-topbar">
+      <main className="dashboard-page module-dashboard-page">
+
+      <div className="dashboard-topbar module-topbar">
         <div>
           <h1 className="dashboard-title">User Management</h1>
           <p className="dashboard-welcome">Manage all registered users</p>
@@ -206,10 +208,6 @@ function UserManagement() {
         <div style={{ display: 'flex', gap: '12px' }}>
           <button className="member-browse-btn" onClick={() => setShowAddModal(true)}>
             + Add User
-          </button>
-
-          <button className="dashboard-logout-btn" onClick={() => navigate('/dashboard')}>
-            ← Back to Dashboard
           </button>
         </div>
       </div>
@@ -441,6 +439,7 @@ function UserManagement() {
         </div>
       )}
 
+      </main>
     </div>
   );
 }

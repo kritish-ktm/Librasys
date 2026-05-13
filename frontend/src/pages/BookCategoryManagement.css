@@ -2,7 +2,7 @@
 .book-page {
   min-height: 100vh;
   padding: 32px;
-  background: linear-gradient(135deg, #f8f1e9 0%, #ede4d5 100%);
+  background: #f6f1e8;
   color: #2c2118;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
@@ -50,14 +50,11 @@
 /* Hero Header */
 .book-hero {
   margin-bottom: 28px;
-  padding: 28px 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fffaf0;
-  border-radius: 12px;
-  border-left: 8px solid #8c6f4e;
-  box-shadow: 0 8px 25px rgba(44, 33, 24, 0.12);
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border-left: 0;
+  box-shadow: none;
 }
 
 .book-kicker {

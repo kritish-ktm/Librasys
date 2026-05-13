@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   getCategories,
   addCategory,
@@ -7,11 +6,10 @@ import {
   deleteCategory,
   toggleCategoryStatus,
 } from "../services/bookCategoryService";
+import Sidebar from "../components/Sidebar";
 import "./BookCategoryManagement.css";
 
 function BookCategoryManagement() {
-  const navigate = useNavigate();
-
   const emptyForm = {
     CategoryName: "",
     Description: "",
@@ -126,7 +124,10 @@ function BookCategoryManagement() {
   );
 
   return (
-    <div className="book-page">
+    <div className="app-shell">
+      <Sidebar />
+
+      <main className="book-page">
       {/* Header */}
       <div className="book-hero">
         <div>
@@ -136,9 +137,6 @@ function BookCategoryManagement() {
             Create, edit, and manage book categories
           </p>
         </div>
-        <button className="book-back-button" onClick={() => navigate("/dashboard")}>
-          ← Back to Dashboard
-        </button>
       </div>
 
       {message && <div className="book-alert success">{message}</div>}
@@ -272,6 +270,7 @@ function BookCategoryManagement() {
           </div>
         </div>
       </div>
+      </main>
     </div>
   );
 }

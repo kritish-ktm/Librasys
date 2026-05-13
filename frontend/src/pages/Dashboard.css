@@ -5,9 +5,13 @@
 .dashboard-page {
   min-height: 100vh;
   padding: 32px;
-  background: #f5f0e8;
+  background: #f6f1e8;
   font-family: 'Georgia', serif;
   color: #2c2416;
+}
+
+.module-dashboard-page {
+  font-family: Inter, Arial, sans-serif;
 }
 
 /* ==================== TOP BAR ==================== */
@@ -227,4 +231,20 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 18px;
   }
+}
+
+.module-topbar {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 24px;
+}
+
+.module-topbar .dashboard-title {
+  color: #141414;
+}
+
+.module-topbar .dashboard-welcome {
+  color: #6b6b6b;
 }
