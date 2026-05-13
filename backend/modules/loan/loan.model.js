@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 
+// ===== COMMON LOAN SELECT =====
 const LOAN_SELECT = `
   SELECT
     l.LoanID,
@@ -28,8 +29,10 @@ const LOAN_SELECT = `
   INNER JOIN book b ON b.BookID = l.BookID
 `;
 
-const getAll = ({ search = "", status = "all" }, callback) => {
+// ===== FILTER BUILDER =====
+const buildLoanFilters = ({ search = "", status = "all", borrowedFrom = "", borrowedTo = "" }) => {
   const values = [];
+  const statusValues = [];
   const filters = [];
 
   if (search) {
@@ -59,16 +62,110 @@ const getAll = ({ search = "", status = "all" }, callback) => {
     filters.push("l.ReturnDate IS NULL AND CURDATE() > l.DueDate");
   }
 
-  const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
-  const sql = `${LOAN_SELECT} ${whereClause} ORDER BY l.LoanID DESC`;
+  if (borrowedFrom) {
+    filters.push("l.BorrowDate >= ?");
+    values.push(borrowedFrom);
+  }
 
-  db.query(sql, values, callback);
+  if (borrowedTo) {
+    filters.push("l.BorrowDate <= ?");
+    values.push(borrowedTo);
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const summaryFilters = filters.filter((filter) => {
+    return ![
+      "l.ReturnDate IS NULL AND CURDATE() <= l.DueDate",
+      "l.ReturnDate IS NOT NULL",
+      "l.ReturnDate IS NULL AND CURDATE() > l.DueDate",
+    ].includes(filter);
+  });
+  const summaryWhereClause = summaryFilters.length ? `WHERE ${summaryFilters.join(" AND ")}` : "";
+
+  if (search) {
+    const searchValue = `%${search}%`;
+    statusValues.push(searchValue, searchValue, searchValue, searchValue, searchValue);
+  }
+
+  if (borrowedFrom) statusValues.push(borrowedFrom);
+  if (borrowedTo) statusValues.push(borrowedTo);
+
+  return { whereClause, values, summaryWhereClause, summaryValues: statusValues };
 };
 
+// ===== LIST LOANS WITH PAGINATION =====
+const getAll = (filters, callback) => {
+  const page = Math.max(Number(filters.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(filters.limit) || 10, 1), 50);
+  const offset = (page - 1) * limit;
+  const { whereClause, values, summaryWhereClause, summaryValues } = buildLoanFilters(filters);
+  const dataSql = `${LOAN_SELECT} ${whereClause} ORDER BY l.LoanID DESC LIMIT ? OFFSET ?`;
+  const countSql = `
+    SELECT COUNT(*) AS total
+    FROM LoanedBook l
+    INNER JOIN user u ON u.UserID = l.UserID
+    INNER JOIN book b ON b.BookID = l.BookID
+    ${whereClause}
+  `;
+  const summarySql = `
+    SELECT
+      COUNT(*) AS total,
+      SUM(CASE WHEN l.ReturnDate IS NULL AND CURDATE() <= l.DueDate THEN 1 ELSE 0 END) AS active,
+      SUM(CASE WHEN l.ReturnDate IS NULL AND CURDATE() > l.DueDate THEN 1 ELSE 0 END) AS overdue,
+      SUM(CASE WHEN l.ReturnDate IS NOT NULL THEN 1 ELSE 0 END) AS returned
+    FROM LoanedBook l
+    INNER JOIN user u ON u.UserID = l.UserID
+    INNER JOIN book b ON b.BookID = l.BookID
+    ${summaryWhereClause}
+  `;
+
+  db.query(countSql, values, (countError, countRows) => {
+    if (countError) {
+      callback(countError);
+      return;
+    }
+
+    db.query(summarySql, summaryValues, (summaryError, summaryRows) => {
+      if (summaryError) {
+        callback(summaryError);
+        return;
+      }
+
+      db.query(dataSql, [...values, limit, offset], (dataError, rows) => {
+        if (dataError) {
+          callback(dataError);
+          return;
+        }
+
+        const total = Number(countRows[0]?.total || 0);
+        const summary = summaryRows[0] || {};
+
+        callback(null, {
+          data: rows,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(Math.ceil(total / limit), 1),
+          },
+          summary: {
+            total: Number(summary.total || 0),
+            active: Number(summary.active || 0),
+            overdue: Number(summary.overdue || 0),
+            returned: Number(summary.returned || 0),
+          },
+        });
+      });
+    });
+  });
+};
+
+// ===== GET LOAN BY ID =====
 const getById = (id, callback) => {
   db.query(`${LOAN_SELECT} WHERE l.LoanID = ?`, [id], callback);
 };
 
+// ===== GET LOANS BY USER =====
 const getByUser = (userId, callback) => {
   db.query(
     `${LOAN_SELECT} WHERE l.UserID = ? ORDER BY l.LoanID DESC`,
@@ -77,6 +174,7 @@ const getByUser = (userId, callback) => {
   );
 };
 
+// ===== GET OVERDUE LOANS =====
 const getUserOverdue = (callback) => {
   const sql = `
     ${LOAN_SELECT}
@@ -87,6 +185,7 @@ const getUserOverdue = (callback) => {
   db.query(sql, callback);
 };
 
+// ===== BORROWABLE BOOK OPTIONS =====
 const getBorrowableBooks = (callback) => {
   const sql = `
     SELECT BookID, Title, ISBN, AvailableCopies, IsBorrowable
@@ -98,6 +197,29 @@ const getBorrowableBooks = (callback) => {
   db.query(sql, callback);
 };
 
+// ===== SEARCH BORROWABLE BOOKS =====
+const searchBorrowableBooks = (query, callback) => {
+  const searchValue = `%${query}%`;
+  const sql = `
+    SELECT BookID, Title, ISBN, PublicationDate, AvailableCopies, IsBorrowable
+    FROM book
+    WHERE
+      (
+        Title LIKE ?
+        OR ISBN LIKE ?
+        OR CAST(BookID AS CHAR) LIKE ?
+      )
+      AND IsBorrowable = 1
+    ORDER BY
+      CASE WHEN AvailableCopies > 0 THEN 0 ELSE 1 END,
+      Title ASC
+    LIMIT 8
+  `;
+
+  db.query(sql, [searchValue, searchValue, searchValue], callback);
+};
+
+// ===== ACTIVE USER OPTIONS =====
 const getActiveUsers = (callback) => {
   const sql = `
     SELECT UserID, FullName, Email, Role, IsActive
@@ -109,6 +231,28 @@ const getActiveUsers = (callback) => {
   db.query(sql, callback);
 };
 
+// ===== SEARCH ACTIVE MEMBERS =====
+const searchActiveUsers = (query, callback) => {
+  const searchValue = `%${query}%`;
+  const sql = `
+    SELECT UserID, FullName, Email, Role, IsActive
+    FROM user
+    WHERE
+      IsActive = 1
+      AND Role = 'Member'
+      AND (
+        FullName LIKE ?
+        OR Email LIKE ?
+        OR CAST(UserID AS CHAR) LIKE ?
+      )
+    ORDER BY FullName ASC
+    LIMIT 8
+  `;
+
+  db.query(sql, [searchValue, searchValue, searchValue], callback);
+};
+
+// ===== CREATE LOAN =====
 // Creates a loan in one transaction so inventory and loan data stay consistent.
 const create = ({ UserID, BookID }, callback) => {
   db.getConnection((connectionError, connection) => {
@@ -204,10 +348,12 @@ const create = ({ UserID, BookID }, callback) => {
   });
 };
 
+// ===== CREATE LOAN FOR MEMBER =====
 const createForUser = (UserID, BookID, callback) => {
   create({ UserID, BookID }, callback);
 };
 
+// ===== UPDATE LOAN =====
 const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callback) => {
   const sql = `
     UPDATE LoanedBook
@@ -223,6 +369,7 @@ const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callbac
   );
 };
 
+// ===== RETURN BOOK =====
 // Marks the loan returned and restores the copy count in the same transaction.
 const markReturned = (id, callback) => {
   db.getConnection((connectionError, connection) => {
@@ -292,6 +439,7 @@ const markReturned = (id, callback) => {
   });
 };
 
+// ===== MEMBER RETURN BOOK =====
 const markReturnedForUser = (id, userId, callback) => {
   db.getConnection((connectionError, connection) => {
     if (connectionError) {
@@ -366,6 +514,7 @@ const markReturnedForUser = (id, userId, callback) => {
   });
 };
 
+// ===== REFRESH OVERDUE FLAGS =====
 const updateOverdueFlags = (callback) => {
   const sql = `
     UPDATE LoanedBook
@@ -378,6 +527,7 @@ const updateOverdueFlags = (callback) => {
   db.query(sql, callback);
 };
 
+// ===== DELETE LOAN =====
 const remove = (id, callback) => {
   db.query("DELETE FROM LoanedBook WHERE LoanID = ?", [id], callback);
 };
@@ -407,7 +557,9 @@ module.exports = {
   getByUser,
   getUserOverdue,
   getBorrowableBooks,
+  searchBorrowableBooks,
   getActiveUsers,
+  searchActiveUsers,
   create,
   createForUser,
   update,
