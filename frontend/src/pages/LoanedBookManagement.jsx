@@ -5,10 +5,10 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
-  MoreVertical,
   Pencil,
   RotateCcw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -18,7 +18,9 @@ import {
   returnLoan,
   searchLoanBooks,
   searchLoanUsers,
+  updateLoan,
 } from "../services/loanedBookService";
+import Sidebar from "../components/Sidebar";
 import "./LoanedBookManagement.css";
 
 const statusFilters = [
@@ -238,6 +240,43 @@ function LoanedBookManagement() {
     }
   };
 
+  // ===== EDIT LOAN =====
+  const handleEdit = async (loan) => {
+    const borrowDate = window.prompt(
+      "Borrow date (YYYY-MM-DD)",
+      formatDateForDisplay(loan.BorrowDate)
+    );
+    if (borrowDate === null) return;
+
+    const dueDate = window.prompt(
+      "Due date (YYYY-MM-DD)",
+      formatDateForDisplay(loan.DueDate)
+    );
+    if (dueDate === null) return;
+
+    const returnDate = window.prompt(
+      "Returned date (YYYY-MM-DD). Leave empty if not returned.",
+      loan.ReturnDate ? formatDateForDisplay(loan.ReturnDate) : ""
+    );
+    if (returnDate === null) return;
+
+    try {
+      await updateLoan(loan.LoanID, {
+        UserID: loan.UserID,
+        BookID: loan.BookID,
+        BorrowDate: borrowDate,
+        DueDate: dueDate,
+        ReturnDate: returnDate.trim() || null,
+      });
+      setMessage("Loan updated successfully.");
+      setError("");
+      await fetchLoans();
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to update loan.");
+      setMessage("");
+    }
+  };
+
   // ===== DELETE LOAN =====
   const handleDelete = async (loan) => {
     const confirmed = window.confirm(`Delete loan #${loan.LoanID}?`);
@@ -266,7 +305,9 @@ function LoanedBookManagement() {
   };
 
   return (
-    <main className="loan-page">
+    <div className="loan-page">
+      <Sidebar />
+
       <section className="loan-main">
         {/* ===== SUMMARY CARDS ===== */}
         <section className="loan-stats" aria-label="Loan summary">
@@ -301,12 +342,6 @@ function LoanedBookManagement() {
         </section>
 
         <section className="loan-workspace">
-          <div className="loan-mode-tabs">
-            <button type="button" className="active">Create Loan</button>
-            <button type="button">Loan Records</button>
-            <button type="button">Overdue Loans</button>
-          </div>
-
           <div className="loan-grid">
             {/* ===== BORROW BOOK FORM ===== */}
             <aside className="loan-panel loan-create-panel">
@@ -365,14 +400,16 @@ function LoanedBookManagement() {
 
                 <div className="loan-date-grid">
                   <label>
-                    Borrow Date
+                    <span className="loan-field-label">Borrow Date</span>
                     <span className="loan-input-icon">
                       <CalendarDays size={16} />
                       <input type="date" value={today} readOnly />
                     </span>
                   </label>
                   <label>
-                    Due Date <small>(14 days from borrow date)</small>
+                    <span className="loan-field-label">
+                      Due Date <small>(14 days from borrow date)</small>
+                    </span>
                     <span className="loan-input-icon">
                       <CalendarDays size={16} />
                       <input type="date" value={dueDate} readOnly />
@@ -503,16 +540,16 @@ function LoanedBookManagement() {
                           <td>{loan.ReturnDate ? formatDateForDisplay(loan.ReturnDate) : "-"}</td>
                           <td>{renderStatus(loan)}</td>
                           <td className="loan-row-actions">
-                            <button type="button" aria-label="Edit loan">
+                            <button type="button" aria-label="Edit loan" title="Edit loan" onClick={() => handleEdit(loan)}>
                               <Pencil size={14} />
                             </button>
                             {!loan.ReturnDate && (
-                              <button type="button" aria-label="Return loan" onClick={() => handleReturn(loan)}>
+                              <button type="button" aria-label="Return loan" title="Return loan" onClick={() => handleReturn(loan)}>
                                 <RotateCcw size={14} />
                               </button>
                             )}
-                            <button type="button" aria-label="Delete loan" onClick={() => handleDelete(loan)}>
-                              <MoreVertical size={15} />
+                            <button type="button" className="danger" aria-label="Delete loan" title="Delete loan" onClick={() => handleDelete(loan)}>
+                              <Trash2 size={15} />
                             </button>
                           </td>
                         </tr>
@@ -573,7 +610,7 @@ function LoanedBookManagement() {
           </div>
         </section>
       </section>
-    </main>
+    </div>
   );
 }
 

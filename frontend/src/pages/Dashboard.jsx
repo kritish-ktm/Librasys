@@ -1,157 +1,123 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "./Dashboard.css";
+import {
+  BookOpen,
+  ClipboardList,
+  FolderOpen,
+  Receipt,
+  UsersRound,
+} from "lucide-react";
+import Sidebar from "../components/Sidebar";
+import StatCard from "../components/StatCard";
+import DashboardCard from "../components/DashboardCard";
+import "../styles/dashboard.css";
 
 const API_BASE_URL = "http://localhost:5000";
 
-const navItems = [
+const moduleCards = [
   {
-    label: "Users",
+    title: "Users",
+    description: "Manage members and librarian accounts.",
     path: "/users",
-    icon: "bi-people-fill",
+    icon: UsersRound,
   },
   {
-    label: "Books",
+    title: "Books",
+    description: "Add, update, and track book records.",
     path: "/books",
-    icon: "bi-book-fill",
+    icon: BookOpen,
   },
   {
-    label: "Book Categories",
+    title: "Categories",
+    description: "Organize books by category and Dewey code.",
     path: "/categories",
-    icon: "bi-folder-fill",
+    icon: FolderOpen,
   },
   {
-    label: "Loaned Books",
+    title: "Loaned Books",
+    description: "Create loans, returns, overdue filters, and history.",
     path: "/loans",
-    icon: "bi-list-check",
+    icon: ClipboardList,
   },
   {
-    label: "Fines",
+    title: "Fines",
+    description: "Review paid and unpaid fine records.",
     path: "/fines",
-    icon: "bi-currency-dollar",
+    icon: Receipt,
   },
 ];
 
 function Dashboard() {
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
-
   const navigate = useNavigate();
-
-  const token = localStorage.getItem("token");
   const name = localStorage.getItem("name");
-
-  useEffect(() => {
-    axios
-      .get(`${API_BASE_URL}/api/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => setUsers(res.data))
-      .catch((err) => {
-        console.error("Failed to load users:", err);
-      });
-  }, [token]);
-
-  const toggleStatus = async (id, current) => {
-    try {
-      await axios.put(
-        `${API_BASE_URL}/api/users/${id}/status`,
-        {
-          isActive: current ? 0 : 1,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setUsers(
-        users.map((user) =>
-          user.UserID === id
-            ? {
-                ...user,
-                IsActive: current ? 0 : 1,
-              }
-            : user
-        )
-      );
-
-    } catch (err) {
-      console.error("Failed to update user status:", err);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
-  };
-
-  const filtered = users.filter((user) => {
-    const fullName = user.FullName || "";
-    const email = user.Email || "";
-
-    return (
-      fullName.toLowerCase().includes(search.toLowerCase()) ||
-      email.toLowerCase().includes(search.toLowerCase())
-    );
+  const token = localStorage.getItem("token");
+  const [stats, setStats] = useState({
+    users: 0,
+    books: 0,
+    categories: 0,
+    activeLoans: 0,
+    fines: 0,
   });
 
+  useEffect(() => {
+    const authHeader = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
+    const loadDashboardStats = async () => {
+      const [users, books, categories, loans, fines] = await Promise.allSettled([
+        axios.get(`${API_BASE_URL}/api/users`, authHeader),
+        axios.get(`${API_BASE_URL}/books`),
+        axios.get(`${API_BASE_URL}/categories`, authHeader),
+        axios.get(`${API_BASE_URL}/loans`, { params: { status: "all", page: 1, limit: 1 } }),
+        axios.get(`${API_BASE_URL}/api/fines`),
+      ]);
+
+      setStats({
+        users: Array.isArray(users.value?.data) ? users.value.data.length : 0,
+        books: Array.isArray(books.value?.data) ? books.value.data.length : 0,
+        categories: Array.isArray(categories.value?.data)
+          ? categories.value.data.length
+          : Array.isArray(categories.value?.data?.data)
+            ? categories.value.data.data.length
+            : 0,
+        activeLoans: loans.value?.data?.summary?.active || 0,
+        fines: Array.isArray(fines.value?.data) ? fines.value.data.length : 0,
+      });
+    };
+
+    loadDashboardStats();
+  }, [token]);
+
   return (
-    <div className="dashboard-page">
+    <div className="app-shell">
+      <Sidebar />
 
-      {/* TOP BAR */}
-      <div className="dashboard-topbar">
+      <main className="app-main">
+        <header className="app-page-heading">
+          <h1>Dashboard</h1>
+          <p>{name ? `Hi, ${name}. Manage LibraSys modules from one place.` : "Manage LibraSys modules from one place."}</p>
+        </header>
 
-        <div>
-          <h1 className="dashboard-title">
-            Dashboard
-          </h1>
+        <section className="app-stats-grid" aria-label="Dashboard summary">
+          <StatCard title="Total Users" value={stats.users} detail="Registered accounts" icon={UsersRound} />
+          <StatCard title="Books" value={stats.books} detail="Library records" icon={BookOpen} />
+          <StatCard title="Categories" value={stats.categories} detail="Book groups" icon={FolderOpen} />
+          <StatCard title="Active Loans" value={stats.activeLoans} detail="Currently borrowed" icon={ClipboardList} />
+          <StatCard title="Fines" value={stats.fines} detail="Fine records" icon={Receipt} tone="orange" />
+        </section>
 
-          {name && (
-            <p className="dashboard-welcome">
-              Hii, {name} Have a nice day!
-            </p>
-          )}
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="dashboard-logout-btn"
-        >
-          Logout
-        </button>
-
-      </div>
-
-      {/* NAVIGATION */}
-      <div className="dashboard-nav-grid">
-
-        {navItems.map((item) => (
-          <button
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className="dashboard-nav-card"
-          >
-            <span className="dashboard-nav-icon">
-              <i className={`bi ${item.icon} dashboard-nav-icon-svg`}></i>
-            </span>
-
-            <span className="dashboard-nav-label">
-              {item.label}
-            </span>
-          </button>
-        ))}
-
-      </div>
-
-      
-
-      
-
+        <section className="dashboard-module-grid" aria-label="Module navigation">
+          {moduleCards.map((card) => (
+            <DashboardCard
+              key={card.path}
+              title={card.title}
+              description={card.description}
+              icon={card.icon}
+              onClick={() => navigate(card.path)}
+            />
+          ))}
+        </section>
+      </main>
     </div>
   );
 }
