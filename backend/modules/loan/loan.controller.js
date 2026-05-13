@@ -1,9 +1,14 @@
 const LoanManager = require("./loan.manager");
 
+// ===== GET LOANS WITH FILTERS =====
 exports.getLoans = (req, res) => {
   const filters = {
     search: String(req.query.search || "").trim(),
     status: String(req.query.status || "all").toLowerCase(),
+    borrowedFrom: String(req.query.borrowedFrom || "").trim(),
+    borrowedTo: String(req.query.borrowedTo || "").trim(),
+    page: req.query.page,
+    limit: req.query.limit,
   };
 
   LoanManager.listLoans(filters, (err, results) => {
@@ -16,6 +21,7 @@ exports.getLoans = (req, res) => {
   });
 };
 
+// ===== GET ONE LOAN =====
 exports.getLoan = (req, res) => {
   LoanManager.getLoan(req.params.id, (err, results) => {
     if (err) {
@@ -31,6 +37,7 @@ exports.getLoan = (req, res) => {
   });
 };
 
+// ===== USER LOAN HISTORY =====
 exports.getLoansByUser = (req, res) => {
   LoanManager.listLoansByUser(req.params.userid, (err, results) => {
     if (err) {
@@ -44,6 +51,7 @@ exports.getLoansByUser = (req, res) => {
   });
 };
 
+// ===== MEMBER: MY LOANS =====
 exports.getMyLoans = (req, res) => {
   LoanManager.listLoansByUser(req.user.id, (err, results) => {
     if (err) {
@@ -57,6 +65,7 @@ exports.getMyLoans = (req, res) => {
   });
 };
 
+// ===== OVERDUE LOANS =====
 exports.getUserOverdueLoans = (req, res) => {
   LoanManager.listUserOverdueLoans((err, results) => {
     if (err) {
@@ -68,6 +77,31 @@ exports.getUserOverdueLoans = (req, res) => {
   });
 };
 
+// ===== SEARCH MEMBERS =====
+exports.searchUsers = (req, res) => {
+  LoanManager.searchUsers(req.query.q, (err, results) => {
+    if (err) {
+      console.error("Search users error:", err);
+      return res.status(500).json({ error: "Database error while searching users" });
+    }
+
+    res.json(results);
+  });
+};
+
+// ===== SEARCH BOOKS =====
+exports.searchBooks = (req, res) => {
+  LoanManager.searchBooks(req.query.q, (err, results) => {
+    if (err) {
+      console.error("Search books error:", err);
+      return res.status(500).json({ error: "Database error while searching books" });
+    }
+
+    res.json(results);
+  });
+};
+
+// ===== OLD OPTIONS ENDPOINT =====
 exports.getLoanOptions = (req, res) => {
   LoanManager.getOptions((err, options) => {
     if (err) {
@@ -79,6 +113,7 @@ exports.getLoanOptions = (req, res) => {
   });
 };
 
+// ===== CREATE LOAN =====
 // Creates a borrowing transaction through the LoanManager middle layer.
 exports.addLoan = (req, res) => {
   LoanManager.createLoan(req.body, (err, result) => {
@@ -96,6 +131,7 @@ exports.addLoan = (req, res) => {
   });
 };
 
+// ===== MEMBER BORROW BOOK =====
 exports.borrowBookForMember = (req, res) => {
   LoanManager.createLoanForMember(req.user.id, req.body, (err, result) => {
     if (err) {
@@ -112,6 +148,7 @@ exports.borrowBookForMember = (req, res) => {
   });
 };
 
+// ===== UPDATE LOAN =====
 exports.updateLoan = (req, res) => {
   LoanManager.updateLoan(req.params.id, req.body, (err, result) => {
     if (err) {
@@ -129,6 +166,7 @@ exports.updateLoan = (req, res) => {
   });
 };
 
+// ===== RETURN BOOK =====
 // Returning a book updates both LoanedBook and the Book inventory count.
 exports.returnLoan = (req, res) => {
   LoanManager.returnLoan(req.params.id, (err, result) => {
@@ -146,6 +184,7 @@ exports.returnLoan = (req, res) => {
   });
 };
 
+// ===== MEMBER RETURN BOOK =====
 exports.returnMyLoan = (req, res) => {
   LoanManager.returnMemberLoan(req.user.id, req.params.id, (err, result) => {
     if (err) {
@@ -162,6 +201,7 @@ exports.returnMyLoan = (req, res) => {
   });
 };
 
+// ===== DELETE LOAN =====
 exports.deleteLoan = (req, res) => {
   LoanManager.deleteLoan(req.params.id, (err, result) => {
     if (err) {

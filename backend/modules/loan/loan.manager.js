@@ -1,6 +1,7 @@
 const loanModel = require("./loan.model");
 
 class LoanManager {
+  // ===== LIST LOANS =====
   // Keeps overdue flags current before records are listed in the admin table.
   static listLoans(filters, callback) {
     loanModel.updateOverdueFlags((updateError) => {
@@ -13,10 +14,12 @@ class LoanManager {
     });
   }
 
+  // ===== SINGLE LOAN =====
   static getLoan(id, callback) {
     loanModel.getById(id, callback);
   }
 
+  // ===== USER LOANS =====
   static listLoansByUser(userId, callback) {
     if (!isValidId(userId)) {
       callback(validationError("A valid user ID is required"));
@@ -33,6 +36,7 @@ class LoanManager {
     });
   }
 
+  // ===== OVERDUE LOANS =====
   static listUserOverdueLoans(callback) {
     loanModel.updateOverdueFlags((updateError) => {
       if (updateError) {
@@ -44,6 +48,7 @@ class LoanManager {
     });
   }
 
+  // ===== FORM OPTIONS =====
   static getOptions(callback) {
     loanModel.getActiveUsers((userError, users) => {
       if (userError) {
@@ -62,6 +67,29 @@ class LoanManager {
     });
   }
 
+  // ===== SEARCH MEMBER =====
+  static searchUsers(query, callback) {
+    const cleanedQuery = String(query || "").trim();
+    if (cleanedQuery.length < 2) {
+      callback(null, []);
+      return;
+    }
+
+    loanModel.searchActiveUsers(cleanedQuery, callback);
+  }
+
+  // ===== SEARCH BOOK =====
+  static searchBooks(query, callback) {
+    const cleanedQuery = String(query || "").trim();
+    if (cleanedQuery.length < 2) {
+      callback(null, []);
+      return;
+    }
+
+    loanModel.searchBorrowableBooks(cleanedQuery, callback);
+  }
+
+  // ===== CREATE LOAN =====
   // Applies the core borrowing rule: active user plus borrowable book.
   static createLoan(data, callback) {
     const validationError = validateCreate(data);
@@ -76,6 +104,7 @@ class LoanManager {
     );
   }
 
+  // ===== MEMBER BORROW BOOK =====
   static createLoanForMember(userId, data, callback) {
     const validationError = validateCreate({ UserID: userId, BookID: data.BookID });
     if (validationError) {
@@ -86,6 +115,7 @@ class LoanManager {
     loanModel.createForUser(Number(userId), Number(data.BookID), callback);
   }
 
+  // ===== UPDATE LOAN =====
   // Allows librarians to correct loan dates while keeping date rules valid.
   static updateLoan(id, data, callback) {
     const validationError = validateUpdate(data);
@@ -107,10 +137,12 @@ class LoanManager {
     );
   }
 
+  // ===== RETURN BOOK =====
   static returnLoan(id, callback) {
     loanModel.markReturned(id, callback);
   }
 
+  // ===== MEMBER RETURN BOOK =====
   static returnMemberLoan(userId, loanId, callback) {
     if (!isValidId(userId)) {
       callback(validationError("A valid member account is required"));
@@ -125,6 +157,7 @@ class LoanManager {
     loanModel.markReturnedForUser(Number(loanId), Number(userId), callback);
   }
 
+  // ===== DELETE LOAN =====
   static deleteLoan(id, callback) {
     loanModel.remove(id, callback);
   }
