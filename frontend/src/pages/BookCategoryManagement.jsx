@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowUpDown, Eye, Pencil, Power, Trash2 } from "lucide-react";
+import { ArrowUpDown, Bold, Eye, Pencil, Power, Trash2 } from "lucide-react";
 import {
   getCategories,
   getMostBorrowedBooks,
@@ -132,6 +132,7 @@ useEffect(() => {
           statusFilter === "all" ||
           (statusFilter === "active" && Number(cat.IsActive) === 1) ||
           (statusFilter === "inactive" && Number(cat.IsActive) !== 1);
+
 
         return matchesSearch && matchesStatus;
       })
@@ -330,7 +331,7 @@ useEffect(() => {
 
       <section className="category-stats" aria-label="Category summary">
         <article className="category-stat-card">
-          <span className="category-stat-icon">C</span>
+        
           <span>
             <small>Total Categories</small>
             <strong>{categories.length}</strong>
@@ -338,7 +339,7 @@ useEffect(() => {
           </span>
         </article>
         <article className="category-stat-card">
-          <span className="category-stat-icon active">A</span>
+        
           <span>
             <small>Active Categories</small>
             <strong>{activeCategories}</strong>
@@ -346,7 +347,7 @@ useEffect(() => {
           </span>
         </article>
         <article className="category-stat-card">
-          <span className="category-stat-icon muted">I</span>
+        
           <span>
             <small>Inactive Categories</small>
             <strong>{inactiveCategories}</strong>
@@ -354,7 +355,7 @@ useEffect(() => {
           </span>
         </article>
         <article className="category-stat-card">
-          <span className="category-stat-icon books">B</span>
+        
           <span>
             <small>Assigned Books</small>
             <strong>{totalBooks}</strong>
