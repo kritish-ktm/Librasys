@@ -68,7 +68,7 @@ function CustomerBookCategories() {
 
   const goBack = () => {
     if (role === "Librarian") navigate("/dashboard");
-    else if (role === "Member") navigate("/profile");
+    else if (role === "Member") navigate("/MemberDashboard");
     else navigate("/");
   };
 

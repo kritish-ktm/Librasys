@@ -22,6 +22,11 @@ export const getCategoryById = async (id) => {
   return response.data;
 };
 
+export const getCategoryBooks = async (id) => {
+  const response = await axios.get(`${API_URL}/${id}/books`, authConfig());
+  return response.data;
+};
+
 export const addCategory = async (data) => {
   const response = await axios.post(API_URL, data, authConfig());
   return response.data;
@@ -36,6 +41,9 @@ export const deleteCategory = async (id) => {
   const response = await axios.delete(`${API_URL}/${id}`, authConfig());
   return response.data;
 };
+
+export const getMostBorrowedBooks = () =>
+  axios.get("/api/categories/most-borrowed")
 
 export const toggleCategoryStatus = async (id, isActive) => {
   const response = await axios.put(`${API_URL}/${id}/status`, { IsActive: isActive }, authConfig());
