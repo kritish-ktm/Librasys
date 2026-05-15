@@ -159,6 +159,11 @@ class LoanManager {
 
   // ===== DELETE LOAN =====
   static deleteLoan(id, callback) {
+    if (!isValidId(id)) {
+      callback(validationError("A valid loan ID is required"));
+      return;
+    }
+
     loanModel.remove(id, callback);
   }
 }

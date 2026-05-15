@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
   Clock3,
+  Filter,
   Pencil,
+  Plus,
   RotateCcw,
   Search,
   Trash2,
@@ -14,12 +16,14 @@ import {
 import {
   addLoan,
   deleteLoan,
+  getLoanById,
   getLoans,
   returnLoan,
   searchLoanBooks,
   searchLoanUsers,
   updateLoan,
 } from "../services/loanedBookService";
+import LoadingOverlay from "../components/LoadingOverlay";
 import Sidebar from "../components/Sidebar";
 import "./LoanedBookManagement.css";
 
@@ -44,6 +48,17 @@ const emptySummary = {
   returned: 0,
 };
 
+const emptyEditForm = {
+  BorrowDate: "",
+  DueDate: "",
+  ReturnDate: "",
+  Status: "active",
+};
+
+const ALERT_DURATION_MS = 3000;
+const ALERT_FADE_MS = 260;
+const MIN_LOADER_MS = 650;
+
 function LoanedBookManagement() {
   const [loans, setLoans] = useState([]);
   const [summary, setSummary] = useState(emptySummary);
@@ -54,18 +69,37 @@ function LoanedBookManagement() {
   const [bookQuery, setBookQuery] = useState("");
   const [userResults, setUserResults] = useState([]);
   const [bookResults, setBookResults] = useState([]);
+  const [editLoan, setEditLoan] = useState(null);
+  const [editForm, setEditForm] = useState(emptyEditForm);
+  const [editSelectedUser, setEditSelectedUser] = useState(null);
+  const [editSelectedBook, setEditSelectedBook] = useState(null);
+  const [editUserQuery, setEditUserQuery] = useState("");
+  const [editBookQuery, setEditBookQuery] = useState("");
+  const [editUserResults, setEditUserResults] = useState([]);
+  const [editBookResults, setEditBookResults] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [borrowedFrom, setBorrowedFrom] = useState("");
   const [borrowedTo, setBorrowedTo] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("success");
+  const [showAlert, setShowAlert] = useState(false);
+  const [isAlertLeaving, setIsAlertLeaving] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingOverlayVisible, setIsLoadingOverlayVisible] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Fetching loan records...");
+  const [loadingSubtext, setLoadingSubtext] = useState("Please wait...");
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingBooks, setLoadingBooks] = useState(false);
+  const [loadingEditUsers, setLoadingEditUsers] = useState(false);
+  const [loadingEditBooks, setLoadingEditBooks] = useState(false);
 
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
   const dueDate = useMemo(() => {
@@ -73,9 +107,64 @@ function LoanedBookManagement() {
     date.setDate(date.getDate() + 14);
     return date.toISOString().split("T")[0];
   }, []);
+  const alertTimerRef = useRef(null);
+  const alertFadeTimerRef = useRef(null);
+  const loaderTimerRef = useRef(null);
+  const loaderStartedAtRef = useRef(0);
+  const isBusy = isLoading || isSaving || isLoadingOverlayVisible;
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(alertTimerRef.current);
+      clearTimeout(alertFadeTimerRef.current);
+      clearTimeout(loaderTimerRef.current);
+    };
+  }, []);
+
+  const showFeedback = (text, type = "success") => {
+    clearTimeout(alertTimerRef.current);
+    clearTimeout(alertFadeTimerRef.current);
+    setAlertMessage(text);
+    setAlertType(type);
+    setIsAlertLeaving(false);
+    setShowAlert(true);
+
+    alertTimerRef.current = setTimeout(() => {
+      setIsAlertLeaving(true);
+      alertFadeTimerRef.current = setTimeout(() => {
+        setShowAlert(false);
+        setAlertMessage("");
+        if (type === "error") setError("");
+        setIsAlertLeaving(false);
+      }, ALERT_FADE_MS);
+    }, ALERT_DURATION_MS);
+  };
+
+  const showError = (text) => {
+    setError(text);
+    showFeedback(text, "error");
+  };
+
+  const showLoader = (message, subtext = "Please wait...") => {
+    clearTimeout(loaderTimerRef.current);
+    loaderStartedAtRef.current = Date.now();
+    setLoadingMessage(message);
+    setLoadingSubtext(subtext);
+    setIsLoadingOverlayVisible(true);
+  };
+
+  const hideLoader = () => {
+    const elapsed = Date.now() - loaderStartedAtRef.current;
+    const remaining = Math.max(MIN_LOADER_MS - elapsed, 0);
+    clearTimeout(loaderTimerRef.current);
+    loaderTimerRef.current = setTimeout(() => {
+      setIsLoadingOverlayVisible(false);
+    }, remaining);
+  };
 
   // ===== LOAD LOAN TABLE =====
-  const fetchLoans = async () => {
+  const fetchLoans = async (message = "Fetching loan records...") => {
+    showLoader(message);
     setIsLoading(true);
 
     try {
@@ -105,9 +194,10 @@ function LoanedBookManagement() {
 
       setError("");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to load loan records.");
+      showError(err.response?.data?.error || "Failed to load loan records.");
     } finally {
       setIsLoading(false);
+      hideLoader();
     }
   };
 
@@ -161,11 +251,57 @@ function LoanedBookManagement() {
     return () => clearTimeout(timer);
   }, [bookQuery]);
 
+  // ===== EDIT MODAL MEMBER SEARCH =====
+  useEffect(() => {
+    const query = editUserQuery.trim();
+    if (!isEditOpen || query.length < 2 || query === editSelectedUser?.FullName) {
+      setEditUserResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingEditUsers(true);
+      try {
+        const data = await searchLoanUsers(query);
+        setEditUserResults(Array.isArray(data) ? data : []);
+      } catch {
+        setEditUserResults([]);
+      } finally {
+        setLoadingEditUsers(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [editUserQuery, editSelectedUser, isEditOpen]);
+
+  // ===== EDIT MODAL BOOK SEARCH =====
+  useEffect(() => {
+    const query = editBookQuery.trim();
+    if (!isEditOpen || query.length < 2 || query === editSelectedBook?.Title) {
+      setEditBookResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingEditBooks(true);
+      try {
+        const data = await searchLoanBooks(query);
+        setEditBookResults(Array.isArray(data) ? data : []);
+      } catch {
+        setEditBookResults([]);
+      } finally {
+        setLoadingEditBooks(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [editBookQuery, editSelectedBook, isEditOpen]);
+
   const canCreateLoan =
     selectedUser &&
     selectedBook &&
     Number(selectedBook.AvailableCopies || 0) > 0 &&
-    !isSaving;
+    !isBusy;
 
   const resetForm = () => {
     setSelectedUser(null);
@@ -174,6 +310,18 @@ function LoanedBookManagement() {
     setBookQuery("");
     setUserResults([]);
     setBookResults([]);
+  };
+
+  const resetEditForm = () => {
+    setEditLoan(null);
+    setEditForm(emptyEditForm);
+    setEditSelectedUser(null);
+    setEditSelectedBook(null);
+    setEditUserQuery("");
+    setEditBookQuery("");
+    setEditUserResults([]);
+    setEditBookResults([]);
+    setIsEditOpen(false);
   };
 
   // ===== CLEAR TABLE FILTERS =====
@@ -188,24 +336,24 @@ function LoanedBookManagement() {
   // ===== CREATE LOAN =====
   const handleCreateLoan = async (event) => {
     event.preventDefault();
-    setMessage("");
     setError("");
 
     if (!selectedUser) {
-      setError("Search and select a member before creating a loan.");
+      showError("Search and select a member before creating a loan.");
       return;
     }
 
     if (!selectedBook) {
-      setError("Search and select a book before creating a loan.");
+      showError("Search and select a book before creating a loan.");
       return;
     }
 
     if (Number(selectedBook.AvailableCopies || 0) < 1) {
-      setError("This book is currently unavailable.");
+      showError("This book is currently unavailable.");
       return;
     }
 
+    showLoader("Creating new loan...");
     setIsSaving(true);
 
     try {
@@ -214,82 +362,141 @@ function LoanedBookManagement() {
         BookID: Number(selectedBook.BookID),
       });
 
-      setMessage("Loan created successfully with a 14-day due date.");
+      showFeedback("Loan created successfully.");
       resetForm();
+      setIsCreateOpen(false);
       await fetchLoans();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create loan.");
+      showError(err.response?.data?.error || "Failed to create loan.");
     } finally {
       setIsSaving(false);
+      hideLoader();
     }
   };
 
-  // ===== RETURN BOOK =====
-  const handleReturn = async (loan) => {
-    const confirmed = window.confirm(`Mark "${loan.BookTitle}" as returned?`);
-    if (!confirmed) return;
+  // ===== OPEN EDIT MODAL =====
+  const openEditModal = async (loan) => {
+    showLoader("Loading loan details...");
+    setIsLoading(true);
 
     try {
-      await returnLoan(loan.LoanID);
-      setMessage("Book returned and available copies updated.");
+      const latestLoan = await getLoanById(loan.LoanID);
+      const loanDetails = latestLoan || loan;
+
+      const user = {
+        UserID: loanDetails.UserID,
+        FullName: loanDetails.BorrowerName,
+        Email: loanDetails.BorrowerEmail,
+        Role: "Member",
+        IsActive: 1,
+      };
+      const book = {
+        BookID: loanDetails.BookID,
+        Title: loanDetails.BookTitle,
+        ISBN: loanDetails.ISBN,
+        AvailableCopies: 1,
+        IsBorrowable: 1,
+      };
+
       setError("");
-      await fetchLoans();
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to return book.");
-      setMessage("");
-    }
-  };
-
-  // ===== EDIT LOAN =====
-  const handleEdit = async (loan) => {
-    const borrowDate = window.prompt(
-      "Borrow date (YYYY-MM-DD)",
-      formatDateForDisplay(loan.BorrowDate)
-    );
-    if (borrowDate === null) return;
-
-    const dueDate = window.prompt(
-      "Due date (YYYY-MM-DD)",
-      formatDateForDisplay(loan.DueDate)
-    );
-    if (dueDate === null) return;
-
-    const returnDate = window.prompt(
-      "Returned date (YYYY-MM-DD). Leave empty if not returned.",
-      loan.ReturnDate ? formatDateForDisplay(loan.ReturnDate) : ""
-    );
-    if (returnDate === null) return;
-
-    try {
-      await updateLoan(loan.LoanID, {
-        UserID: loan.UserID,
-        BookID: loan.BookID,
-        BorrowDate: borrowDate,
-        DueDate: dueDate,
-        ReturnDate: returnDate.trim() || null,
+      setEditLoan(loanDetails);
+      setEditSelectedUser(user);
+      setEditSelectedBook(book);
+      setEditUserQuery(user.FullName);
+      setEditBookQuery(book.Title);
+      setEditForm({
+        BorrowDate: formatDateForDisplay(loanDetails.BorrowDate),
+        DueDate: formatDateForDisplay(loanDetails.DueDate),
+        ReturnDate: loanDetails.ReturnDate ? formatDateForDisplay(loanDetails.ReturnDate) : "",
+        Status: loanDetails.ReturnDate ? "returned" : loanDetails.IsOverdue ? "overdue" : "active",
       });
-      setMessage("Loan updated successfully.");
-      setError("");
-      await fetchLoans();
+      setEditUserResults([]);
+      setEditBookResults([]);
+      setIsEditOpen(true);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to update loan.");
-      setMessage("");
+      showError(err.response?.data?.error || "Failed to load loan details.");
+    } finally {
+      setIsLoading(false);
+      hideLoader();
     }
   };
 
-  // ===== DELETE LOAN =====
-  const handleDelete = async (loan) => {
-    const confirmed = window.confirm(`Delete loan #${loan.LoanID}?`);
-    if (!confirmed) return;
+  // ===== SAVE EDIT MODAL =====
+  const handleEditSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    const validationMessage = validateEditForm({
+      editLoan,
+      editForm,
+      editSelectedUser,
+      editSelectedBook,
+    });
+
+    if (validationMessage) {
+      showError(validationMessage);
+      return;
+    }
+
+    const returnDate =
+      editForm.Status === "returned"
+        ? editForm.ReturnDate || today
+        : null;
+
+    showLoader("Saving changes...");
+    setIsSaving(true);
 
     try {
-      await deleteLoan(loan.LoanID);
-      setMessage("Loan deleted successfully.");
-      setError("");
+      await updateLoan(editLoan.LoanID, {
+        UserID: Number(editSelectedUser.UserID),
+        BookID: Number(editSelectedBook.BookID),
+        BorrowDate: editForm.BorrowDate,
+        DueDate: editForm.DueDate,
+        ReturnDate: returnDate,
+      });
+      showFeedback("Loan updated successfully.");
+      resetEditForm();
       await fetchLoans();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to delete loan.");
-      setMessage("");
+      showError(err.response?.data?.error || "Failed to update loan.");
+    } finally {
+      setIsSaving(false);
+      hideLoader();
+    }
+  };
+
+  // ===== CONFIRM ACTIONS =====
+  const handleConfirmAction = async () => {
+    if (!confirmAction?.loan) return;
+
+    const loan = confirmAction.loan;
+    setError("");
+    showLoader(confirmAction.type === "return" ? "Processing return..." : "Deleting loan record...");
+    setIsSaving(true);
+
+    try {
+      if (confirmAction.type === "return") {
+        await returnLoan(loan.LoanID);
+        showFeedback("Loan returned successfully.");
+      }
+
+      if (confirmAction.type === "delete") {
+        if (!loan.ReturnDate) {
+          showError("Active loans cannot be deleted. Return the book first.");
+          return;
+        }
+
+        await deleteLoan(loan.LoanID);
+        showFeedback("Loan deleted successfully.");
+      }
+
+      setConfirmAction(null);
+      await fetchLoans();
+    } catch (err) {
+      showError(err.response?.data?.error || "Action failed.");
+    } finally {
+      setIsSaving(false);
+      hideLoader();
     }
   };
 
@@ -306,6 +513,7 @@ function LoanedBookManagement() {
 
   return (
     <div className="loan-page">
+      <LoadingOverlay show={isBusy} message={loadingMessage} subtext={loadingSubtext} />
       <Sidebar />
 
       <section className="loan-main">
@@ -341,112 +549,53 @@ function LoanedBookManagement() {
           />
         </section>
 
+        {showAlert && (
+          <div className={`loan-alert ${alertType} ${isAlertLeaving ? "is-hiding" : ""}`}>
+            {alertMessage}
+          </div>
+        )}
+
         <section className="loan-workspace">
           <div className="loan-grid">
-            {/* ===== BORROW BOOK FORM ===== */}
-            <aside className="loan-panel loan-create-panel">
-              <div className="loan-section-heading">
-                <h2>Create New Loan</h2>
-                <p>Search and select member & book to create a new loan.</p>
-              </div>
-
-              {message && <div className="loan-alert success">{message}</div>}
-              {error && <div className="loan-alert error">{error}</div>}
-
-              <form className="loan-form" onSubmit={handleCreateLoan}>
-                <SearchSelector
-                  label="Search Member"
-                  query={userQuery}
-                  setQuery={setUserQuery}
-                  placeholder="Search by name, email or member ID..."
-                  results={userResults}
-                  loading={loadingUsers}
-                  selected={selectedUser}
-                  onSelect={(user) => {
-                    setSelectedUser(user);
-                    setUserQuery(user.FullName);
-                    setUserResults([]);
-                  }}
-                  onRemove={() => {
-                    setSelectedUser(null);
-                    setUserQuery("");
-                  }}
-                  type="user"
-                />
-
-                <SearchSelector
-                  label="Search Book"
-                  query={bookQuery}
-                  setQuery={setBookQuery}
-                  placeholder="Search by title, author, ISBN or book ID..."
-                  results={bookResults}
-                  loading={loadingBooks}
-                  selected={selectedBook}
-                  onSelect={(book) => {
-                    setSelectedBook(book);
-                    setBookQuery(book.Title);
-                    setBookResults([]);
-                  }}
-                  onRemove={() => {
-                    setSelectedBook(null);
-                    setBookQuery("");
-                  }}
-                  type="book"
-                />
-
-                {selectedBook && Number(selectedBook.AvailableCopies || 0) < 1 && (
-                  <div className="loan-alert error">This book is currently unavailable.</div>
-                )}
-
-                <div className="loan-date-grid">
-                  <label>
-                    <span className="loan-field-label">Borrow Date</span>
-                    <span className="loan-input-icon">
-                      <CalendarDays size={16} />
-                      <input type="date" value={today} readOnly />
-                    </span>
-                  </label>
-                  <label>
-                    <span className="loan-field-label">
-                      Due Date <small>(14 days from borrow date)</small>
-                    </span>
-                    <span className="loan-input-icon">
-                      <CalendarDays size={16} />
-                      <input type="date" value={dueDate} readOnly />
-                    </span>
-                  </label>
-                </div>
-
-                <button type="submit" className="loan-primary" disabled={!canCreateLoan}>
-                  <CalendarDays size={16} />
-                  {isSaving ? "Creating..." : "Create Loan"}
-                </button>
-              </form>
-            </aside>
-
             {/* ===== LOAN TABLE ===== */}
             <section className="loan-panel loan-table-panel">
-              <div className="loan-table-head">
+              <div className="loan-list-head">
                 <div className="loan-section-heading">
-                  <h2>LoanedBook Table</h2>
+                  <h2>Loaned Books</h2>
                   <p>View, filter and manage all loan transactions.</p>
                 </div>
 
-                <div className="loan-search-box">
-                  <input
-                    value={search}
-                    onChange={handleFilterChange(setSearch)}
-                    placeholder="Search by loan ID, member, book, ISBN..."
-                  />
-                  <button type="button" aria-label="Search loans">
-                    Search
+                <div className="loan-list-actions">
+                  <button
+                    type="button"
+                    className="loan-add-button"
+                    disabled={isBusy}
+                    onClick={() => {
+                      setError("");
+                      setIsCreateOpen(true);
+                    }}
+                  >
+                    <Plus size={18} />
+                    Add New Loan
                   </button>
+
+                  <div className="loan-search-box">
+                    <input
+                      value={search}
+                      disabled={isBusy}
+                      onChange={handleFilterChange(setSearch)}
+                      placeholder="Search by loan ID, member, book, ISBN..."
+                    />
+                    <button type="button" aria-label="Search loans" disabled={isBusy}>
+                      <Search size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* ===== TABLE FILTERS ===== */}
               <div className="loan-filter-row">
-                <select value={statusFilter} onChange={handleFilterChange(setStatusFilter)}>
+                <select value={statusFilter} onChange={handleFilterChange(setStatusFilter)} disabled={isBusy}>
                   {statusFilters.map((filter) => (
                     <option key={filter.value} value={filter.value}>
                       {filter.label === "All" ? "All Status" : filter.label}
@@ -459,6 +608,7 @@ function LoanedBookManagement() {
                   <input
                     type="date"
                     value={borrowedFrom}
+                    disabled={isBusy}
                     onChange={handleFilterChange(setBorrowedFrom)}
                     aria-label="Borrowed from"
                   />
@@ -469,13 +619,19 @@ function LoanedBookManagement() {
                   <input
                     type="date"
                     value={borrowedTo}
+                    disabled={isBusy}
                     onChange={handleFilterChange(setBorrowedTo)}
                     aria-label="Borrowed to"
                   />
                 </label>
 
-                <button type="button" className="loan-secondary" onClick={resetFilters}>
+                <button type="button" className="loan-secondary" disabled={isBusy} onClick={resetFilters}>
                   Clear
+                </button>
+
+                <button type="button" className="loan-filter-button" disabled={isBusy} onClick={() => setPage(1)}>
+                  <Filter size={16} />
+                  Filter
                 </button>
               </div>
 
@@ -485,6 +641,7 @@ function LoanedBookManagement() {
                   <button
                     key={filter.value}
                     type="button"
+                    disabled={isBusy}
                     className={statusFilter === filter.value ? `active ${filter.value}` : filter.value}
                     onClick={() => {
                       setStatusFilter(filter.value);
@@ -540,15 +697,28 @@ function LoanedBookManagement() {
                           <td>{loan.ReturnDate ? formatDateForDisplay(loan.ReturnDate) : "-"}</td>
                           <td>{renderStatus(loan)}</td>
                           <td className="loan-row-actions">
-                            <button type="button" aria-label="Edit loan" title="Edit loan" onClick={() => handleEdit(loan)}>
+                            <button type="button" aria-label="Edit loan" title="Edit loan" disabled={isBusy} onClick={() => openEditModal(loan)}>
                               <Pencil size={14} />
                             </button>
                             {!loan.ReturnDate && (
-                              <button type="button" aria-label="Return loan" title="Return loan" onClick={() => handleReturn(loan)}>
+                              <button
+                                type="button"
+                                aria-label="Return loan"
+                                title="Return loan"
+                                disabled={isBusy}
+                                onClick={() => setConfirmAction({ type: "return", loan })}
+                              >
                                 <RotateCcw size={14} />
                               </button>
                             )}
-                            <button type="button" className="danger" aria-label="Delete loan" title="Delete loan" onClick={() => handleDelete(loan)}>
+                            <button
+                              type="button"
+                              className="danger"
+                              aria-label="Delete loan"
+                              title="Delete loan"
+                              disabled={isBusy}
+                              onClick={() => setConfirmAction({ type: "delete", loan })}
+                            >
                               <Trash2 size={15} />
                             </button>
                           </td>
@@ -574,30 +744,30 @@ function LoanedBookManagement() {
                 </span>
 
                 <div className="loan-page-buttons">
-                  <button type="button" disabled={page <= 1} onClick={() => setPage(1)}>
+                  <button type="button" disabled={isBusy || page <= 1} onClick={() => setPage(1)}>
                     &laquo;
                   </button>
-                  <button type="button" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
+                  <button type="button" disabled={isBusy || page <= 1} onClick={() => setPage((current) => current - 1)}>
                     &lsaquo;
                   </button>
                   <strong>{pagination.page}</strong>
                   <button
                     type="button"
-                    disabled={page >= pagination.totalPages}
+                    disabled={isBusy || page >= pagination.totalPages}
                     onClick={() => setPage((current) => current + 1)}
                   >
                     &rsaquo;
                   </button>
                   <button
                     type="button"
-                    disabled={page >= pagination.totalPages}
+                    disabled={isBusy || page >= pagination.totalPages}
                     onClick={() => setPage(pagination.totalPages)}
                   >
                     &raquo;
                   </button>
                 </div>
 
-                <select value={limit} onChange={(event) => {
+                <select value={limit} disabled={isBusy} onChange={(event) => {
                   setLimit(Number(event.target.value));
                   setPage(1);
                 }}>
@@ -610,6 +780,319 @@ function LoanedBookManagement() {
           </div>
         </section>
       </section>
+
+      {isCreateOpen && (
+        <div className="loan-modal-backdrop" role="presentation">
+          <section className="loan-modal" role="dialog" aria-modal="true" aria-labelledby="create-loan-title">
+            <div className="loan-modal-head">
+              <div className="loan-section-heading">
+                <h2 id="create-loan-title">Create New Loan</h2>
+                <p>Search and select member & book to create a new loan.</p>
+              </div>
+
+              <button
+                type="button"
+                className="loan-modal-close"
+                disabled={isBusy}
+                aria-label="Close create loan form"
+                onClick={() => {
+                  resetForm();
+                  setIsCreateOpen(false);
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {error && <div className="loan-alert error">{error}</div>}
+
+            <form className="loan-form" onSubmit={handleCreateLoan}>
+              <SearchSelector
+                label="1. Search Member"
+                query={userQuery}
+                setQuery={setUserQuery}
+                placeholder="Search by name, email or member ID..."
+                results={userResults}
+                loading={loadingUsers}
+                selected={selectedUser}
+                onSelect={(user) => {
+                  setSelectedUser(user);
+                  setUserQuery(user.FullName);
+                  setUserResults([]);
+                }}
+                onRemove={() => {
+                  setSelectedUser(null);
+                  setUserQuery("");
+                }}
+                type="user"
+              />
+
+              <SearchSelector
+                label="2. Search Book"
+                query={bookQuery}
+                setQuery={setBookQuery}
+                placeholder="Search by title, author, ISBN or book ID..."
+                results={bookResults}
+                loading={loadingBooks}
+                selected={selectedBook}
+                onSelect={(book) => {
+                  setSelectedBook(book);
+                  setBookQuery(book.Title);
+                  setBookResults([]);
+                }}
+                onRemove={() => {
+                  setSelectedBook(null);
+                  setBookQuery("");
+                }}
+                type="book"
+              />
+
+              {selectedBook && Number(selectedBook.AvailableCopies || 0) < 1 && (
+                <div className="loan-alert error">This book is currently unavailable.</div>
+              )}
+
+              <div className="loan-date-grid">
+                <label>
+                  <span className="loan-field-label">Borrow Date</span>
+                  <span className="loan-input-icon">
+                    <CalendarDays size={16} />
+                    <input type="date" value={today} readOnly />
+                  </span>
+                </label>
+                <label>
+                  <span className="loan-field-label">
+                    Due Date <small>(14 days from borrow date)</small>
+                  </span>
+                  <span className="loan-input-icon">
+                    <CalendarDays size={16} />
+                    <input type="date" value={dueDate} readOnly />
+                  </span>
+                </label>
+              </div>
+
+              <button type="submit" className="loan-primary" disabled={!canCreateLoan}>
+                <CalendarDays size={16} />
+                {isSaving ? "Creating..." : "Create Loan"}
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {isEditOpen && editLoan && (
+        <div className="loan-modal-backdrop" role="presentation">
+          <section className="loan-modal loan-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-loan-title">
+            <div className="loan-modal-head">
+              <div className="loan-section-heading">
+                <h2 id="edit-loan-title">Edit / Correct Loan Record</h2>
+                <p>Correct the selected loan while keeping the original LoanID unchanged.</p>
+              </div>
+
+              <button
+                type="button"
+                className="loan-modal-close"
+                disabled={isBusy}
+                aria-label="Close edit loan form"
+                onClick={resetEditForm}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {error && <div className="loan-alert error">{error}</div>}
+
+            <form className="loan-form" onSubmit={handleEditSubmit}>
+              <div className="loan-modal-grid">
+                <label>
+                  <span className="loan-field-label">LoanID</span>
+                  <input value={`#${editLoan.LoanID}`} readOnly />
+                </label>
+
+                <label>
+                  <span className="loan-field-label">Status</span>
+                  <select
+                    value={editForm.Status}
+                    onChange={(event) =>
+                      setEditForm((current) => ({
+                        ...current,
+                        Status: event.target.value,
+                        ReturnDate: event.target.value === "returned" ? current.ReturnDate || today : "",
+                      }))
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="returned">Returned</option>
+                  </select>
+                </label>
+              </div>
+
+              {editLoan.ReturnDate ? (
+                <ReadOnlySelectionCard label="Member" type="user" item={editSelectedUser} />
+              ) : (
+                <SearchSelector
+                  label="Member"
+                  query={editUserQuery}
+                  setQuery={setEditUserQuery}
+                  placeholder="Search member by name, email, or member ID"
+                  results={editUserResults}
+                  loading={loadingEditUsers}
+                  selected={editSelectedUser}
+                  onSelect={(user) => {
+                    setEditSelectedUser(user);
+                    setEditUserQuery(user.FullName);
+                    setEditUserResults([]);
+                  }}
+                  onRemove={() => {
+                    setEditSelectedUser(null);
+                    setEditUserQuery("");
+                  }}
+                  type="user"
+                />
+              )}
+
+              {editLoan.ReturnDate ? (
+                <ReadOnlySelectionCard label="Book" type="book" item={editSelectedBook} />
+              ) : (
+                <SearchSelector
+                  label="Book"
+                  query={editBookQuery}
+                  setQuery={setEditBookQuery}
+                  placeholder="Search book by title, ISBN, or book ID"
+                  results={editBookResults}
+                  loading={loadingEditBooks}
+                  selected={editSelectedBook}
+                  onSelect={(book) => {
+                    setEditSelectedBook(book);
+                    setEditBookQuery(book.Title);
+                    setEditBookResults([]);
+                  }}
+                  onRemove={() => {
+                    setEditSelectedBook(null);
+                    setEditBookQuery("");
+                  }}
+                  type="book"
+                />
+              )}
+
+              <div className="loan-modal-grid">
+                <label>
+                  <span className="loan-field-label">Borrow Date</span>
+                  <span className="loan-input-icon">
+                    <CalendarDays size={16} />
+                    <input
+                      type="date"
+                      value={editForm.BorrowDate}
+                      onChange={(event) => setEditForm((current) => ({ ...current, BorrowDate: event.target.value }))}
+                    />
+                  </span>
+                </label>
+
+                <label>
+                  <span className="loan-field-label">Due Date</span>
+                  <span className="loan-input-icon">
+                    <CalendarDays size={16} />
+                    <input
+                      type="date"
+                      value={editForm.DueDate}
+                      onChange={(event) => setEditForm((current) => ({ ...current, DueDate: event.target.value }))}
+                    />
+                  </span>
+                </label>
+
+                <label>
+                  <span className="loan-field-label">Return Date</span>
+                  <span className="loan-input-icon">
+                    <CalendarDays size={16} />
+                    <input
+                      type="date"
+                      value={editForm.ReturnDate}
+                      onChange={(event) =>
+                        setEditForm((current) => ({
+                          ...current,
+                          ReturnDate: event.target.value,
+                          Status: event.target.value ? "returned" : current.Status,
+                        }))
+                      }
+                    />
+                  </span>
+                </label>
+              </div>
+
+              <div className="loan-modal-actions">
+                <button type="button" className="loan-modal-cancel" onClick={resetEditForm}>
+                  Cancel
+                </button>
+                <button type="submit" className="loan-primary" disabled={isBusy}>
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {confirmAction && (
+        <div className="loan-modal-backdrop" role="presentation">
+          <section className="loan-modal loan-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-loan-title">
+            <div className="loan-modal-head">
+              <div className="loan-section-heading">
+                <h2 id="confirm-loan-title">
+                  {confirmAction.type === "return" ? "Confirm Return" : "Delete Loan Record"}
+                </h2>
+                <p>
+                  {confirmAction.type === "return"
+                    ? "Confirm before marking this book as returned."
+                    : "This action permanently removes the selected loan record."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="loan-modal-close"
+                disabled={isBusy}
+                aria-label="Close confirmation"
+                onClick={() => setConfirmAction(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className={confirmAction.type === "delete" ? "loan-warning danger" : "loan-warning"}>
+              {confirmAction.type === "delete" && !confirmAction.loan.ReturnDate ? (
+                <>
+                  <strong>Active loans cannot be deleted.</strong>
+                  <span>Return this book first, then delete the record if it was entered incorrectly.</span>
+                </>
+              ) : confirmAction.type === "delete" ? (
+                <>
+                  <strong>Delete loan #{confirmAction.loan.LoanID}?</strong>
+                  <span>This cannot be undone after the record is removed.</span>
+                </>
+              ) : (
+                <>
+                  <strong>Return {confirmAction.loan.BookTitle}?</strong>
+                  <span>This will set the return date and add the copy back to available stock.</span>
+                </>
+              )}
+            </div>
+
+            <div className="loan-modal-actions">
+              <button type="button" className="loan-modal-cancel" disabled={isBusy} onClick={() => setConfirmAction(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={confirmAction.type === "delete" ? "loan-primary danger" : "loan-primary"}
+                disabled={isBusy || (confirmAction.type === "delete" && !confirmAction.loan.ReturnDate)}
+                onClick={handleConfirmAction}
+              >
+                {isSaving ? "Working..." : confirmAction.type === "return" ? "Confirm Return" : "Delete Record"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -722,6 +1205,17 @@ function BookResult({ book, selected }) {
   );
 }
 
+function ReadOnlySelectionCard({ label, type, item }) {
+  return (
+    <div className="loan-lookup">
+      <span className="loan-readonly-label">{label}</span>
+      <div className="loan-selected-card compact">
+        {type === "user" ? <UserResult user={item} /> : <BookResult book={item} selected />}
+      </div>
+    </div>
+  );
+}
+
 // ===== STATUS BADGE =====
 function renderStatus(loan) {
   if (loan.ReturnDate) return <span className="loan-status returned">Returned</span>;
@@ -732,6 +1226,46 @@ function renderStatus(loan) {
 function formatDateForDisplay(value) {
   if (!value) return "-";
   return String(value).split("T")[0];
+}
+
+function validateEditForm({ editLoan, editForm, editSelectedUser, editSelectedBook }) {
+  if (!editLoan) return "Loan record is missing.";
+  if (!editSelectedUser?.UserID) return "Selected member must exist.";
+  if (!isTruthy(editSelectedUser.IsActive)) return "Selected member must be active.";
+  if (!editSelectedBook?.BookID) return "Selected book must exist.";
+  if (!isTruthy(editSelectedBook.IsBorrowable)) return "Selected book must be borrowable.";
+
+  const memberChanged = Number(editSelectedUser.UserID) !== Number(editLoan.UserID);
+  const bookChanged = Number(editSelectedBook.BookID) !== Number(editLoan.BookID);
+
+  if (editLoan.ReturnDate && (memberChanged || bookChanged)) {
+    return "Member and book can only be changed for active loans.";
+  }
+
+  if (editLoan.ReturnDate && editForm.Status !== "returned") {
+    return "Returned loans cannot be reopened from this edit form.";
+  }
+
+  if (bookChanged && Number(editSelectedBook.AvailableCopies || 0) < 1) {
+    return "Selected book has no available copies.";
+  }
+
+  if (!editForm.BorrowDate) return "Borrow date is required.";
+  if (!editForm.DueDate) return "Due date is required.";
+
+  if (editForm.DueDate < editForm.BorrowDate) {
+    return "Due Date must not be earlier than Borrow Date.";
+  }
+
+  if (editForm.ReturnDate && editForm.ReturnDate < editForm.BorrowDate) {
+    return "Return Date must be empty or not earlier than Borrow Date.";
+  }
+
+  return "";
+}
+
+function isTruthy(value) {
+  return value === true || value === 1 || value === "1";
 }
 
 function getInitials(name) {

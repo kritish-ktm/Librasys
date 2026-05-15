@@ -206,7 +206,9 @@ exports.deleteLoan = (req, res) => {
   LoanManager.deleteLoan(req.params.id, (err, result) => {
     if (err) {
       console.error("Delete loan error:", err);
-      return res.status(500).json({ error: "Database error while deleting loan" });
+      return res.status(err.statusCode || 500).json({
+        error: err.statusCode ? err.message : "Database error while deleting loan",
+      });
     }
 
     if (result.affectedRows === 0) {
