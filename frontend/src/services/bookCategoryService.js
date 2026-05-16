@@ -42,10 +42,16 @@ export const deleteCategory = async (id) => {
   return response.data;
 };
 
-export const getMostBorrowedBooks = () =>
-  axios.get("/api/categories/most-borrowed")
+export const getMostBorrowedBooks = async () => {
+  const response = await axios.get(`${API_URL}/most-borrowed`, authConfig());
+  return response.data;
+};
 
-export const toggleCategoryStatus = async (id, isActive) => {
-  const response = await axios.put(`${API_URL}/${id}/status`, { IsActive: isActive }, authConfig());
+export const toggleCategoryStatus = async (id, isActive, archiveReason = "") => {
+  const response = await axios.put(
+    `${API_URL}/${id}/status`,
+    { IsActive: isActive, ArchiveReason: archiveReason },
+    authConfig()
+  );
   return response.data;
 };

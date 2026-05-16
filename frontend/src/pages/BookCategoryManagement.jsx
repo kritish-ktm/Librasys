@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowUpDown, Bold, Eye, Pencil, Power, Trash2 } from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Power, Trash2 } from "lucide-react";
 import {
   getCategories,
   getMostBorrowedBooks,
@@ -15,6 +15,11 @@ import "./BookCategoryManagement.css";
 const LOADING_DELAY_MS = 3500;
 const LOADING_SWITCH_MS = 2000;
 const deweyPattern = /^\d{3}(?:\.\d{1,3})?$/;
+const archiveReasons = [
+  { value: "merged", label: "Merged" },
+  { value: "outdated", label: "Outdated" },
+  { value: "temporary hidden", label: "Temporary hidden" },
+];
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function BookCategoryManagement() {
@@ -23,6 +28,8 @@ function BookCategoryManagement() {
     Description: "",
     DeweyCode: "",
     IsActive: true,
+    CategoryColor: "#2f6b52",
+    ArchiveReason: "",
   };
 
   const [categories, setCategories] = useState([]);
@@ -46,6 +53,7 @@ function BookCategoryManagement() {
   const [detailCategory, setDetailCategory] = useState(null);
   const [detailBooks, setDetailBooks] = useState([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const showLoadingOverlay = (title, detail) => {
     setLoadingOverlay({ title, detail, phase: "large" });
@@ -94,17 +102,16 @@ useEffect(() => {
     // ⭐ MOST BORROWED MODE (NEW FEATURE)
     if (bookviewMode === "mostBorrowed") {
       try {
-        const res = await getMostBorrowedBooks();
-
-        const data = Array.isArray(res) ? res : res.data || [];
+        const data = await getMostBorrowedBooks();
 
         const mapped = data.map((b) => ({
           CategoryID: b.BookID,
           CategoryName: b.Title,
-          DeweyCode: "-",
-          Description: "Most borrowed book",
+          DeweyCode: b.ISBN || "-",
+          Description: b.CategoryName ? `Category: ${b.CategoryName}` : "Most borrowed book",
           BookCount: b.BorrowCount,
           IsActive: 1,
+          CategoryColor: "#2f6b52",
           CreatedAt: null,
           UpdatedAt: null,
         }));
@@ -178,6 +185,8 @@ useEffect(() => {
     if (!form.DeweyCode.trim()) return "Dewey Code is required.";
     if (form.DeweyCode.trim().length > 10) return "Dewey Code is too long.";
     if (!deweyPattern.test(form.DeweyCode.trim())) return "Dewey Code must look like 500 or 500.1.";
+    if (!/^#[0-9a-fA-F]{6}$/.test(form.CategoryColor)) return "Category color must look like #2f6b52.";
+    if (!form.IsActive && !form.ArchiveReason) return "Archive reason is required when category is inactive.";
     if (!form.Description.trim()) return "Description is required.";
     if (form.Description.trim().length > 200) return "Description cannot be more than 200 characters.";
     return "";
@@ -228,25 +237,27 @@ useEffect(() => {
       Description: category.Description || "",
       DeweyCode: category.DeweyCode,
       IsActive: category.IsActive,
+      CategoryColor: category.CategoryColor || "#2f6b52",
+      ArchiveReason: category.ArchiveReason || "",
     });
     setMessage("");
     setError("");
     setIsFormOpen(true);
   };
 
-  const handleToggleStatus = async (category) => {
+  const runToggleStatus = async (category, nextStatus, archiveReason = "") => {
     setBusyAction(`status-${category.CategoryID}`);
     const overlayTimer = showLoadingOverlay("Changing Status", "Updating database");
 
     try {
       await Promise.all([
-        toggleCategoryStatus(category.CategoryID, !category.IsActive),
+        toggleCategoryStatus(category.CategoryID, nextStatus, archiveReason),
         wait(LOADING_DELAY_MS),
       ]);
-      setMessage(`Category ${!category.IsActive ? "activated" : "deactivated"} successfully.`);
+      setMessage(`Category ${nextStatus ? "activated" : "deactivated"} successfully.`);
       await fetchCategories(false);
     } catch (err) {
-      setError("Failed to change status.");
+      setError(err.response?.data?.error || "Failed to change status.");
     } finally {
       clearTimeout(overlayTimer);
       setLoadingOverlay(null);
@@ -254,8 +265,22 @@ useEffect(() => {
     }
   };
 
+  const handleToggleStatus = async (category) => {
+    const nextStatus = !category.IsActive;
+    if (!nextStatus) {
+      setConfirmAction({ type: "deactivate", category, reason: "outdated" });
+      return;
+    }
+
+    await runToggleStatus(category, nextStatus);
+  };
+
   const handleDelete = async (category) => {
-    if (!window.confirm(`Delete category "${category.CategoryName}"?`)) return;
+    setConfirmAction({ type: "delete", category });
+  };
+
+  const confirmDelete = async (category) => {
+    setConfirmAction(null);
     setBusyAction(`delete-${category.CategoryID}`);
     const overlayTimer = showLoadingOverlay("Deleting", "Removing data from database");
 
@@ -270,6 +295,11 @@ useEffect(() => {
       setLoadingOverlay(null);
       setBusyAction("");
     }
+  };
+
+  const closeConfirmAction = () => {
+    if (busyAction) return;
+    setConfirmAction(null);
   };
 
   const handleSort = (key) => {
@@ -393,13 +423,18 @@ useEffect(() => {
               <button
                 key={status}
                 type="button"
-                className={statusFilter === status ? "active" : ""}
+                className={(status === "mostBorrowed" ? bookviewMode === "mostBorrowed" : statusFilter === status && bookviewMode === "all") ? "active" : ""}
                 onClick={() => {
-                  setStatusFilter(status);
+                  if (status === "mostBorrowed") {
+                    setBookviewMode("mostBorrowed");
+                  } else {
+                    setBookviewMode("all");
+                    setStatusFilter(status);
+                  }
                   setPage(1);
                 }}
               >
-                {status === "all" ? "All" : status[0].toUpperCase() + status.slice(1)}
+                {status === "mostBorrowed" ? "Most Borrowed" : status === "all" ? "All" : status[0].toUpperCase() + status.slice(1)}
               </button>
             ))}
           </div>
@@ -422,7 +457,7 @@ useEffect(() => {
                   <th>Description</th>
                   <th>
                     <button type="button" className="sort-header" onClick={() => handleSort("BookCount")}>
-                      Book Count <ArrowUpDown size={13} />
+                      {bookviewMode === "mostBorrowed" ? "Borrow Count" : "Book Count"} <ArrowUpDown size={13} />
                     </button>
                   </th>
                   <th>Status</th>
@@ -449,7 +484,16 @@ useEffect(() => {
                   paginatedCategories.map((cat) => (
                     <tr key={cat.CategoryID}>
                       <td className="book-id">{cat.CategoryID}</td>
-                      <td className="book-title">{cat.CategoryName}</td>
+                      <td className="book-title">
+                        <span className="category-identity">
+                          <span
+                            className="category-color-dot"
+                            style={{ backgroundColor: cat.CategoryColor || "#2f6b52" }}
+                            aria-hidden="true"
+                          />
+                          <span>{cat.CategoryName}</span>
+                        </span>
+                      </td>
                       <td><code>{cat.DeweyCode}</code></td>
                       <td>{cat.Description || <em>No description</em>}</td>
                       <td>
@@ -466,43 +510,49 @@ useEffect(() => {
                       <td>{formatDate(cat.CreatedAt)}</td>
                       <td>{formatDate(cat.UpdatedAt)}</td>
                       <td className="book-row-actions">
-                        <button
-                          type="button"
-                          aria-label="View category details"
-                          title="View category details"
-                          onClick={() => openCategoryDetails(cat)}
-                          disabled={Boolean(busyAction)}
-                        >
-                          <Eye size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Edit category"
-                          title="Edit category"
-                          onClick={() => handleEdit(cat)}
-                          disabled={Boolean(busyAction)}
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={cat.IsActive ? "Deactivate category" : "Activate category"}
-                          title={cat.IsActive ? "Deactivate category" : "Activate category"}
-                          className={cat.IsActive ? "switch-off" : "switch-on"}
-                          onClick={() => handleToggleStatus(cat)}
-                          disabled={Boolean(busyAction)}
-                        >
-                          <Power size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Delete category"
-                          title="Delete category"
-                          onClick={() => handleDelete(cat)}
-                          disabled={Boolean(busyAction)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {bookviewMode === "mostBorrowed" ? (
+                          <span className="book-readonly-action">Insight</span>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              aria-label="View category details"
+                              title="View category details"
+                              onClick={() => openCategoryDetails(cat)}
+                              disabled={Boolean(busyAction)}
+                            >
+                              <Eye size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Edit category"
+                              title="Edit category"
+                              onClick={() => handleEdit(cat)}
+                              disabled={Boolean(busyAction)}
+                            >
+                              <Pencil size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={cat.IsActive ? "Deactivate category" : "Activate category"}
+                              title={cat.IsActive ? "Deactivate category" : "Activate category"}
+                              className={cat.IsActive ? "switch-off" : "switch-on"}
+                              onClick={() => handleToggleStatus(cat)}
+                              disabled={Boolean(busyAction)}
+                            >
+                              <Power size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Delete category"
+                              title="Delete category"
+                              onClick={() => handleDelete(cat)}
+                              disabled={Boolean(busyAction)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -598,6 +648,27 @@ useEffect(() => {
                 />
               </div>
 
+              <div className="book-field">
+                <label>Display Color *</label>
+                <div className="book-color-row">
+                  <input
+                    type="color"
+                    name="CategoryColor"
+                    value={form.CategoryColor}
+                    onChange={handleChange}
+                    disabled={isSaving}
+                  />
+                  <input
+                    name="CategoryColor"
+                    value={form.CategoryColor}
+                    onChange={handleChange}
+                    pattern="#[0-9a-fA-F]{6}"
+                    title="Use a hex color like #2f6b52"
+                    disabled={isSaving}
+                  />
+                </div>
+              </div>
+
               <div className="book-field full">
                 <label>Description *</label>
                 <textarea
@@ -625,6 +696,26 @@ useEffect(() => {
                 />
                 <span>Active (Visible to students)</span>
               </label>
+
+              {!form.IsActive && (
+                <div className="book-field full">
+                  <label>Archive Reason *</label>
+                  <select
+                    name="ArchiveReason"
+                    value={form.ArchiveReason}
+                    onChange={handleChange}
+                    required={!form.IsActive}
+                    disabled={isSaving}
+                  >
+                    <option value="">Select reason</option>
+                    {archiveReasons.map((reason) => (
+                      <option key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="book-actions">
                 <button type="submit" className="book-primary-button" disabled={isSaving}>
@@ -663,9 +754,28 @@ useEffect(() => {
                 <dd>{detailCategory.IsActive ? "Active" : "Inactive"}</dd>
               </div>
               <div>
+                <dt>Display</dt>
+                <dd>
+                  <span className="category-identity">
+                    <span
+                      className="category-color-dot"
+                      style={{ backgroundColor: detailCategory.CategoryColor || "#2f6b52" }}
+                      aria-hidden="true"
+                    />
+                    <span>{detailCategory.CategoryColor || "#2f6b52"}</span>
+                  </span>
+                </dd>
+              </div>
+              <div>
                 <dt>Book Count</dt>
                 <dd>{Number(detailCategory.BookCount || 0)}</dd>
               </div>
+              {!detailCategory.IsActive && detailCategory.ArchiveReason && (
+                <div>
+                  <dt>Archive Reason</dt>
+                  <dd>{detailCategory.ArchiveReason}</dd>
+                </div>
+              )}
               <div>
                 <dt>Created</dt>
                 <dd>{formatDate(detailCategory.CreatedAt)}</dd>
@@ -701,6 +811,69 @@ useEffect(() => {
             <div className="book-actions">
               <button type="button" className="book-ghost-button" onClick={closeCategoryDetails}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmAction && (
+        <div className="book-modal-backdrop confirm-backdrop" role="presentation" onMouseDown={closeConfirmAction}>
+          <div
+            className="book-modal confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-confirm-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="book-section-title">
+              <p>{confirmAction.type === "delete" ? "DELETE CATEGORY" : "DEACTIVATE CATEGORY"}</p>
+              <h2 id="category-confirm-title">
+                {confirmAction.type === "delete" ? "Delete this category?" : "Deactivate this category?"}
+              </h2>
+            </div>
+
+            <p className="confirm-copy">
+              {confirmAction.type === "delete"
+                ? `Are you sure you want to delete "${confirmAction.category.CategoryName}"? This cannot be undone.`
+                : `Choose why "${confirmAction.category.CategoryName}" is being switched inactive.`}
+            </p>
+
+            {confirmAction.type === "deactivate" && (
+              <div className="archive-reason-options" role="radiogroup" aria-label="Archive reason">
+                {archiveReasons.map((reason) => (
+                  <label key={reason.value} className="archive-reason-card">
+                    <input
+                      type="radio"
+                      name="ArchiveReason"
+                      value={reason.value}
+                      checked={confirmAction.reason === reason.value}
+                      onChange={() => setConfirmAction((current) => ({ ...current, reason: reason.value }))}
+                    />
+                    <span>{reason.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="book-actions">
+              <button
+                type="button"
+                className={confirmAction.type === "delete" ? "book-danger-button" : "book-primary-button"}
+                onClick={() => {
+                  if (confirmAction.type === "delete") {
+                    confirmDelete(confirmAction.category);
+                  } else {
+                    const { category, reason } = confirmAction;
+                    setConfirmAction(null);
+                    runToggleStatus(category, false, reason);
+                  }
+                }}
+              >
+                {confirmAction.type === "delete" ? "Delete" : "Deactivate"}
+              </button>
+              <button type="button" className="book-ghost-button" onClick={closeConfirmAction}>
+                Cancel
               </button>
             </div>
           </div>
