@@ -1,53 +1,114 @@
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
-  Users,
-  ShieldCheck,
-  Eye,
-  LayoutGrid,
-  BarChart3,
+  Boxes,
   ChevronRight,
+  Clock3,
+  Compass,
+  KeyRound,
   Library,
+  LockKeyhole,
+  Search,
+  Sparkles,
+  Tags,
+  Users,
 } from "lucide-react";
+
 import Footer from "../components/Footer";
+
+import cleanCodeImg from "../assets/books/clean-code.jpg";
+import silentPatientImg from "../assets/books/silent-patient.jpg";
+import briefHistoryImg from "../assets/books/brief-history-time.jpg";
+import encyclopaediaImg from "../assets/books/encyclopaedia-reference.jpg";
+
 import "./LandingPage.css";
 
-const features = [
+const featuredBooks = [
   {
-    icon: <BookOpen size={28} />,
-    title: "Book Management",
-    description:
-      "Add, edit, and organise the entire library catalogue with ISBN tracking, category tagging, and copy counts.",
+    title: "Clean Code",
+    category: "Computer Science",
+    badge: "Available",
+    image: cleanCodeImg,
   },
   {
-    icon: <BarChart3 size={28} />,
-    title: "Loan & Fine Tracking",
-    description:
-      "Monitor active loans, due dates, and overdue fines across all borrowers from a single management view.",
+    title: "The Silent Patient",
+    category: "Fiction",
+    badge: "Available",
+    image: silentPatientImg,
   },
   {
-    icon: <ShieldCheck size={28} />,
-    title: "User & Role Management",
-    description:
-      "Manage member accounts and assign roles — guest, registered user, or librarian — with appropriate access levels.",
+    title: "A Brief History of Time",
+    category: "Science",
+    badge: "Limited Copies",
+    image: briefHistoryImg,
   },
   {
-    icon: <Eye size={28} />,
-    title: "Browse as Guest",
-    description:
-      "Visitors can explore the library catalogue freely without an account, then register to unlock borrowing.",
+    title: "Encyclopaedia Reference",
+    category: "Reference",
+    badge: "In-library only",
+    image: encyclopaediaImg,
+  },
+];
+
+const categories = [
+  {
+    icon: <BookOpen size={22} />,
+    name: "Fiction",
+    description: "Stories, novels, and imaginative writing for general reading.",
   },
   {
-    icon: <LayoutGrid size={28} />,
-    title: "Category Organisation",
+    icon: <Sparkles size={22} />,
+    name: "Science",
     description:
-      "Structure your collection with a flexible category system that makes discovery fast and intuitive.",
+      "Titles covering discovery, nature, space, and scientific thinking.",
   },
   {
-    icon: <Users size={28} />,
-    title: "Librarian Dashboard",
+    icon: <Boxes size={22} />,
+    name: "Computer Science",
     description:
-      "A dedicated control centre giving librarians instant visibility over inventory, loans, users, and fines.",
+      "Programming, systems, software design, and digital technology.",
+  },
+  {
+    icon: <Clock3 size={22} />,
+    name: "History",
+    description:
+      "Books exploring past events, people, cultures, and societies.",
+  },
+  {
+    icon: <Tags size={22} />,
+    name: "Mathematics",
+    description:
+      "Numbers, logic, problem solving, and mathematical foundations.",
+  },
+  {
+    icon: <Library size={22} />,
+    name: "Reference",
+    description:
+      "In-library resources, encyclopaedias, guides, and non-borrowable material.",
+  },
+];
+
+const benefits = [
+  {
+    icon: <KeyRound size={24} />,
+    title: "Role-Based Access",
+    description: "Separate access for members and authorised staff.",
+  },
+  {
+    icon: <Compass size={24} />,
+    title: "Organised Catalogue",
+    description: "Books are grouped clearly by category and availability.",
+  },
+  {
+    icon: <Search size={24} />,
+    title: "Smart Book Search",
+    description: "Users can find books quickly using title, ISBN, or category.",
+  },
+  {
+    icon: <Users size={24} />,
+    title: "Live Collection Insights",
+    description:
+      "Staff can view useful collection and availability information.",
   },
 ];
 
@@ -56,221 +117,162 @@ export default function LandingPage() {
 
   return (
     <div className="lp-root">
-      {/* HEADER */}
       <header className="lp-header">
         <div className="lp-header-inner">
-          <div className="lp-logo">
-            <Library size={26} className="lp-logo-icon" />
+          <button
+            className="lp-logo"
+            onClick={() => navigate("/")}
+            aria-label="LibraSys home"
+          >
+            <Library size={28} className="lp-logo-icon" />
             <span className="lp-logo-text">LibraSys</span>
-          </div>
+          </button>
 
-          <nav className="lp-nav">
+          <nav className="lp-nav" aria-label="Primary navigation">
+            <button className="lp-nav-link" onClick={() => navigate("/")}>
+              Home
+            </button>
+
             <button
-              className="lp-nav-ghost"
+              className="lp-nav-link"
               onClick={() => navigate("/browse-categories")}
             >
-              Browse Books
+              Browse
             </button>
 
-            <button
-              className="lp-nav-ghost"
-              onClick={() => navigate("/register")}
-            >
-              Register
-            </button>
-
-            <button
-              className="lp-nav-cta"
-              onClick={() => navigate("/member-login")}
-              >
-                Member Login
-            </button>
-            
-
-                <button
-              className="lp-nav-cta"
-              onClick={() => navigate("/admin-login")}
-            >
-Admin Login
-            
-            </button>
+            <a className="lp-nav-link" href="#about">
+              About
+            </a>
           </nav>
-        </div>
-      </header>
 
-      {/* HERO */}
-      <section className="lp-hero">
-        <div className="lp-hero-bg-shape" aria-hidden="true" />
-
-        <div className="lp-hero-content">
-          <span className="lp-hero-badge">
-            Library Management System
-          </span>
-
-          <h1 className="lp-hero-heading">
-            The smarter way to
-            <br />
-            <span className="lp-hero-accent">
-              run your library.
-            </span>
-          </h1>
-
-          <p className="lp-hero-sub">
-            LibraSys brings books, borrowers, and librarians
-            together in one organised, role-based platform —
-            built for real library operations.
-          </p>
-
-          <div className="lp-hero-actions">
+          <div className="lp-access">
             <button
-              className="lp-btn-primary"
+              className="lp-member-link"
               onClick={() => navigate("/member-login")}
             >
               Member Login
-              <ChevronRight size={18} />
             </button>
 
             <button
-              className="lp-btn-secondary"
+              className="lp-staff-button"
               onClick={() => navigate("/admin-login")}
             >
-              Admin Login
+              <LockKeyhole size={16} />
+              Staff Access
             </button>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section className="lp-hero">
+          <div className="lp-hero-image" aria-hidden="true" />
+          <div className="lp-hero-overlay" aria-hidden="true" />
+          <div className="lp-hero-glow" aria-hidden="true" />
+          <div className="lp-dust" aria-hidden="true" />
+
+          <div className="lp-hero-content">
+            <span className="lp-hero-kicker">Modern library management</span>
+
+            <h1 className="lp-hero-heading">
+              The smarter way to <span>run your library.</span>
+            </h1>
+
+            <p className="lp-hero-sub">
+              LibraSys brings books, borrowers, and librarians together in one
+              organised, role-based platform — built for real library
+              operations.
+            </p>
 
             <button
-              className="lp-btn-secondary"
+              className="lp-btn-primary"
               onClick={() => navigate("/browse-categories")}
             >
               Browse as Guest
+              <ChevronRight size={19} />
             </button>
+
+            <p className="lp-signup-line">
+              <span>New here?</span>{" "}
+              <button onClick={() => navigate("/register")}>
+                Create an account
+              </button>
+            </p>
+          </div>
+        </section>
+
+        <section className="lp-section lp-featured" aria-labelledby="featured-books">
+          <div className="lp-section-heading">
+            <span className="lp-section-label">Selected collection</span>
+            <h2 id="featured-books">Featured Books</h2>
+            <p>Explore selected titles from the LibraSys collection.</p>
           </div>
 
-          <p className="lp-hero-hint">
-            New here?{" "}
-            <span
-              className="lp-hero-link"
-              onClick={() => navigate("/register")}
-            >
-              Create an account
-            </span>
-          </p>
-        </div>
+          <div className="lp-books-grid">
+            {featuredBooks.map((book) => (
+              <article className="lp-book-card" key={book.title}>
+                <div className="lp-book-cover">
+                  <img
+                    src={book.image}
+                    alt={`${book.title} book cover`}
+                    className="lp-book-cover-img"
+                  />
+                </div>
 
-        <div className="lp-hero-visual" aria-hidden="true">
-          <div className="lp-book-stack">
-            <div className="lp-book lp-book-1">
-              <BookOpen size={20} />
-            </div>
-
-            <div className="lp-book lp-book-2">
-              <Library size={22} />
-            </div>
-
-            <div className="lp-book lp-book-3">
-              <LayoutGrid size={18} />
-            </div>
+                <div className="lp-book-info">
+                  <span className="lp-book-badge">{book.badge}</span>
+                  <h3>{book.title}</h3>
+                  <p>{book.category}</p>
+                </div>
+              </article>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* USER FLOWS */}
-      <section className="lp-flows">
-        <div className="lp-flows-inner">
-          {[
-            {
-              role: "Guest",
-              path: "Landing Page → Browse Books & Categories",
-              color: "flow-guest",
-            },
-            {
-              role: "Registered User",
-              path: "Landing → Login / Register → Profile & Browse",
-              color: "flow-user",
-            },
-            {
-              role: "Librarian / Admin",
-              path: "Landing → Login → Dashboard & Management",
-              color: "flow-admin",
-            },
-          ].map((f) => (
-            <div
-              className={`lp-flow-card ${f.color}`}
-              key={f.role}
-            >
-              <span className="lp-flow-role">
-                {f.role}
-              </span>
+        <section
+          className="lp-section lp-categories"
+          aria-labelledby="browse-category"
+        >
+          <div className="lp-section-heading">
+            <span className="lp-section-label">Organised discovery</span>
+            <h2 id="browse-category">Browse by Category</h2>
+            <p>Find books faster by exploring organised library sections.</p>
+          </div>
 
-              <span className="lp-flow-path">
-                {f.path}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
+          <div className="lp-category-grid">
+            {categories.map((category) => (
+              <article className="lp-category-card" key={category.name}>
+                <div className="lp-category-icon">{category.icon}</div>
+                <h3>{category.name}</h3>
+                <p>{category.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      {/* FEATURES */}
-      <section className="lp-features">
-        <div className="lp-section-label">
-          What LibraSys Offers
-        </div>
-
-        <h2 className="lp-features-heading">
-          Everything a library needs,
-          <br />
-          nothing it doesn't.
-        </h2>
-
-        <div className="lp-features-grid">
-          {features.map((f) => (
-            <div
-              className="lp-feature-card"
-              key={f.title}
-            >
-              <div className="lp-feature-icon">
-                {f.icon}
-              </div>
-
-              <h3 className="lp-feature-title">
-                {f.title}
-              </h3>
-
-              <p className="lp-feature-desc">
-                {f.description}
+        <section className="lp-why" id="about" aria-labelledby="why-librasys">
+          <div className="lp-why-inner">
+            <div className="lp-section-heading lp-section-heading--dark">
+              <span className="lp-section-label">Why LibraSys</span>
+              <h2 id="why-librasys">Built for real library operations</h2>
+              <p>
+                LibraSys keeps library access simple for members while giving
+                staff the tools they need to manage records securely.
               </p>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* CTA STRIP */}
-      <section className="lp-cta-strip">
-        <h2 className="lp-cta-heading">
-          Ready to get started?
-        </h2>
-
-        <p className="lp-cta-sub">
-          Log in to access your dashboard,
-          or explore the catalogue as a guest.
-        </p>
-
-        <div className="lp-hero-actions">
-          <button
-            className="lp-btn-primary"
-            onClick={() => navigate("/login")}
-          >
-            Login to Get Started
-            <ChevronRight size={18} />
-          </button>
-
-          <button
-            className="lp-btn-secondary lp-btn-secondary--light"
-            onClick={() => navigate("/browse-categories")}
-          >
-            Browse as Guest
-          </button>
-        </div>
-      </section>
+            <div className="lp-benefits-grid">
+              {benefits.map((benefit) => (
+                <article className="lp-benefit-card" key={benefit.title}>
+                  <div className="lp-benefit-icon">{benefit.icon}</div>
+                  <h3>{benefit.title}</h3>
+                  <p>{benefit.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </div>

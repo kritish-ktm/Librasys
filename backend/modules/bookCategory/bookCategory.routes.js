@@ -5,6 +5,8 @@ const { auth, requireLibrarian } = require("../../middleware/auth.middleware");
 
 router.get("/active", controller.getActiveCategories);
 router.get("/", auth, requireLibrarian, controller.getCategories);
+router.get("/:id/books", auth, requireLibrarian, controller.getCategoryBooks);
+router.get("//most-borrowed", controller.getMostBorrowedBooks);
 router.get("/:id", auth, requireLibrarian, controller.getCategoryById);
 router.post("/", auth, requireLibrarian, controller.createCategory);
 router.put("/:id/status", auth, requireLibrarian, controller.toggleStatus);

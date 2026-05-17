@@ -68,143 +68,204 @@ function CustomerBookCategories() {
 
   const goBack = () => {
     if (role === "Librarian") navigate("/dashboard");
-    else if (role === "Member") navigate("/profile");
+    else if (role === "Member") navigate("/MemberDashboard");
     else navigate("/");
   };
 
-  return (
-    <div className="customer-category-page">
-      {/* Hero Header */}
-      <div className="customer-category-hero">
+ return (
+  <div className="customer-catalog-page">
+    <main className="customer-catalog-main">
+
+      {/* HERO */}
+      <div className="book-hero">
+        <div>
+          <p className="book-kicker">LIBRASYS CATALOGUE</p>
+          <h1>Browse Book Categories</h1>
+          <p className="book-hero-text">
+            Explore books by Dewey classification and subject areas
+          </p>
+        </div>
+
         <div className="customer-category-actions">
-          <button onClick={goBack}>
-            <i className="bi bi-arrow-left"></i> Back
+          <button onClick={goBack} className="book-ghost-button">
+            ← Back
           </button>
 
           {role === "Librarian" && (
-            <button onClick={() => navigate("/categories")}>
-              <i className="bi bi-gear"></i> Manage Categories
+            <button
+              onClick={() => navigate("/categories")}
+              className="book-primary-button"
+            >
+              Manage Categories
             </button>
           )}
         </div>
-
-        <p className="customer-kicker">LIBRASYS CATALOGUE</p>
-        <h1>Browse by Category</h1>
-        <p>Discover books by subject and Dewey classification</p>
       </div>
 
-      {/* Search Bar */}
-      <div className="customer-category-toolbar">
-        <div className="search-container">
-          <i className="bi bi-search"></i>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search categories, Dewey code, or description..."
-          />
+      {/* STATS */}
+      <section className="category-stats">
+        <article className="category-stat-card">
+          <span>
+            <small>Total Categories</small>
+            <strong>{categories.length}</strong>
+            <em>Available collections</em>
+          </span>
+        </article>
+
+        <article className="category-stat-card">
+          <span>
+            <small>Total Books</small>
+            <strong>{books.length}</strong>
+            <em>Books in catalogue</em>
+          </span>
+        </article>
+
+        <article className="category-stat-card">
+          <span>
+            <small>Visible Categories</small>
+            <strong>{visibleCategories.length}</strong>
+            <em>Filtered results</em>
+          </span>
+        </article>
+      </section>
+
+      {/* SEARCH */}
+      <div className="book-table-panel">
+        <div className="book-table-header">
+          <div>
+            <h2>Library Categories</h2>
+            <p>Browse and explore available categories</p>
+          </div>
+
+          <div className="book-table-tools">
+            <input
+              type="text"
+              className="book-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search categories..."
+            />
+          </div>
         </div>
-      </div>
 
-      {error && <div className="customer-alert error">{error}</div>}
-
-      {loading ? (
-        <div className="customer-alert">Loading collections...</div>
-      ) : (
+        {/* MAIN LAYOUT */}
         <div className="customer-category-layout">
-          {/* Left Sidebar - Categories */}
-          <aside className="customer-category-list">
-            <div className="customer-section-title">
-              <h2>Active Categories ({visibleCategories.length})</h2>
-            </div>
 
-            {visibleCategories.length === 0 ? (
-              <div className="customer-empty">No categories found.</div>
-            ) : (
-              visibleCategories.map((category) => (
-                <button
-                  key={category.CategoryID}
-                  className={`customer-category-item ${
-                    selectedCategoryId === category.CategoryID ? "active" : ""
-                  }`}
-                  onClick={() => setSelectedCategoryId(category.CategoryID)}
-                >
-                  <span className="customer-dewey">{category.DeweyCode}</span>
-                  <div>
+          {/* LEFT */}
+          <aside className="customer-category-list">
+            {visibleCategories.map((category) => (
+              <button
+                key={category.CategoryID}
+                className={`customer-category-item ${
+                  selectedCategoryId === category.CategoryID ? "active" : ""
+                }`}
+                style={getCategoryStyle(category)}
+                onClick={() => setSelectedCategoryId(category.CategoryID)}
+              >
+                <div>
+                  <span className="customer-category-title">
                     <strong>{category.CategoryName}</strong>
-                    <small>{getDeweyGroup(category.DeweyCode)}</small>
-                  </div>
-                  <span className="customer-book-count">
-                    <i className="bi bi-journal-text"></i>
-                    {category.BookCount || 0}
                   </span>
-                </button>
-              ))
-            )}
+                  <small>{getDeweyGroup(category.DeweyCode)}</small>
+                </div>
+
+                <span className="book-count-badge">
+                  {category.BookCount || 0}
+                </span>
+              </button>
+            ))}
           </aside>
 
-          {/* Right Side - Category Details + Books */}
-          <section className="customer-category-detail">
+          {/* RIGHT */}
+          <section className="customer-category-detail" style={selectedCategory ? getCategoryStyle(selectedCategory) : undefined}>
             {selectedCategory ? (
               <>
                 <div className="customer-detail-header">
                   <div>
-                    <p className="customer-kicker">
+                    <p className="book-kicker">
                       {getDeweyGroup(selectedCategory.DeweyCode)}
                     </p>
-                    <h2>{selectedCategory.CategoryName}</h2>
+
+                    <h2>
+                      {selectedCategory.CategoryName}
+                    </h2>
+
                     <p>
                       {selectedCategory.Description ||
-                        "No description available for this category."}
+                        "No description available"}
                     </p>
                   </div>
+
                   <code className="dewey-code">
-                    <i className="bi bi-bookmark-fill"></i> {selectedCategory.DeweyCode}
+                    {selectedCategory.DeweyCode}
                   </code>
                 </div>
 
-                <div className="customer-book-panel">
-                  <div className="customer-section-title">
-                    <h3>
-                      <i className="bi bi-book"></i> Books in this Category ({selectedBooks.length})
-                    </h3>
-                  </div>
+                <div className="book-table-wrap">
+                  <table className="book-table">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>ISBN</th>
+                        <th>Copies</th>
+                      </tr>
+                    </thead>
 
-                  {selectedBooks.length === 0 ? (
-                    <div className="customer-empty">
-                      No books available in this category yet.
-                    </div>
-                  ) : (
-                    <div className="customer-book-list">
-                      {selectedBooks.map((book) => (
-                        <article
-                          key={book.BookID}
-                          className="customer-book-row"
-                          onClick={() => navigate(`/book/${book.BookID}`)}
-                        >
-                          <div>
-                            <h4>{book.Title}</h4>
-                            <p>
-                              <i className="bi bi-upc-scan"></i> ISBN {book.ISBN}
-                            </p>
-                          </div>
-                          <span>
-                            <i className="bi bi-layers"></i>
-                            {book.AvailableCopies || 0} copies
-                          </span>
-                        </article>
-                      ))}
-                    </div>
-                  )}
+                    <tbody>
+                      {selectedBooks.length > 0 ? (
+                        selectedBooks.map((book) => (
+                          <tr
+                            key={book.BookID}
+                            onClick={() => navigate(`/book/${book.BookID}`)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <td>{book.Title}</td>
+                            <td>{book.ISBN}</td>
+                            <td>{book.AvailableCopies || 0}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="3" className="book-empty">
+                            No books available
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </>
             ) : (
-              <div className="customer-empty">Select a category to view books.</div>
+              <div className="book-empty">
+                Select a category
+              </div>
             )}
           </section>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    </main>
+  </div>
+);
+}
+
+function getCategoryStyle(category) {
+  const color = /^#[0-9a-fA-F]{6}$/.test(category?.CategoryColor || "")
+    ? category.CategoryColor
+    : "#d97706";
+
+  return {
+    "--category-color": color,
+    "--category-soft": hexToRgba(color, 0.12),
+    "--category-border": hexToRgba(color, 0.36),
+  };
+}
+
+function hexToRgba(hex, alpha) {
+  const value = hex.replace("#", "");
+  const red = parseInt(value.slice(0, 2), 16);
+  const green = parseInt(value.slice(2, 4), 16);
+  const blue = parseInt(value.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
 export default CustomerBookCategories;

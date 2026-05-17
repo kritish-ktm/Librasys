@@ -1,4 +1,5 @@
 const model = require("./bookCategory.model");
+const deweyPattern = /^\d{3}(?:\.\d{1,3})?$/;
 
 exports.getCategories = (req, res) => {
   const { search = "", status = "all", sortBy = "CategoryName", sortDirection = "asc" } = req.query;
@@ -22,6 +23,8 @@ exports.getActiveCategories = (req, res) => {
   });
 };
 
+
+
 exports.getCategoryById = (req, res) => {
   const { id } = req.params;
   model.getById(id, (err, results) => {
@@ -36,8 +39,22 @@ exports.getCategoryById = (req, res) => {
   });
 };
 
+exports.getCategoryBooks = (req, res) => {
+  const { id } = req.params;
+
+  model.getBooksByCategory(id, (err, results) => {
+    if (err) {
+      console.error("Get category books error:", err);
+      return res.status(500).json({ error: "Database error while fetching category books" });
+    }
+
+    res.json(results);
+  });
+};
+
 exports.createCategory = (req, res) => {
   const { CategoryName, DeweyCode, Description, IsActive } = req.body;
+  const trimmedDescription = Description ? Description.trim() : "";
 
   if (!CategoryName || CategoryName.trim() === "") {
     return res.status(400).json({ error: "Category name is required" });
@@ -51,15 +68,23 @@ exports.createCategory = (req, res) => {
   if (DeweyCode.trim().length > 10) {
     return res.status(400).json({ error: "Dewey Code cannot exceed 10 characters" });
   }
-  if (Description && Description.length > 200) {
+  if (!deweyPattern.test(DeweyCode.trim())) {
+    return res.status(400).json({ error: "Dewey Code must look like 500 or 500.1" });
+  }
+  if (!trimmedDescription) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+  if (trimmedDescription.length > 200) {
     return res.status(400).json({ error: "Description cannot exceed 200 characters" });
   }
 
   const data = {
     CategoryName: CategoryName.trim(),
     DeweyCode: DeweyCode.trim(),
-    Description: Description ? Description.trim() : null,
+    Description: trimmedDescription,
     IsActive: IsActive !== undefined ? IsActive : true,
+    CreatedBy: req.user?.id || null,
+    UpdatedBy: req.user?.id || null,
   };
 
   model.create(data, (err, result) => {
@@ -80,6 +105,7 @@ exports.updateCategory = (req, res) => {
   const { CategoryName, DeweyCode, Description, IsActive, status } = req.body;
 
   const isActiveValue = IsActive !== undefined ? IsActive : (status !== undefined ? status : true);
+  const trimmedDescription = Description ? Description.trim() : "";
 
   if (!CategoryName || CategoryName.trim() === "") {
     return res.status(400).json({ error: "Category name is required" });
@@ -93,15 +119,22 @@ exports.updateCategory = (req, res) => {
   if (DeweyCode.trim().length > 10) {
     return res.status(400).json({ error: "Dewey Code cannot exceed 10 characters" });
   }
-  if (Description && Description.length > 200) {
+  if (!deweyPattern.test(DeweyCode.trim())) {
+    return res.status(400).json({ error: "Dewey Code must look like 500 or 500.1" });
+  }
+  if (!trimmedDescription) {
+    return res.status(400).json({ error: "Description is required" });
+  }
+  if (trimmedDescription.length > 200) {
     return res.status(400).json({ error: "Description cannot exceed 200 characters" });
   }
 
   const data = {
     CategoryName: CategoryName.trim(),
     DeweyCode: DeweyCode.trim(),
-    Description: Description ? Description.trim() : null,
+    Description: trimmedDescription,
     IsActive: isActiveValue,
+    UpdatedBy: req.user?.id || null,
   };
 
   model.update(id, data, (err, result) => {
@@ -128,7 +161,7 @@ exports.toggleStatus = (req, res) => {
     return res.status(400).json({ error: "IsActive value is required" });
   }
 
-  model.updateStatus(id, IsActive, (err, result) => {
+  model.updateStatus(id, IsActive, req.user?.id || null, (err, result) => {
     if (err) {
       console.error("Toggle status error:", err);
       return res.status(500).json({ error: "Database error while updating status" });
@@ -169,5 +202,18 @@ exports.deleteCategory = (req, res) => {
       }
       res.json({ message: "Category deleted successfully" });
     });
+  });
+};
+
+exports.getMostBorrowedBooks = (req, res) => {
+  model.getMostBorrowedBooks((err, results) => {
+    if (err) {
+      console.error("Most borrowed books error:", err);
+      return res.status(500).json({
+        error: "Database error while fetching most borrowed books"
+      });
+    }
+
+    res.json(results);
   });
 };

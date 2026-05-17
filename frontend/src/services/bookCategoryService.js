@@ -22,6 +22,11 @@ export const getCategoryById = async (id) => {
   return response.data;
 };
 
+export const getCategoryBooks = async (id) => {
+  const response = await axios.get(`${API_URL}/${id}/books`, authConfig());
+  return response.data;
+};
+
 export const addCategory = async (data) => {
   const response = await axios.post(API_URL, data, authConfig());
   return response.data;
@@ -37,7 +42,16 @@ export const deleteCategory = async (id) => {
   return response.data;
 };
 
-export const toggleCategoryStatus = async (id, isActive) => {
-  const response = await axios.put(`${API_URL}/${id}/status`, { IsActive: isActive }, authConfig());
+export const getMostBorrowedBooks = async () => {
+  const response = await axios.get(`${API_URL}/most-borrowed`, authConfig());
+  return response.data;
+};
+
+export const toggleCategoryStatus = async (id, isActive, archiveReason = "") => {
+  const response = await axios.put(
+    `${API_URL}/${id}/status`,
+    { IsActive: isActive, ArchiveReason: archiveReason },
+    authConfig()
+  );
   return response.data;
 };

@@ -309,41 +309,242 @@ const create = ({ UserID, BookID }, callback) => {
             return;
           }
 
-          const loanSql = `
-            INSERT INTO LoanedBook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
-            VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, 0)
-          `;
+          connection.query(
+            "SELECT LoanID FROM LoanedBook WHERE UserID = ? AND BookID = ? AND ReturnDate IS NULL LIMIT 1",
+            [UserID, BookID],
+            (duplicateError, duplicates) => {
+              if (duplicateError) {
+                rollback(connection, duplicateError, callback);
+                return;
+              }
 
-          connection.query(loanSql, [UserID, BookID], (loanError, result) => {
-            if (loanError) {
-              rollback(connection, loanError, callback);
-              return;
-            }
+              if (duplicates.length) {
+                rollback(connection, validationError("This member already has an active loan for this book"), callback);
+                return;
+              }
 
-            connection.query(
-              "UPDATE book SET AvailableCopies = AvailableCopies - 1 WHERE BookID = ?",
-              [BookID],
-              (updateError) => {
-                if (updateError) {
-                  rollback(connection, updateError, callback);
+              const loanSql = `
+                INSERT INTO LoanedBook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
+                VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, 0)
+              `;
+
+              connection.query(loanSql, [UserID, BookID], (loanError, result) => {
+                if (loanError) {
+                  rollback(connection, loanError, callback);
                   return;
                 }
 
-                connection.commit((commitError) => {
-                  connection.release();
+                connection.query(
+                  "UPDATE book SET AvailableCopies = AvailableCopies - 1 WHERE BookID = ?",
+                  [BookID],
+                  (updateError) => {
+                    if (updateError) {
+                      rollback(connection, updateError, callback);
+                      return;
+                    }
 
-                  if (commitError) {
-                    callback(commitError);
+                    connection.commit((commitError) => {
+                      connection.release();
+
+                      if (commitError) {
+                        callback(commitError);
+                        return;
+                      }
+
+                      callback(null, result);
+                    });
+                  }
+                );
+              });
+            }
+          );
+        });
+      });
+    });
+  });
+};
+
+// ===== UPDATE LOAN =====
+const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callback) => {
+  db.getConnection((connectionError, connection) => {
+    if (connectionError) {
+      callback(connectionError);
+      return;
+    }
+
+    connection.beginTransaction((transactionError) => {
+      if (transactionError) {
+        connection.release();
+        callback(transactionError);
+        return;
+      }
+
+      connection.query(
+        "SELECT LoanID, UserID, BookID, ReturnDate FROM LoanedBook WHERE LoanID = ? FOR UPDATE",
+        [id],
+        (loanError, loans) => {
+          if (loanError) {
+            rollback(connection, loanError, callback);
+            return;
+          }
+
+          if (!loans.length) {
+            rollback(connection, notFoundError("Loan record not found"), callback);
+            return;
+          }
+
+          const currentLoan = loans[0];
+          const newUserId = Number(UserID);
+          const newBookId = Number(BookID);
+          const memberChanged = Number(currentLoan.UserID) !== newUserId;
+          const bookChanged = Number(currentLoan.BookID) !== newBookId;
+          const isAlreadyReturned = Boolean(currentLoan.ReturnDate);
+
+          if (isAlreadyReturned && (memberChanged || bookChanged)) {
+            rollback(connection, validationError("Member and book can only be changed for active loans"), callback);
+            return;
+          }
+
+          connection.query(
+            "SELECT UserID, Role, IsActive FROM user WHERE UserID = ? FOR UPDATE",
+            [newUserId],
+            (userError, users) => {
+              if (userError) {
+                rollback(connection, userError, callback);
+                return;
+              }
+
+              if (!users.length) {
+                rollback(connection, validationError("Selected member does not exist"), callback);
+                return;
+              }
+
+              if (users[0].Role !== "Member" || !users[0].IsActive) {
+                rollback(connection, validationError("Selected member must be an active member"), callback);
+                return;
+              }
+
+              connection.query(
+                "SELECT BookID, AvailableCopies, IsBorrowable FROM book WHERE BookID = ? FOR UPDATE",
+                [newBookId],
+                (bookError, books) => {
+                  if (bookError) {
+                    rollback(connection, bookError, callback);
                     return;
                   }
 
-                  callback(null, result);
-                });
-              }
-            );
-          });
-        });
-      });
+                  if (!books.length) {
+                    rollback(connection, validationError("Selected book does not exist"), callback);
+                    return;
+                  }
+
+                  const newBook = books[0];
+
+                  if (!newBook.IsBorrowable) {
+                    rollback(connection, validationError("Selected book must be borrowable"), callback);
+                    return;
+                  }
+
+                  if (bookChanged && Number(newBook.AvailableCopies) < 1) {
+                    rollback(connection, validationError("Selected book has no available copies"), callback);
+                    return;
+                  }
+
+                  connection.query(
+                    `
+                      SELECT LoanID
+                      FROM LoanedBook
+                      WHERE LoanID <> ?
+                        AND UserID = ?
+                        AND BookID = ?
+                        AND ReturnDate IS NULL
+                      LIMIT 1
+                    `,
+                    [id, newUserId, newBookId],
+                    (duplicateError, duplicates) => {
+                      if (duplicateError) {
+                        rollback(connection, duplicateError, callback);
+                        return;
+                      }
+
+                      if (duplicates.length && !ReturnDate) {
+                        rollback(connection, validationError("This member already has an active loan for this book"), callback);
+                        return;
+                      }
+
+                      const updateSql = `
+                        UPDATE LoanedBook
+                        SET UserID = ?, BookID = ?, BorrowDate = ?, DueDate = ?, ReturnDate = ?,
+                            IsOverdue = CASE WHEN ? IS NULL AND CURDATE() > ? THEN 1 ELSE 0 END
+                        WHERE LoanID = ?
+                      `;
+                      const updateValues = [
+                        newUserId,
+                        newBookId,
+                        BorrowDate,
+                        DueDate,
+                        ReturnDate || null,
+                        ReturnDate || null,
+                        DueDate,
+                        id,
+                      ];
+
+                      connection.query(updateSql, updateValues, (updateError, result) => {
+                        if (updateError) {
+                          rollback(connection, updateError, callback);
+                          return;
+                        }
+
+                        const finish = () => {
+                          connection.commit((commitError) => {
+                            connection.release();
+
+                            if (commitError) {
+                              callback(commitError);
+                              return;
+                            }
+
+                            callback(null, result);
+                          });
+                        };
+
+                        if (!bookChanged) {
+                          finish();
+                          return;
+                        }
+
+                        connection.query(
+                          "UPDATE book SET AvailableCopies = AvailableCopies + 1 WHERE BookID = ?",
+                          [currentLoan.BookID],
+                          (oldBookError) => {
+                            if (oldBookError) {
+                              rollback(connection, oldBookError, callback);
+                              return;
+                            }
+
+                            connection.query(
+                              "UPDATE book SET AvailableCopies = AvailableCopies - 1 WHERE BookID = ?",
+                              [newBookId],
+                              (newBookError) => {
+                                if (newBookError) {
+                                  rollback(connection, newBookError, callback);
+                                  return;
+                                }
+
+                                finish();
+                              }
+                            );
+                          }
+                        );
+                      });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
     });
   });
 };
@@ -351,22 +552,6 @@ const create = ({ UserID, BookID }, callback) => {
 // ===== CREATE LOAN FOR MEMBER =====
 const createForUser = (UserID, BookID, callback) => {
   create({ UserID, BookID }, callback);
-};
-
-// ===== UPDATE LOAN =====
-const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callback) => {
-  const sql = `
-    UPDATE LoanedBook
-    SET UserID = ?, BookID = ?, BorrowDate = ?, DueDate = ?, ReturnDate = ?,
-        IsOverdue = CASE WHEN ? IS NULL AND CURDATE() > ? THEN 1 ELSE 0 END
-    WHERE LoanID = ?
-  `;
-
-  db.query(
-    sql,
-    [UserID, BookID, BorrowDate, DueDate, ReturnDate || null, ReturnDate || null, DueDate, id],
-    callback
-  );
 };
 
 // ===== RETURN BOOK =====
@@ -529,7 +714,24 @@ const updateOverdueFlags = (callback) => {
 
 // ===== DELETE LOAN =====
 const remove = (id, callback) => {
-  db.query("DELETE FROM LoanedBook WHERE LoanID = ?", [id], callback);
+  db.query("SELECT LoanID, ReturnDate FROM LoanedBook WHERE LoanID = ?", [id], (selectError, loans) => {
+    if (selectError) {
+      callback(selectError);
+      return;
+    }
+
+    if (!loans.length) {
+      callback(null, { affectedRows: 0 });
+      return;
+    }
+
+    if (!loans[0].ReturnDate) {
+      callback(validationError("Active loans cannot be deleted. Return the book first."));
+      return;
+    }
+
+    db.query("DELETE FROM LoanedBook WHERE LoanID = ?", [id], callback);
+  });
 };
 
 function rollback(connection, error, callback) {

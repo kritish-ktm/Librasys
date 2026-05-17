@@ -7,17 +7,9 @@ export default defineConfig({
     host: 'localhost',
     port: 5001,
     strictPort: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('Cache-Control', 'no-cache');
-          });
-        }
-      }
-    }
-  }
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws',
+    },
+  },
 })
