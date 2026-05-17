@@ -240,23 +240,11 @@
 }
 
 .customer-category-icon {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--category-color);
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 900;
+  display: none;
 }
 
 .customer-category-icon.large {
-  width: 36px;
-  height: 36px;
-  flex-basis: 36px;
-  font-size: 11px;
+  display: none;
 }
 
 .customer-category-item strong {
@@ -267,7 +255,7 @@
 
 .customer-category-item small {
   display: block;
-  margin: 5px 0 0 37px;
+  margin: 5px 0 0;
   color: var(--category-color);
   font-size: 11px;
   font-weight: 700;

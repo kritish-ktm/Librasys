@@ -164,9 +164,6 @@ function CustomerBookCategories() {
               >
                 <div>
                   <span className="customer-category-title">
-                    <span className="customer-category-icon" aria-hidden="true">
-                      {getIconLabel(category.CategoryIcon)}
-                    </span>
                     <strong>{category.CategoryName}</strong>
                   </span>
                   <small>{getDeweyGroup(category.DeweyCode)}</small>
@@ -190,9 +187,6 @@ function CustomerBookCategories() {
                     </p>
 
                     <h2>
-                      <span className="customer-category-icon large" aria-hidden="true">
-                        {getIconLabel(selectedCategory.CategoryIcon)}
-                      </span>
                       {selectedCategory.CategoryName}
                     </h2>
 
@@ -272,10 +266,6 @@ function hexToRgba(hex, alpha) {
   const green = parseInt(value.slice(2, 4), 16);
   const blue = parseInt(value.slice(4, 6), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-}
-
-function getIconLabel(icon = "book") {
-  return String(icon).slice(0, 2).toUpperCase();
 }
 
 export default CustomerBookCategories;
