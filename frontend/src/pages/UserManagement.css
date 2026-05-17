@@ -1,0 +1,539 @@
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  width: 100%;
+  background: #f5efe4;
+  /* Removed overflow-x: hidden — it was masking the real overflow problem */
+}
+
+/* ─── Page Layout ────────────────────────────────────────────────────────── */
+.um-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: #f5efe4;
+  color: #2b211b;
+}
+
+/* ─── Main Content Area ──────────────────────────────────────────────────── */
+.um-main {
+  flex: 1;
+  min-width: 0;          /* FIXED: prevents flex child from overflowing its container */
+  min-height: 100vh;
+  background: #f5efe4;
+  padding: 42px 40px;
+  box-sizing: border-box;
+  /* Removed width: 100% — flex: 1 already handles sizing; width: 100% caused overflow */
+}
+
+/* ─── Page Heading ───────────────────────────────────────────────────────── */
+.um-page-header {
+  width: 100%;
+  /* Removed max-width: 1240px — let it fill the available space naturally */
+  margin-bottom: 30px;
+}
+
+.um-breadcrumb {
+  color: #9a6b3d;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.um-page-title {
+  font-size: 32px;
+  line-height: 1.12;
+  font-weight: 900;
+  margin: 0;
+  color: #2b211b;
+}
+
+.um-page-sub {
+  font-size: 15px;
+  line-height: 1.45;
+  color: #725842;
+  margin-top: 10px;
+  max-width: 760px;
+}
+
+/* ─── Page-level Error Banner ────────────────────────────────────────────── */
+.um-error-banner {
+  width: 100%;
+  /* Removed max-width: 1240px — matches page-header fix above */
+  margin-bottom: 22px;
+}
+
+/* ─── Shared Message Styles ──────────────────────────────────────────────── */
+.um-error-banner,
+.um-panel-error,
+.um-panel-success {
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.um-error-banner,
+.um-panel-error {
+  background: #fff0e8;
+  color: #b13a18;
+  border: 1px solid #f0b696;
+}
+
+.um-panel-error,
+.um-panel-success {
+  margin-bottom: 16px;
+}
+
+.um-panel-success {
+  background: #e1f8e9;
+  color: #08763a;
+  border: 1px solid #bde8cb;
+}
+
+/* ─── Main Table Card ────────────────────────────────────────────────────── */
+.um-table-card {
+  width: 100%;
+  /* Removed max-width: 1240px — was causing the card to overflow past the sidebar */
+  background: #fffdfa;
+  border: 1px solid #ead8bd;
+  border-radius: 14px;
+  padding: 26px;
+  box-shadow: 0 10px 25px rgba(62, 44, 31, 0.08);
+  box-sizing: border-box;
+}
+
+/* ─── Top Bar (title + toolbar) ──────────────────────────────────────────── */
+.um-table-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.um-section-label,
+.um-panel-label {
+  color: #5f6f4b;
+  font-weight: 900;
+  letter-spacing: 2px;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin: 0 0 7px;
+}
+
+.um-table-title {
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 0;
+  font-weight: 900;
+  color: #2b211b;
+}
+
+.um-showing {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: #4f3b2d;
+}
+
+/* ─── Toolbar (search + filter + add button) ─────────────────────────────── */
+.um-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.um-search,
+.um-role-select {
+  height: 44px;
+  border: 2px solid #ead8bd;
+  border-radius: 8px;
+  background: #fff9ee;
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.um-search {
+  width: 300px;
+}
+
+.um-role-select {
+  width: 150px;
+}
+
+.um-search:focus,
+.um-role-select:focus,
+.um-form-group input:focus,
+.um-form-group select:focus {
+  border-color: #f2a23a;
+}
+
+.um-add-btn {
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: #f6a23a;
+  color: #1f1712;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.um-add-btn:hover {
+  opacity: 0.9;
+}
+
+/* ─── Table Wrapper ──────────────────────────────────────────────────────── */
+.um-table-wrap {
+  width: 100%;
+  overflow-x: auto;     /* Correct: table scrolls horizontally inside the card */
+  border-radius: 8px;
+}
+
+/* ─── User Table ─────────────────────────────────────────────────────────── */
+.um-table {
+  width: 100%;
+  min-width: 900px;     /* FIXED: reduced from 1040px so it fits better on smaller screens */
+  border-collapse: collapse;
+}
+
+.um-table th {
+  background: #705b49;
+  color: white;
+  text-align: left;
+  padding: 13px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.um-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #ead8bd;
+  font-size: 14px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.um-table tbody tr:nth-child(even) {
+  background: #f7efe5;
+}
+
+.um-empty {
+  text-align: center;
+  color: #7d6b5c;
+  padding: 32px !important;
+}
+
+/* ─── Table Cell Sizing ──────────────────────────────────────────────────── */
+.um-td-id {
+  font-weight: 900;
+  white-space: nowrap;
+  width: 60px;          /* Fixed narrow column for ID */
+}
+
+.um-td-name {
+  font-weight: 800;
+  min-width: 120px;
+}
+
+.um-td-email {
+  min-width: 180px;     /* FIXED: reduced from 220px to reclaim space for Actions column */
+}
+
+.um-td-date {
+  white-space: nowrap;
+  width: 110px;         /* Fixed width so it doesn't grow unnecessarily */
+}
+
+/* ─── Role & Status Badges ───────────────────────────────────────────────── */
+.um-role-badge,
+.um-status-pill {
+  display: inline-block;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.role-librarian {
+  background: #e8f2df;
+  color: #355c2d;
+}
+
+.role-member {
+  background: #edf2ec;
+  color: #4b6343;
+}
+
+.pill-active {
+  background: #dff8e8;
+  color: #007a35;
+}
+
+.pill-inactive {
+  background: #ffe1e1;
+  color: #a62222;
+}
+
+/* ─── Action Buttons ─────────────────────────────────────────────────────── */
+.um-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;    /* Keep buttons on one line */
+  align-items: center;
+}
+
+.um-btn-action {
+  border: none;
+  border-radius: 7px;
+  padding: 7px 10px;    /* FIXED: slightly tighter padding so 3 buttons fit without clipping */
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.um-btn-action:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-edit,
+.btn-activate {
+  background: #f6a23a;
+  color: #1f1712;
+}
+
+.btn-delete {
+  background: #14b879;
+}
+
+.btn-deactivate {
+  background: #d8653d;
+}
+
+.um-btn-action:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+/* ─── Pagination ─────────────────────────────────────────────────────────── */
+.um-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.um-pg-info {
+  color: #705b49;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.um-pg-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.um-pg-btns button {
+  border: none;
+  background: #6b7650;
+  color: white;
+  padding: 8px 11px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.um-pg-btns button.active {
+  background: #f6a23a;
+  color: #1f1712;
+}
+
+.um-pg-btns button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Modal Overlay ──────────────────────────────────────────────────────── */
+.um-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 23, 18, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+/* ─── Modal Card ─────────────────────────────────────────────────────────── */
+.um-modal {
+  width: 100%;
+  max-width: 590px;
+  background: #fffdfa;
+  border: 1px solid #ead8bd;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 20px 45px rgba(31, 23, 18, 0.25);
+  box-sizing: border-box;
+}
+
+/* ─── Modal Header ───────────────────────────────────────────────────────── */
+.um-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.um-panel-title {
+  font-size: 24px;
+  line-height: 1.2;
+  font-weight: 900;
+  margin: 0;
+  color: #2b211b;
+}
+
+.um-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  color: #705b49;
+}
+
+/* ─── Form Layout ────────────────────────────────────────────────────────── */
+.um-form-row {
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  gap: 14px;
+}
+
+.um-form-group {
+  margin-bottom: 16px;
+}
+
+.um-form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #4f3b2d;
+  margin-bottom: 7px;
+}
+
+.um-required {
+  color: #d8653d;
+}
+
+.um-form-group input,
+.um-form-group select {
+  width: 100%;
+  min-height: 46px;
+  border: 2px solid #ead8bd;
+  border-radius: 8px;
+  background: #fff9ee;
+  padding: 0 13px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* ─── Modal Action Buttons ───────────────────────────────────────────────── */
+.um-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.um-cancel-btn,
+.um-submit-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.um-cancel-btn {
+  background: #6b7650;
+  color: white;
+}
+
+.um-submit-btn {
+  background: #f6a23a;
+  color: #1f1712;
+}
+
+.um-cancel-btn:hover,
+.um-submit-btn:hover {
+  opacity: 0.9;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .um-main {
+    padding: 32px 20px;
+  }
+
+  .um-page-title {
+    font-size: 30px;
+  }
+
+  .um-page-sub {
+    font-size: 15px;
+  }
+
+  .um-table-title {
+    font-size: 22px;
+  }
+
+  .um-table-topbar {
+    flex-direction: column;
+  }
+
+  /* Toolbar stacks vertically on smaller screens */
+  .um-toolbar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .um-search,
+  .um-role-select,
+  .um-add-btn {
+    width: 100%;
+  }
+
+  /* Form grid collapses to single column */
+  .um-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .um-form-actions {
+    flex-direction: column;
+  }
+}
