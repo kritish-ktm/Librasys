@@ -20,6 +20,7 @@ const archiveReasons = [
   { value: "outdated", label: "Outdated" },
   { value: "temporary hidden", label: "Temporary hidden" },
 ];
+const CATEGORY_IMAGE_MAX_SIZE = 850 * 1024;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function BookCategoryManagement() {
@@ -29,6 +30,7 @@ function BookCategoryManagement() {
     DeweyCode: "",
     IsActive: true,
     CategoryColor: "#2f6b52",
+    CategoryImage: "",
     ArchiveReason: "",
   };
 
@@ -112,6 +114,7 @@ useEffect(() => {
           BookCount: b.BorrowCount,
           IsActive: 1,
           CategoryColor: "#2f6b52",
+          CategoryImage: "",
           CreatedAt: null,
           UpdatedAt: null,
         }));
@@ -159,6 +162,26 @@ useEffect(() => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleCategoryImageFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    resizeCategoryImage(file)
+      .then((image) => {
+        if (image.length > CATEGORY_IMAGE_MAX_SIZE) {
+          setError("Category image is still too large. Please choose a smaller image.");
+          return;
+        }
+
+      setForm((prev) => ({
+        ...prev,
+        CategoryImage: image,
+      }));
+        setError("");
+      })
+      .catch(() => setError("Could not read this image. Please try another file."));
   };
 
   const resetForm = () => {
@@ -238,6 +261,7 @@ useEffect(() => {
       DeweyCode: category.DeweyCode,
       IsActive: category.IsActive,
       CategoryColor: category.CategoryColor || "#2f6b52",
+      CategoryImage: category.CategoryImage || "",
       ArchiveReason: category.ArchiveReason || "",
     });
     setMessage("");
@@ -670,6 +694,45 @@ useEffect(() => {
               </div>
 
               <div className="book-field full">
+                <label>Category Image</label>
+                <div className="category-image-field">
+                  <div
+                    className="category-image-preview"
+                    style={form.CategoryImage ? { backgroundImage: `url(${form.CategoryImage})` } : undefined}
+                  >
+                    {!form.CategoryImage && <span>No image selected</span>}
+                  </div>
+
+                  <div className="category-image-controls">
+                    <input
+                      name="CategoryImage"
+                      placeholder="Paste an image URL, or choose a file below"
+                      value={form.CategoryImage}
+                      onChange={handleChange}
+                      disabled={isSaving}
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCategoryImageFile}
+                      disabled={isSaving}
+                    />
+                    {form.CategoryImage && (
+                      <button
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, CategoryImage: "" }))}
+                        className="book-ghost-button"
+                        disabled={isSaving}
+                      >
+                        Remove Image
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <small className="book-field-hint">Saved to the database when you submit the form.</small>
+              </div>
+
+              <div className="book-field full">
                 <label>Description *</label>
                 <textarea
                   name="Description"
@@ -765,6 +828,10 @@ useEffect(() => {
                     <span>{detailCategory.CategoryColor || "#2f6b52"}</span>
                   </span>
                 </dd>
+              </div>
+              <div>
+                <dt>Image</dt>
+                <dd>{detailCategory.CategoryImage ? "Added" : "No image"}</dd>
               </div>
               <div>
                 <dt>Book Count</dt>
@@ -917,6 +984,42 @@ function compareCategories(a, b, sortConfig) {
     numeric: true,
     sensitivity: "base",
   }) * direction;
+}
+
+function resizeCategoryImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = reject;
+    reader.onload = () => {
+      const source = typeof reader.result === "string" ? reader.result : "";
+      const image = new Image();
+
+      image.onerror = reject;
+      image.onload = () => {
+        const maxSide = 900;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        let quality = 0.78;
+        let output = canvas.toDataURL("image/jpeg", quality);
+        while (output.length > CATEGORY_IMAGE_MAX_SIZE && quality > 0.42) {
+          quality -= 0.08;
+          output = canvas.toDataURL("image/jpeg", quality);
+        }
+
+        resolve(output);
+      };
+      image.src = source;
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
 
 function formatDate(value) {

@@ -1,33 +1,64 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import './Dashboard.css';
-import './MemberDashboard.css';
+import './Profile.css';
 
 function Profile() {
   const [profile, setProfile] = useState({});
-  const [form, setForm] = useState({ fullName: '', email: '' });
+  const [form, setForm] = useState({
+    fullName: '',
+    email: ''
+  });
+
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    axios.get('/api/users/profile', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => {
-      setProfile(res.data);
-      setForm({ fullName: res.data.FullName, email: res.data.Email });
-    });
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get('/api/users/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setProfile(res.data);
+
+      setForm({
+        fullName: res.data.FullName || '',
+        email: res.data.Email || ''
+      });
+
+    } catch (err) {
+      console.error(err);
+      setMessage('Failed to load profile');
+    }
+  };
 
   const handleUpdate = async () => {
     try {
       await axios.put('/api/users/profile', form, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
-      setMessage('Profile updated successfully!');
-    } catch {
-      setMessage('Update failed');
+
+      setProfile({
+        ...profile,
+        FullName: form.fullName,
+        Email: form.email
+      });
+
+      setMessage('Profile updated successfully');
+
+    } catch (err) {
+      console.error(err);
+      setMessage('Failed to update profile');
     }
   };
 
@@ -37,92 +68,224 @@ function Profile() {
   };
 
   return (
-    <div className="dashboard-page">
+    <div className="profile-page">
 
-      {/* TOP BAR */}
-      <div className="dashboard-topbar">
-        <div>
-          <h1 className="dashboard-title">My Profile</h1>
-          <p className="dashboard-welcome">
-            <b>Role:</b> {profile.Role} &nbsp;|&nbsp;
-            <b>Registered:</b> {profile.DateRegistered ? new Date(profile.DateRegistered).toLocaleDateString() : ''}
+      {/* HERO SECTION */}
+
+      <section className="profile-hero">
+
+        <div className="profile-hero-content">
+
+          <span className="profile-kicker">
+            Library Member Portal
+          </span>
+
+          <h1>
+            My Profile
+          </h1>
+
+          <p>
+            Manage your account details, update your information,
+            and access your library activities in one place.
           </p>
+
         </div>
-        <div className="member-topbar-actions">
-          <button
-            className="member-browse-btn"
-            onClick={() => navigate('/MemberDashboard')}
-          >
-            ← Back to Dashboard
-          </button>
-          <button className="dashboard-logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
+
+      </section>
+
+      {/* MAIN CONTENT */}
+
+      <main className="profile-main">
+
+        <div className="profile-card">
+
+          {/* TOP SECTION */}
+
+          <div className="profile-top">
+
+            <div className="profile-user">
+
+              <div className="profile-avatar">
+                {profile.FullName
+                  ? profile.FullName.charAt(0).toUpperCase()
+                  : 'U'}
+              </div>
+
+              <div>
+
+                <h2>
+                  {profile.FullName}
+                </h2>
+
+                <p>
+                  {profile.Email}
+                </p>
+
+                <div className="profile-tags">
+
+                  <span className="profile-tag">
+                    {profile.Role}
+                  </span>
+
+                  <span className="profile-tag">
+                    Joined: {
+                      profile.DateRegistered
+                        ? new Date(
+                            profile.DateRegistered
+                          ).toLocaleDateString()
+                        : 'N/A'
+                    }
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div className="profile-top-actions">
+
+              <button
+                className="profile-btn-outline"
+                onClick={() => navigate('/MemberDashboard')}
+              >
+                Dashboard
+              </button>
+
+              <button
+                className="profile-btn-danger"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* SUCCESS MESSAGE */}
+
+          {message && (
+            <div className="profile-message">
+              {message}
+            </div>
+          )}
+
+          {/* FORM */}
+
+          <div className="profile-form">
+
+            <div className="profile-field">
+
+              <label>
+                Full Name
+              </label>
+
+              <input
+                type="text"
+                placeholder="Enter full name"
+                value={form.fullName}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    fullName: e.target.value
+                  })
+                }
+              />
+
+            </div>
+
+            <div className="profile-field">
+
+              <label>
+                Email Address
+              </label>
+
+              <input
+                type="email"
+                placeholder="Enter email address"
+                value={form.email}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    email: e.target.value
+                  })
+                }
+              />
+
+            </div>
+
+            <div className="profile-field full-width">
+
+              <button
+                className="profile-btn"
+                onClick={handleUpdate}
+              >
+                Save Changes
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* QUICK LINKS */}
+
+          <div className="profile-links">
+
+            {profile.Role === 'Member' && (
+              <div
+                className="profile-link-card"
+                onClick={() => navigate('/my-loans')}
+                style={{ cursor: 'pointer' }}
+              >
+                <strong>
+                  My Loans
+                </strong>
+
+                <p>
+                  View all borrowed books, due dates,
+                  and return history.
+                </p>
+              </div>
+            )}
+
+            {profile.Role === 'Member' && (
+              <div
+                className="profile-link-card"
+                onClick={() => navigate('/browse-categories')}
+                style={{ cursor: 'pointer' }}
+              >
+                <strong>
+                  Browse Books
+                </strong>
+
+                <p>
+                  Explore available categories and
+                  discover books in the library.
+                </p>
+              </div>
+            )}
+
+            <div
+              className="profile-link-card"
+              onClick={() => navigate('/MemberDashboard')}
+              style={{ cursor: 'pointer' }}
+            >
+              <strong>
+                Dashboard
+              </strong>
+
+              <p>
+                Return to the main dashboard and
+                access your library overview.
+              </p>
+            </div>
+
+          </div>
+
         </div>
-      </div>
 
-      {/* PROFILE FORM */}
-      <div className="dashboard-section" style={{ maxWidth: '500px', margin: '0 auto' }}>
-        <h2 className="dashboard-section-title">Edit Profile</h2>
-
-        <input
-          className="dashboard-search"
-          style={{ maxWidth: '100%', marginBottom: '16px' }}
-          placeholder="Full Name"
-          value={form.fullName}
-          onChange={e => setForm({ ...form, fullName: e.target.value })}
-        />
-
-        <input
-          className="dashboard-search"
-          style={{ maxWidth: '100%', marginBottom: '16px' }}
-          placeholder="Email"
-          value={form.email}
-          onChange={e => setForm({ ...form, email: e.target.value })}
-        />
-
-        {message && (
-          <p style={{ color: '#27ae60', fontWeight: '600', marginBottom: '12px' }}>
-            {message}
-          </p>
-        )}
-
-        <button
-          className="member-browse-btn"
-          style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
-          onClick={handleUpdate}
-        >
-          Update Profile
-        </button>
-
-        {profile.Role === 'Member' && (
-          <button
-            className="member-browse-btn"
-            style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
-            onClick={() => navigate('/my-loans')}
-          >
-            My Loans
-          </button>
-        )}
-
-        {profile.Role === 'Member' && (
-          <button
-            className="member-browse-btn"
-            style={{ width: '100%', padding: '14px', marginBottom: '12px' }}
-            onClick={() => navigate('/browse-categories')}
-          >
-            Browse Books
-          </button>
-        )}
-
-        <button
-          className="dashboard-logout-btn"
-          style={{ width: '100%', padding: '14px' }}
-          onClick={handleLogout}
-        >
-          Logout
-        </button>
-      </div>
+      </main>
 
     </div>
   );

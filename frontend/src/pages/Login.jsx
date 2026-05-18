@@ -68,8 +68,8 @@ function Login() {
       // Redirect based on the user's role returned from the server
       if (res.data.role === 'Librarian') {
         navigate('/dashboard');  // Librarians go to the admin dashboard
-      } else {
-        navigate('/profile');    // Regular users go to their profile
+      } else  if (res.data.role === 'Member') {
+        navigate('/memberDashboard');    // Regular users go to their profile
       }
 
     } catch (err) {

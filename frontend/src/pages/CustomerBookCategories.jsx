@@ -162,6 +162,13 @@ function CustomerBookCategories() {
                 style={getCategoryStyle(category)}
                 onClick={() => setSelectedCategoryId(category.CategoryID)}
               >
+                {category.CategoryImage && (
+                  <span
+                    className="customer-category-thumb"
+                    style={{ backgroundImage: `url(${category.CategoryImage})` }}
+                    aria-hidden="true"
+                  />
+                )}
                 <div>
                   <span className="customer-category-title">
                     <strong>{category.CategoryName}</strong>
@@ -180,6 +187,13 @@ function CustomerBookCategories() {
           <section className="customer-category-detail" style={selectedCategory ? getCategoryStyle(selectedCategory) : undefined}>
             {selectedCategory ? (
               <>
+                {selectedCategory.CategoryImage && (
+                  <div
+                    className="customer-detail-image"
+                    style={{ backgroundImage: `url(${selectedCategory.CategoryImage})` }}
+                    aria-hidden="true"
+                  />
+                )}
                 <div className="customer-detail-header">
                   <div>
                     <p className="book-kicker">
