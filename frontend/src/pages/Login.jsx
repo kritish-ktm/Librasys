@@ -1,141 +1,205 @@
-import { useState } from 'react';
-import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
-import './Login.css';
+import { useState } from "react";
+import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  BookOpen,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  Library,
+  Search,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+
+import "./Login.css";
 
 function Login() {
-
-  // Form state holds email and password inputs
   const [form, setForm] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
 
-  // Error state holds the message shown to the user on failed login
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  // useNavigate allows programmatic redirection after login
   const navigate = useNavigate();
 
-  // ─── Client-Side Validation ───────────────────────────────────────────────
-  // Runs before hitting the API to catch obvious errors early,
-  // saving unnecessary network requests.
   const validate = () => {
-
-    // Check that neither field is left empty
     if (!form.email.trim() || !form.password.trim()) {
-      setError('Email and password are required.');
+      setError("Email and password are required.");
       return false;
     }
 
-    // Basic email format check (must contain @ and a domain)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!emailRegex.test(form.email)) {
-      setError('Please enter a valid email address.');
+      setError("Please enter a valid email address.");
       return false;
     }
 
-    // Enforce a minimum password length
     if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError("Password must be at least 6 characters.");
       return false;
     }
 
-    return true; // All checks passed
+    return true;
   };
 
-  // ─── Form Submit Handler ──────────────────────────────────────────────────
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default browser form submission
+    e.preventDefault();
+    setError("");
 
-    setError(''); // Clear any previous error before a new attempt
-
-    // Run validation first — abort if it fails
     if (!validate()) return;
 
     try {
-      // Send login credentials to the backend
       const res = await axios.post(
-        'http://localhost:5000/api/auth/login',
+        "http://localhost:5000/api/auth/login",
         form
       );
 
-      // Persist auth data in localStorage so other pages can access it
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', res.data.role);
-      localStorage.setItem('name', res.data.name);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.role);
+      localStorage.setItem("name", res.data.name);
 
-      // Redirect based on the user's role returned from the server
-      if (res.data.role === 'Librarian') {
-        navigate('/dashboard');  // Librarians go to the admin dashboard
+      if (res.data.role === "Librarian") {
+        navigate("/dashboard");
       } else {
-        navigate('/profile');    // Regular users go to their profile
+        navigate("/profile");
       }
-
     } catch (err) {
-      console.error('Login error:', err);
+      console.error("Login error:", err);
 
-      // Show the server's error message if available,
-      // otherwise fall back to a generic message
-      setError(
-        err.response?.data?.error || 'Login failed. Please try again.'
-      );
+      setError(err.response?.data?.error || "Login failed. Please try again.");
     }
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <main className="auth-page auth-page-member">
+      <section className="auth-shell">
+        <aside className="auth-intro-panel">
+          <button
+            className="auth-back-link"
+            type="button"
+            onClick={() => navigate("/")}
+          >
+            <ArrowLeft size={17} />
+            Back to home
+          </button>
 
-        <h1 className="login-title">LibraSys</h1>
-        <p className="login-subtitle">Library Management System</p>
+          <div className="auth-brand">
+            <div className="auth-brand-icon">
+              <Library size={31} />
+            </div>
 
-        {/* Show error message only when there is one */}
-        {error && (
-          <p className="login-error">{error}</p>
-        )}
+            <div>
+              <span>LibraSys</span>
+              <p>Library Management System</p>
+            </div>
+          </div>
 
-        {/* Email input — updates form.email on every keystroke */}
-        <input
-          className="login-input"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
-          }
-        />
+          <div className="auth-intro-copy">
+            <span className="auth-kicker">Member Access</span>
 
-        {/* Password input — type="password" masks the characters */}
-        <input
-          className="login-input"
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
-        />
+            <h1>Welcome back to your library space.</h1>
 
-        {/* Login button triggers handleSubmit on click */}
-        <button
-          className="login-button"
-          onClick={handleSubmit}
-        >
-          Login
-        </button>
+            <p>
+              Sign in to browse the catalogue, check book availability, and
+              access your member profile through LibraSys.
+            </p>
+          </div>
 
-        {/* Link to registration page for users without an account */}
-        <p className="login-register-text">
-          No account?{' '}
-          <Link to="/register" className="login-register-link">
-            Register
-          </Link>
-        </p>
+          <div className="auth-feature-list">
+            <div className="auth-feature-item">
+              <BookOpen size={21} />
+              <span>Browse organised library categories</span>
+            </div>
 
-      </div>
-    </div>
+            <div className="auth-feature-item">
+              <Search size={21} />
+              <span>Search books by title, ISBN, or category</span>
+            </div>
+
+            <div className="auth-feature-item">
+              <UserRound size={21} />
+              <span>Access your member profile securely</span>
+            </div>
+          </div>
+        </aside>
+
+        <section className="auth-card" aria-labelledby="member-login-title">
+          <div className="auth-card-header">
+            <div className="auth-card-icon">
+              <UserRound size={25} />
+            </div>
+
+            <span>Member Login</span>
+            <h2 id="member-login-title">Access your account</h2>
+            <p>Enter your details to continue to LibraSys.</p>
+          </div>
+
+          {error && <p className="login-error">{error}</p>}
+
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label className="auth-field">
+              <span>Email address</span>
+              <input
+                className="login-input"
+                type="email"
+                placeholder="Enter your email"
+                value={form.email}
+                onChange={(e) =>
+                  setForm({ ...form, email: e.target.value })
+                }
+              />
+            </label>
+
+            <label className="auth-field">
+              <span>Password</span>
+
+              <div className="auth-password-wrap">
+                <input
+                  className="login-input login-input-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                />
+
+                <button
+                  className="auth-password-toggle"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </div>
+            </label>
+
+            <button className="login-button" type="submit">
+              Login
+              <ChevronRight size={18} />
+            </button>
+          </form>
+
+          <p className="login-register-text">
+            No account?{" "}
+            <Link to="/register" className="login-register-link">
+              Create an account
+            </Link>
+          </p>
+
+          <div className="auth-security-note">
+            <ShieldCheck size={18} />
+            <span>Your login connects to the protected LibraSys account system.</span>
+          </div>
+        </section>
+      </section>
+    </main>
   );
 }
 

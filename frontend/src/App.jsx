@@ -11,7 +11,6 @@ import LoanedBookManagement from './pages/LoanedBookManagement';
 import FineManagement from './pages/FineManagement';
 import CustomerBookCategories from './pages/CustomerBookCategories';
 import LandingPage from './pages/LandingPage';
-import MemberLogin from './pages/MemberLogin';
 import AdminLogin from './pages/AdminLogin';
 import MemberDashboard from './pages/MemberDashboard';
 import MyLoans from './pages/MyLoans';
@@ -37,15 +36,22 @@ function App() {
 
         {/* PUBLIC ROUTES */}
         <Route path="/" element={<LandingPage />} />
+
+        {/* Member login routes both use the same updated Login page */}
         <Route path="/login" element={<Login />} />
-        <Route path="/member-login" element={<MemberLogin />} />
+        <Route path="/member-login" element={<Login />} />
+
+        {/* Staff/admin login uses the updated AdminLogin page */}
         <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/MemberDashboard" element={<MemberDashboard />} />      
+
+        <Route path="/MemberDashboard" element={<MemberDashboard />} />
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/browse-categories"
           element={<CustomerBookCategories />}
         />
+
         <Route path="/book/:id" element={<BookDetail />} />
 
         {/* USER ROUTES */}

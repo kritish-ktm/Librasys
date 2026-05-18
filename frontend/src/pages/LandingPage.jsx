@@ -1,20 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import {
+  BarChart3,
+  BookCheck,
   BookOpen,
   Boxes,
   ChevronRight,
+  ClipboardList,
   Clock3,
-  Compass,
-  KeyRound,
+  Database,
   Library,
   LockKeyhole,
   Search,
+  ShieldCheck,
   Sparkles,
   Tags,
-  Users,
+  UserRound,
 } from "lucide-react";
-
-import Footer from "../components/Footer";
 
 import cleanCodeImg from "../assets/books/clean-code.jpg";
 import silentPatientImg from "../assets/books/silent-patient.jpg";
@@ -54,62 +55,76 @@ const categories = [
   {
     icon: <BookOpen size={22} />,
     name: "Fiction",
-    description: "Stories, novels, and imaginative writing for general reading.",
+    count: "24 titles",
+    description: "Stories, novels, and imaginative writing.",
   },
   {
     icon: <Sparkles size={22} />,
     name: "Science",
-    description:
-      "Titles covering discovery, nature, space, and scientific thinking.",
+    count: "18 titles",
+    description: "Discovery, nature, space, and scientific thinking.",
   },
   {
     icon: <Boxes size={22} />,
     name: "Computer Science",
-    description:
-      "Programming, systems, software design, and digital technology.",
+    count: "21 titles",
+    description: "Programming, systems, and digital technology.",
   },
   {
     icon: <Clock3 size={22} />,
     name: "History",
-    description:
-      "Books exploring past events, people, cultures, and societies.",
+    count: "16 titles",
+    description: "Past events, people, cultures, and societies.",
   },
   {
     icon: <Tags size={22} />,
     name: "Mathematics",
-    description:
-      "Numbers, logic, problem solving, and mathematical foundations.",
+    count: "13 titles",
+    description: "Logic, numbers, problem solving, and foundations.",
   },
   {
     icon: <Library size={22} />,
     name: "Reference",
-    description:
-      "In-library resources, encyclopaedias, guides, and non-borrowable material.",
+    count: "12 items",
+    description: "Guides, encyclopaedias, and in-library resources.",
   },
 ];
 
-const benefits = [
+const snapshotStats = [
   {
-    icon: <KeyRound size={24} />,
-    title: "Role-Based Access",
-    description: "Separate access for members and authorised staff.",
+    icon: <Database size={23} />,
+    value: "120+",
+    label: "Books Managed",
   },
   {
-    icon: <Compass size={24} />,
-    title: "Organised Catalogue",
-    description: "Books are grouped clearly by category and availability.",
+    icon: <Boxes size={23} />,
+    value: "6",
+    label: "Core Categories",
   },
   {
-    icon: <Search size={24} />,
-    title: "Smart Book Search",
-    description: "Users can find books quickly using title, ISBN, or category.",
+    icon: <BookCheck size={23} />,
+    value: "94",
+    label: "Borrowable Titles",
   },
   {
-    icon: <Users size={24} />,
-    title: "Live Collection Insights",
-    description:
-      "Staff can view useful collection and availability information.",
+    icon: <ShieldCheck size={23} />,
+    value: "12",
+    label: "Reference Items",
   },
+];
+
+const memberActions = [
+  "Browse the public catalogue",
+  "Search books by title, ISBN, or category",
+  "Check book availability before requesting",
+  "Create and access a member profile",
+];
+
+const staffActions = [
+  "Add, update, and maintain book records",
+  "Manage borrowable and reference-only items",
+  "Review catalogue and availability information",
+  "Protect staff tools through controlled access",
 ];
 
 export default function LandingPage() {
@@ -201,7 +216,10 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="lp-section lp-featured" aria-labelledby="featured-books">
+        <section
+          className="lp-section lp-featured"
+          aria-labelledby="featured-books"
+        >
           <div className="lp-section-heading">
             <span className="lp-section-label">Selected collection</span>
             <h2 id="featured-books">Featured Books</h2>
@@ -233,48 +251,208 @@ export default function LandingPage() {
           className="lp-section lp-categories"
           aria-labelledby="browse-category"
         >
-          <div className="lp-section-heading">
-            <span className="lp-section-label">Organised discovery</span>
-            <h2 id="browse-category">Browse by Category</h2>
-            <p>Find books faster by exploring organised library sections.</p>
+          <div className="lp-section-heading-row">
+            <div className="lp-section-heading lp-section-heading-compact">
+              <span className="lp-section-label">Organised discovery</span>
+              <h2 id="browse-category">Explore the catalogue by section</h2>
+              <p>
+                Preview the main library categories before browsing the full
+                catalogue.
+              </p>
+            </div>
+
+            <button
+              className="lp-btn-secondary"
+              onClick={() => navigate("/browse-categories")}
+            >
+              View full catalogue
+              <ChevronRight size={18} />
+            </button>
           </div>
 
           <div className="lp-category-grid">
             {categories.map((category) => (
               <article className="lp-category-card" key={category.name}>
-                <div className="lp-category-icon">{category.icon}</div>
+                <div className="lp-category-top">
+                  <div className="lp-category-icon">{category.icon}</div>
+                  <span className="lp-category-count">{category.count}</span>
+                </div>
+
                 <h3>{category.name}</h3>
                 <p>{category.description}</p>
+
+                <button
+                  className="lp-card-link"
+                  onClick={() => navigate("/browse-categories")}
+                >
+                  View books
+                  <ChevronRight size={16} />
+                </button>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="lp-why" id="about" aria-labelledby="why-librasys">
-          <div className="lp-why-inner">
-            <div className="lp-section-heading lp-section-heading--dark">
-              <span className="lp-section-label">Why LibraSys</span>
-              <h2 id="why-librasys">Built for real library operations</h2>
+        <section className="lp-snapshot" aria-labelledby="library-snapshot">
+          <div className="lp-snapshot-inner">
+            <div className="lp-snapshot-copy">
+              <span className="lp-section-label">Live system preview</span>
+              <h2 id="library-snapshot">Library Snapshot</h2>
               <p>
-                LibraSys keeps library access simple for members while giving
-                staff the tools they need to manage records securely.
+                A quick overview of the collection structure, availability, and
+                catalogue coverage inside LibraSys.
               </p>
             </div>
 
-            <div className="lp-benefits-grid">
-              {benefits.map((benefit) => (
-                <article className="lp-benefit-card" key={benefit.title}>
-                  <div className="lp-benefit-icon">{benefit.icon}</div>
-                  <h3>{benefit.title}</h3>
-                  <p>{benefit.description}</p>
+            <div className="lp-snapshot-grid">
+              {snapshotStats.map((stat) => (
+                <article className="lp-stat-card" key={stat.label}>
+                  <div className="lp-stat-icon">{stat.icon}</div>
+                  <strong>{stat.value}</strong>
+                  <span>{stat.label}</span>
                 </article>
               ))}
             </div>
           </div>
         </section>
+
+        <section className="lp-access-paths" id="about" aria-labelledby="access-paths">
+          <div className="lp-access-paths-inner">
+            <div className="lp-section-heading lp-section-heading--dark lp-path-heading">
+              <span className="lp-section-label">Why LibraSys</span>
+              <h2 id="access-paths">One platform, two clear access paths</h2>
+              <p>
+                Members can browse and search the catalogue, while staff manage
+                records through protected system access.
+              </p>
+            </div>
+
+            <div className="lp-path-grid">
+              <article className="lp-path-card">
+                <div className="lp-path-card-header">
+                  <div className="lp-path-icon">
+                    <UserRound size={25} />
+                  </div>
+
+                  <div>
+                    <span>For readers and members</span>
+                    <h3>Member Access</h3>
+                  </div>
+                </div>
+
+                <ul>
+                  {memberActions.map((action) => (
+                    <li key={action}>
+                      <CheckDot />
+                      {action}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  className="lp-path-button lp-path-button-light"
+                  onClick={() => navigate("/member-login")}
+                >
+                  Continue as Member
+                  <ChevronRight size={18} />
+                </button>
+              </article>
+
+              <article className="lp-path-card lp-path-card-highlight">
+                <div className="lp-path-card-header">
+                  <div className="lp-path-icon">
+                    <ClipboardList size={25} />
+                  </div>
+
+                  <div>
+                    <span>For authorised library staff</span>
+                    <h3>Staff Access</h3>
+                  </div>
+                </div>
+
+                <ul>
+                  {staffActions.map((action) => (
+                    <li key={action}>
+                      <CheckDot />
+                      {action}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  className="lp-path-button lp-path-button-orange"
+                  onClick={() => navigate("/admin-login")}
+                >
+                  Open Staff Access
+                  <LockKeyhole size={17} />
+                </button>
+              </article>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <Footer />
+      <footer className="lp-footer">
+        <div className="lp-footer-inner">
+          <div className="lp-footer-brand">
+            <button
+              className="lp-footer-logo"
+              onClick={() => navigate("/")}
+              aria-label="Return to LibraSys home"
+            >
+              <Library size={27} />
+              <span>LibraSys</span>
+            </button>
+
+            <p>
+              A modern library management system built for organised catalogue
+              access, role-based control, and reliable book record management.
+            </p>
+          </div>
+
+          <div className="lp-footer-column">
+            <h4>Platform</h4>
+            <button onClick={() => navigate("/")}>Home</button>
+            <button onClick={() => navigate("/browse-categories")}>
+              Browse Catalogue
+            </button>
+            <button onClick={() => navigate("/member-login")}>
+              Member Login
+            </button>
+            <button onClick={() => navigate("/admin-login")}>
+              Staff Access
+            </button>
+          </div>
+
+          <div className="lp-footer-column">
+            <h4>System Features</h4>
+            <span>Book Management</span>
+            <span>Category Browsing</span>
+            <span>Availability Tracking</span>
+            <span>Role-Based Access</span>
+          </div>
+
+          <div className="lp-footer-column">
+            <h4>Project</h4>
+            <span>Agile Development Team Project</span>
+            <span>React · Node.js · Express · MySQL</span>
+            <span>BSc Computer Science</span>
+          </div>
+        </div>
+
+        <div className="lp-footer-bottom">
+          <span>© 2026 LibraSys</span>
+          <span>Built for secure and organised library operations.</span>
+        </div>
+      </footer>
     </div>
+  );
+}
+
+function CheckDot() {
+  return (
+    <span className="lp-check-dot" aria-hidden="true">
+      <ChevronRight size={14} />
+    </span>
   );
 }

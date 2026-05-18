@@ -37,15 +37,15 @@ const QUICK_ACTIONS = [
   { label: "Review Loans", path: "/loaned-books", icon: ClipboardList },
 ];
 
-function getArrayCount(data) {
-  if (Array.isArray(data)) return data.length;
-  if (Array.isArray(data?.data)) return data.data.length;
-  if (Array.isArray(data?.users)) return data.users.length;
-  if (Array.isArray(data?.books)) return data.books.length;
-  if (Array.isArray(data?.categories)) return data.categories.length;
-  if (Array.isArray(data?.loans)) return data.loans.length;
-  if (Array.isArray(data?.fines)) return data.fines.length;
-  return 0;
+function getArrayData(data, keyName) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.[keyName])) return data[keyName];
+  return [];
+}
+
+function getArrayCount(data, keyName) {
+  return getArrayData(data, keyName).length;
 }
 
 function Dashboard() {
@@ -57,6 +57,9 @@ function Dashboard() {
     categories: 0,
     loans: 0,
     fines: 0,
+    borrowableBooks: 0,
+    referenceBooks: 0,
+    totalCopies: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -70,41 +73,53 @@ function Dashboard() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       };
 
-      const endpoints = {
-        users: `${API_BASE}/api/users`,
-        books: `${API_BASE}/books`,
-        categories: `${API_BASE}/categories`,
-        loans: `${API_BASE}/loans`,
-        fines: `${API_BASE}/fines`,
-      };
-
       try {
-        const results = await Promise.allSettled(
-          Object.entries(endpoints).map(async ([key, url]) => {
-            const response = await fetch(url, requestOptions);
-            if (!response.ok) return [key, 0];
+        const [usersResponse, booksResponse, categoriesResponse, loansResponse, finesResponse] =
+          await Promise.allSettled([
+            fetch(`${API_BASE}/api/users`, requestOptions),
+            fetch(`${API_BASE}/books`, requestOptions),
+            fetch(`${API_BASE}/categories`, requestOptions),
+            fetch(`${API_BASE}/loans`, requestOptions),
+            fetch(`${API_BASE}/fines`, requestOptions),
+          ]);
 
-            const data = await response.json();
-            return [key, getArrayCount(data)];
-          })
-        );
+        async function safeJson(result) {
+          if (result.status !== "fulfilled") return null;
+          if (!result.value.ok) return null;
+          return result.value.json();
+        }
 
-        const nextStats = {
-          users: 0,
-          books: 0,
-          categories: 0,
-          loans: 0,
-          fines: 0,
-        };
+        const usersData = await safeJson(usersResponse);
+        const booksData = await safeJson(booksResponse);
+        const categoriesData = await safeJson(categoriesResponse);
+        const loansData = await safeJson(loansResponse);
+        const finesData = await safeJson(finesResponse);
 
-        results.forEach((result) => {
-          if (result.status === "fulfilled") {
-            const [key, value] = result.value;
-            nextStats[key] = value;
-          }
+        const booksArray = getArrayData(booksData, "books");
+        const categoriesArray = getArrayData(categoriesData, "categories");
+
+        const borrowableBooks = booksArray.filter((book) =>
+          Boolean(book.IsBorrowable)
+        ).length;
+
+        const referenceBooks = booksArray.filter(
+          (book) => !Boolean(book.IsBorrowable)
+        ).length;
+
+        const totalCopies = booksArray.reduce((sum, book) => {
+          return sum + Number(book.AvailableCopies || 0);
+        }, 0);
+
+        setStats({
+          users: getArrayCount(usersData, "users"),
+          books: booksArray.length,
+          categories: categoriesArray.length,
+          loans: getArrayCount(loansData, "loans"),
+          fines: getArrayCount(finesData, "fines"),
+          borrowableBooks,
+          referenceBooks,
+          totalCopies,
         });
-
-        setStats(nextStats);
       } catch (error) {
         console.error("Dashboard data failed to load:", error);
       } finally {
@@ -145,7 +160,22 @@ function Dashboard() {
       },
       {
         title:
-          stats.loans > 0 ? "Borrowing activity in progress" : "No active borrowing activity",
+          stats.referenceBooks > 0
+            ? "Reference books protected"
+            : "No reference-only records",
+        text:
+          stats.referenceBooks > 0
+            ? `${stats.referenceBooks} books are marked as reference-only and cannot be borrowed.`
+            : "No books are currently marked as reference-only.",
+        status: stats.referenceBooks > 0 ? "info" : "success",
+        action: "Review Books",
+        path: "/books",
+      },
+      {
+        title:
+          stats.loans > 0
+            ? "Borrowing activity in progress"
+            : "No active borrowing activity",
         text:
           stats.loans > 0
             ? `${stats.loans} loan records are currently being tracked.`
@@ -190,6 +220,27 @@ function Dashboard() {
       tone: stats.categories === 0 ? "orange" : "green",
     },
     {
+      label: "Borrowable Titles",
+      value: stats.borrowableBooks,
+      note: "Available for lending",
+      icon: CheckCircle2,
+      tone: "green",
+    },
+    {
+      label: "Reference Items",
+      value: stats.referenceBooks,
+      note: "Not available for borrowing",
+      icon: ShieldCheck,
+      tone: stats.referenceBooks > 0 ? "orange" : "green",
+    },
+    {
+      label: "Total Copies",
+      value: stats.totalCopies,
+      note: "Copies across all books",
+      icon: Database,
+      tone: "green",
+    },
+    {
       label: "Active Loans",
       value: stats.loans,
       note: "Borrowing records",
@@ -228,6 +279,7 @@ function Dashboard() {
         <nav className="admin-nav">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+
             return (
               <button
                 key={item.label}
@@ -263,8 +315,8 @@ function Dashboard() {
             <div className="workspace-pill">Staff Workspace</div>
             <h1>Dashboard</h1>
             <p>
-              Welcome back, {adminName}. Monitor catalogue health, review priority
-              issues, and manage LibraSys operations from one workspace.
+              Welcome back, {adminName}. Monitor catalogue health, review
+              priority issues, and manage LibraSys operations from one workspace.
             </p>
           </div>
 
@@ -277,9 +329,55 @@ function Dashboard() {
           </div>
         </section>
 
+        <section className="library-snapshot-section">
+          <div className="library-snapshot-copy">
+            <span className="section-kicker">Live System Preview</span>
+            <h2>Library Snapshot</h2>
+            <p>
+              A quick overview of the collection structure, availability, and
+              catalogue coverage inside LibraSys.
+            </p>
+          </div>
+
+          <div className="library-snapshot-grid">
+            <article className="library-snapshot-card">
+              <div className="stat-icon green">
+                <Database size={30} />
+              </div>
+              <h3>{loading ? "..." : stats.books}</h3>
+              <p>Books Managed</p>
+            </article>
+
+            <article className="library-snapshot-card">
+              <div className="stat-icon green">
+                <Folder size={30} />
+              </div>
+              <h3>{loading ? "..." : stats.categories}</h3>
+              <p>Core Categories</p>
+            </article>
+
+            <article className="library-snapshot-card">
+              <div className="stat-icon green">
+                <CheckCircle2 size={30} />
+              </div>
+              <h3>{loading ? "..." : stats.borrowableBooks}</h3>
+              <p>Borrowable Titles</p>
+            </article>
+
+            <article className="library-snapshot-card">
+              <div className="stat-icon orange">
+                <ShieldCheck size={30} />
+              </div>
+              <h3>{loading ? "..." : stats.referenceBooks}</h3>
+              <p>Reference Items</p>
+            </article>
+          </div>
+        </section>
+
         <section className="stats-grid">
           {statCards.map((card) => {
             const Icon = card.icon;
+
             return (
               <article key={card.label} className="stat-card">
                 <div className={`stat-icon ${card.tone}`}>
@@ -344,6 +442,7 @@ function Dashboard() {
             <div className="quick-actions-list">
               {QUICK_ACTIONS.map((action) => {
                 const Icon = action.icon;
+
                 return (
                   <button
                     key={action.label}
@@ -392,7 +491,23 @@ function Dashboard() {
                   <BookOpen size={21} />
                   <span>Book records stored</span>
                 </div>
-                <strong>{stats.books}</strong>
+                <strong>{loading ? "..." : stats.books}</strong>
+              </div>
+
+              <div className="health-row">
+                <div>
+                  <CheckCircle2 size={21} />
+                  <span>Borrowable titles</span>
+                </div>
+                <strong>{loading ? "..." : stats.borrowableBooks}</strong>
+              </div>
+
+              <div className="health-row">
+                <div>
+                  <ShieldCheck size={21} />
+                  <span>Reference-only items</span>
+                </div>
+                <strong>{loading ? "..." : stats.referenceBooks}</strong>
               </div>
 
               <div className={`health-row ${stats.categories === 0 ? "needs-review" : ""}`}>
@@ -421,15 +536,24 @@ function Dashboard() {
               </div>
               <div className="activity-item">
                 <span></span>
-                <p>Catalogue module available for book record management.</p>
+                <p>
+                  Catalogue contains {loading ? "..." : stats.books} book
+                  records across {loading ? "..." : stats.categories} categories.
+                </p>
               </div>
               <div className="activity-item">
                 <span></span>
-                <p>Loan and fine modules ready for librarian review.</p>
+                <p>
+                  {loading ? "..." : stats.borrowableBooks} titles are available
+                  for borrowing.
+                </p>
               </div>
               <div className="activity-item">
                 <span></span>
-                <p>User access area available for account management.</p>
+                <p>
+                  {loading ? "..." : stats.referenceBooks} reference items are
+                  protected from normal borrowing.
+                </p>
               </div>
             </div>
           </article>

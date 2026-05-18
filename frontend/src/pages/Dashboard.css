@@ -684,3 +684,103 @@
     align-self: center;
   }
 }
+/* ==========================================
+   LIVE LIBRARY SNAPSHOT
+========================================== */
+
+.library-snapshot-section {
+  display: grid;
+  grid-template-columns: 1.1fr 1.8fr;
+  gap: 28px;
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(44, 58, 31, 0.98), rgba(66, 79, 45, 0.95)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 70px
+    );
+  border-radius: 28px;
+  padding: 34px;
+  margin-bottom: 28px;
+  box-shadow: 0 22px 55px rgba(44, 36, 22, 0.18);
+  color: #fff8ed;
+}
+
+.library-snapshot-copy h2 {
+  margin: 8px 0 14px;
+  font-family: Georgia, serif;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1;
+  color: #fff8ed;
+}
+
+.library-snapshot-copy p {
+  margin: 0;
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.7;
+  color: #d7d2c6;
+}
+
+.library-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 18px;
+}
+
+.library-snapshot-card {
+  min-height: 190px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 24px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.library-snapshot-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.library-snapshot-card h3 {
+  margin: 18px 0 4px;
+  font-family: Georgia, serif;
+  font-size: 44px;
+  line-height: 1;
+  color: #fff8ed;
+}
+
+.library-snapshot-card p {
+  margin: 0;
+  color: #d7d2c6;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+  .library-snapshot-section {
+    grid-template-columns: 1fr;
+  }
+
+  .library-snapshot-grid {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .library-snapshot-section {
+    padding: 24px;
+  }
+
+  .library-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+}
