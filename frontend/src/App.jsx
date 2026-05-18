@@ -14,6 +14,7 @@ import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MemberDashboard from './pages/MemberDashboard';
 import MyLoans from './pages/MyLoans';
+import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
 
 function PrivateRoute({ children, role }) {
@@ -69,6 +70,15 @@ function App() {
           element={
             <PrivateRoute role="Member">
               <MyLoans />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/my-fines"
+          element={
+            <PrivateRoute role="Member">
+              <MyFines />
             </PrivateRoute>
           }
         />

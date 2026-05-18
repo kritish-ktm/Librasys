@@ -1,5 +1,25 @@
 const model = require("./bookCategory.model");
 const deweyPattern = /^\d{3}(?:\.\d{1,3})?$/;
+const colorPattern = /^#[0-9a-fA-F]{6}$/;
+const allowedArchiveReasons = new Set(["merged", "outdated", "temporary hidden"]);
+
+const normalizeCategoryStyle = (body) => {
+  const color = body.CategoryColor ? String(body.CategoryColor).trim() : "#2f6b52";
+  const image = body.CategoryImage ? String(body.CategoryImage).trim() : null;
+  const archiveReason = body.ArchiveReason ? String(body.ArchiveReason).trim() : null;
+
+  if (!colorPattern.test(color)) {
+    return { error: "Category color must be a valid hex color like #2f6b52" };
+  }
+  if (image && image.length > 850 * 1024) {
+    return { error: "Category image is too large. Please use a smaller image" };
+  }
+  if (archiveReason && archiveReason.length > 80) {
+    return { error: "Archive reason cannot exceed 80 characters" };
+  }
+
+  return { CategoryColor: color, CategoryImage: image, ArchiveReason: archiveReason };
+};
 
 exports.getCategories = (req, res) => {
   const { search = "", status = "all", sortBy = "CategoryName", sortDirection = "asc" } = req.query;
@@ -55,7 +75,11 @@ exports.getCategoryBooks = (req, res) => {
 exports.createCategory = (req, res) => {
   const { CategoryName, DeweyCode, Description, IsActive } = req.body;
   const trimmedDescription = Description ? Description.trim() : "";
+  const style = normalizeCategoryStyle(req.body);
 
+  if (style.error) {
+    return res.status(400).json({ error: style.error });
+  }
   if (!CategoryName || CategoryName.trim() === "") {
     return res.status(400).json({ error: "Category name is required" });
   }
@@ -77,12 +101,18 @@ exports.createCategory = (req, res) => {
   if (trimmedDescription.length > 200) {
     return res.status(400).json({ error: "Description cannot exceed 200 characters" });
   }
+  if (IsActive === false && !allowedArchiveReasons.has(style.ArchiveReason)) {
+    return res.status(400).json({ error: "Archive reason must be merged, outdated, or temporary hidden" });
+  }
 
   const data = {
     CategoryName: CategoryName.trim(),
     DeweyCode: DeweyCode.trim(),
     Description: trimmedDescription,
     IsActive: IsActive !== undefined ? IsActive : true,
+    CategoryColor: style.CategoryColor,
+    CategoryImage: style.CategoryImage,
+    ArchiveReason: IsActive === false ? style.ArchiveReason : null,
     CreatedBy: req.user?.id || null,
     UpdatedBy: req.user?.id || null,
   };
@@ -93,6 +123,9 @@ exports.createCategory = (req, res) => {
       if (err.code === "ER_DUP_ENTRY") {
         const duplicateField = err.sqlMessage?.includes("CategoryName") ? "name" : "Dewey Code";
         return res.status(400).json({ error: `A category with this ${duplicateField} already exists` });
+      }
+      if (err.code === "ER_NET_PACKET_TOO_LARGE") {
+        return res.status(413).json({ error: "Category image is too large for the database packet limit" });
       }
       return res.status(500).json({ error: "Database error while creating category" });
     }
@@ -106,7 +139,11 @@ exports.updateCategory = (req, res) => {
 
   const isActiveValue = IsActive !== undefined ? IsActive : (status !== undefined ? status : true);
   const trimmedDescription = Description ? Description.trim() : "";
+  const style = normalizeCategoryStyle(req.body);
 
+  if (style.error) {
+    return res.status(400).json({ error: style.error });
+  }
   if (!CategoryName || CategoryName.trim() === "") {
     return res.status(400).json({ error: "Category name is required" });
   }
@@ -128,12 +165,18 @@ exports.updateCategory = (req, res) => {
   if (trimmedDescription.length > 200) {
     return res.status(400).json({ error: "Description cannot exceed 200 characters" });
   }
+  if (!isActiveValue && !allowedArchiveReasons.has(style.ArchiveReason)) {
+    return res.status(400).json({ error: "Archive reason must be merged, outdated, or temporary hidden" });
+  }
 
   const data = {
     CategoryName: CategoryName.trim(),
     DeweyCode: DeweyCode.trim(),
     Description: trimmedDescription,
     IsActive: isActiveValue,
+    CategoryColor: style.CategoryColor,
+    CategoryImage: style.CategoryImage,
+    ArchiveReason: isActiveValue ? null : style.ArchiveReason,
     UpdatedBy: req.user?.id || null,
   };
 
@@ -143,6 +186,9 @@ exports.updateCategory = (req, res) => {
       if (err.code === "ER_DUP_ENTRY") {
         const duplicateField = err.sqlMessage?.includes("CategoryName") ? "name" : "Dewey Code";
         return res.status(400).json({ error: `A category with this ${duplicateField} already exists` });
+      }
+      if (err.code === "ER_NET_PACKET_TOO_LARGE") {
+        return res.status(413).json({ error: "Category image is too large for the database packet limit" });
       }
       return res.status(500).json({ error: "Database error while updating category" });
     }
@@ -155,13 +201,17 @@ exports.updateCategory = (req, res) => {
 
 exports.toggleStatus = (req, res) => {
   const { id } = req.params;
-  const { IsActive } = req.body;
+  const { IsActive, ArchiveReason } = req.body;
 
   if (IsActive === undefined) {
     return res.status(400).json({ error: "IsActive value is required" });
   }
+  const archiveReason = ArchiveReason ? String(ArchiveReason).trim() : "";
+  if (!IsActive && !allowedArchiveReasons.has(archiveReason)) {
+    return res.status(400).json({ error: "Archive reason must be merged, outdated, or temporary hidden" });
+  }
 
-  model.updateStatus(id, IsActive, req.user?.id || null, (err, result) => {
+  model.updateStatus(id, IsActive, archiveReason, req.user?.id || null, (err, result) => {
     if (err) {
       console.error("Toggle status error:", err);
       return res.status(500).json({ error: "Database error while updating status" });

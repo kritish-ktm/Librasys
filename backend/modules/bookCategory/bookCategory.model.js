@@ -36,6 +36,9 @@ const getAll = (filters, callback) => {
       bc.DeweyCode,
       bc.Description,
       bc.IsActive,
+      bc.CategoryColor,
+      bc.CategoryImage,
+      bc.ArchiveReason,
       bc.CreatedAt,
       bc.CreatedBy,
       bc.UpdatedBy,
@@ -44,7 +47,7 @@ const getAll = (filters, callback) => {
     FROM bookcategory bc
     LEFT JOIN book b ON b.CategoryID = bc.CategoryID
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.CreatedAt, bc.CreatedBy, bc.UpdatedBy, bc.UpdatedAt
+    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.CategoryColor, bc.CategoryImage, bc.ArchiveReason, bc.CreatedAt, bc.CreatedBy, bc.UpdatedBy, bc.UpdatedAt
     ORDER BY ${sortBy} ${sortDirection}, bc.CategoryName ASC
   `;
   db.query(sql, params, callback);
@@ -62,6 +65,9 @@ const getById = (id, callback) => {
       bc.DeweyCode,
       bc.Description,
       bc.IsActive,
+      bc.CategoryColor,
+      bc.CategoryImage,
+      bc.ArchiveReason,
       bc.CreatedAt,
       bc.CreatedBy,
       bc.UpdatedBy,
@@ -70,7 +76,7 @@ const getById = (id, callback) => {
     FROM bookcategory bc
     LEFT JOIN book b ON b.CategoryID = bc.CategoryID
     WHERE bc.CategoryID = ?
-    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.CreatedAt, bc.CreatedBy, bc.UpdatedBy, bc.UpdatedAt
+    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.CategoryColor, bc.CategoryImage, bc.ArchiveReason, bc.CreatedAt, bc.CreatedBy, bc.UpdatedBy, bc.UpdatedAt
   `;
   db.query(sql, [id], callback);
 };
@@ -93,14 +99,17 @@ const getBooksByCategory = (id, callback) => {
 
 const create = (data, callback) => {
   const sql = `
-    INSERT INTO bookcategory (CategoryName, DeweyCode, Description, IsActive, CreatedBy, UpdatedBy)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO bookcategory (CategoryName, DeweyCode, Description, IsActive, CategoryColor, CategoryImage, ArchiveReason, CreatedBy, UpdatedBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     data.CategoryName,
     data.DeweyCode,
     data.Description,
     data.IsActive !== undefined ? (data.IsActive ? 1 : 0) : 1,
+    data.CategoryColor,
+    data.CategoryImage || null,
+    data.ArchiveReason || null,
     data.CreatedBy || null,
     data.UpdatedBy || null,
   ];
@@ -110,7 +119,7 @@ const create = (data, callback) => {
 const update = (id, data, callback) => {
   const sql = `
     UPDATE bookcategory
-    SET CategoryName = ?, DeweyCode = ?, Description = ?, IsActive = ?, UpdatedBy = ?, UpdatedAt = NOW()
+    SET CategoryName = ?, DeweyCode = ?, Description = ?, IsActive = ?, CategoryColor = ?, CategoryImage = ?, ArchiveReason = ?, UpdatedBy = ?, UpdatedAt = NOW()
     WHERE CategoryID = ?
   `;
   const values = [
@@ -118,19 +127,22 @@ const update = (id, data, callback) => {
     data.DeweyCode,
     data.Description,
     data.IsActive !== undefined ? (data.IsActive ? 1 : 0) : 1,
+    data.CategoryColor,
+    data.CategoryImage || null,
+    data.ArchiveReason || null,
     data.UpdatedBy || null,
     id,
   ];
   db.query(sql, values, callback);
 };
 
-const updateStatus = (id, isActive, updatedBy, callback) => {
+const updateStatus = (id, isActive, archiveReason, updatedBy, callback) => {
   const sql = `
     UPDATE bookcategory
-    SET IsActive = ?, UpdatedBy = ?, UpdatedAt = NOW()
+    SET IsActive = ?, ArchiveReason = ?, UpdatedBy = ?, UpdatedAt = NOW()
     WHERE CategoryID = ?
   `;
-  db.query(sql, [isActive ? 1 : 0, updatedBy || null, id], callback);
+  db.query(sql, [isActive ? 1 : 0, isActive ? null : archiveReason, updatedBy || null, id], callback);
 };
 
 const remove = (id, callback) => {
@@ -145,14 +157,18 @@ const hasBooksAssigned = (id, callback) => {
 
 const getMostBorrowedBooks = (callback) => {
   const sql = `
-    SELECT 
+    SELECT
       b.BookID,
       b.Title,
+      b.ISBN,
+      b.CategoryID,
+      bc.CategoryName,
       COUNT(l.LoanID) AS BorrowCount
     FROM book b
-    LEFT JOIN loan l ON l.BookID = b.BookID
-    GROUP BY b.BookID, b.Title
-    ORDER BY BorrowCount DESC
+    LEFT JOIN LoanedBook l ON l.BookID = b.BookID
+    LEFT JOIN bookcategory bc ON bc.CategoryID = b.CategoryID
+    GROUP BY b.BookID, b.Title, b.ISBN, b.CategoryID, bc.CategoryName
+    ORDER BY BorrowCount DESC, b.Title ASC
     LIMIT 10
   `;
 

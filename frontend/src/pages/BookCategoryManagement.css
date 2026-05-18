@@ -841,6 +841,36 @@
   padding: 3px;
 }
 
+.category-page .category-image-field {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.category-page .category-image-preview {
+  min-height: 112px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #d8ceb9;
+  border-radius: 8px;
+  background: #f7f2e5 center / cover no-repeat;
+  color: #7a715f;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.category-page .category-image-controls {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.category-page .category-image-controls .book-ghost-button {
+  width: fit-content;
+}
+
 .category-page .book-field textarea {
   min-height: 140px;
   resize: vertical;
@@ -1089,6 +1119,7 @@
 
   .category-page .category-stats,
   .category-page .book-form,
+  .category-page .category-image-field,
   .category-page .category-detail-grid,
   .category-page .category-book-item {
     grid-template-columns: 1fr;
