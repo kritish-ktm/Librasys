@@ -1,8 +1,15 @@
+/*
+  My Loans page for members.
+  This page is the member-facing side of the LoanedBook component. It only
+  loads the logged-in member's own loans and lets the member return their own
+  active books. Librarians use LoanedBookManagement instead.
+*/
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyLoans, returnMyLoan } from "../services/loanedBookService";
 import "./MyLoans.css";
 
+// Status filter buttons used to switch between all, active, overdue, and returned loans.
 const filters = [
   { value: "all", label: "All" },
   { value: "active", label: "Active" },
@@ -12,6 +19,13 @@ const filters = [
 
 function MyLoans() {
   const navigate = useNavigate();
+
+  /*
+    Member page state:
+    - loans stores the records returned from /loans/me.
+    - statusFilter controls which records are visible on screen.
+    - returningId disables only the loan card currently being returned.
+  */
   const [loans, setLoans] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [message, setMessage] = useState("");
@@ -19,6 +33,10 @@ function MyLoans() {
   const [loading, setLoading] = useState(true);
   const [returningId, setReturningId] = useState(null);
 
+  /*
+    Loads only the logged-in member's loans. The frontend does not send a user id;
+    the backend reads it from the JWT token, which protects member privacy.
+  */
   const loadLoans = async () => {
     setLoading(true);
 
@@ -37,6 +55,7 @@ function MyLoans() {
     loadLoans();
   }, []);
 
+  // Calculates the small summary cards from the member's own loan list.
   const stats = useMemo(() => {
     const active = loans.filter((loan) => !loan.ReturnDate && !loan.IsOverdue).length;
     const overdue = loans.filter((loan) => !loan.ReturnDate && Boolean(loan.IsOverdue)).length;
@@ -44,6 +63,7 @@ function MyLoans() {
     return { total: loans.length, active, overdue, returned };
   }, [loans]);
 
+  // Applies the selected status tab without making another API request.
   const visibleLoans = useMemo(() => {
     if (statusFilter === "active") {
       return loans.filter((loan) => !loan.ReturnDate && !loan.IsOverdue);
@@ -60,6 +80,11 @@ function MyLoans() {
     return loans;
   }, [loans, statusFilter]);
 
+  /*
+    Member return flow.
+    The backend checks that this LoanID belongs to the logged-in member before it
+    updates ReturnDate and restores the book copy count.
+  */
   const handleReturn = async (loan) => {
     const confirmed = window.confirm(`Return "${loan.BookTitle}"?`);
     if (!confirmed) return;
@@ -192,18 +217,21 @@ function MyLoans() {
 }
 
 function getStatus(loan) {
+  // ReturnDate has priority because a returned loan should not appear active/overdue.
   if (loan.ReturnDate) return "returned";
   if (loan.IsOverdue) return "overdue";
   return "active";
 }
 
 function getStatusLabel(loan) {
+  // Human-readable label for the member loan cards.
   if (loan.ReturnDate) return "Returned";
   if (loan.IsOverdue) return "Overdue";
   return "Active";
 }
 
 function formatDate(value) {
+  // Empty ReturnDate means the member has not returned this loan yet.
   if (!value) return "Not returned";
   return String(value).split("T")[0];
 }
