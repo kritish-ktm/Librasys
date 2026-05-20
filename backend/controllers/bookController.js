@@ -3,7 +3,9 @@ const db = require("../config/db");
 // Converts empty optional fields into values MySQL can store.
 const prepareBookValues = (book) => {
   const categoryId =
-    book.CategoryID === "" || book.CategoryID === undefined || book.CategoryID === null
+    book.CategoryID === "" ||
+    book.CategoryID === undefined ||
+    book.CategoryID === null
       ? null
       : Number(book.CategoryID);
 
@@ -24,7 +26,7 @@ const prepareBookValues = (book) => {
   };
 };
 
-// Backend validation protects the database from invalid Book records.
+// Backend validation protects the database from invalid book records.
 const validateBook = (book) => {
   if (!book.Title || book.Title.trim() === "") {
     return "Book title is required";
@@ -75,6 +77,7 @@ exports.getBooks = (req, res) => {
   });
 };
 
+// Get one book by its BookID, including the category name if available.
 exports.getBookById = (req, res) => {
   const sql = `
     SELECT
@@ -221,7 +224,8 @@ exports.deleteBook = (req, res) => {
 
       if (err.code === "ER_ROW_IS_REFERENCED_2") {
         return res.status(400).json({
-          error: "Cannot delete this book because it is connected to another record",
+          error:
+            "Cannot delete this book because it is connected to another record",
         });
       }
 

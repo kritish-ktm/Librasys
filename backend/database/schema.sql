@@ -24,6 +24,38 @@ CREATE TABLE IF NOT EXISTS BookCategory (
     UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Table: book
+-- Developer: Richart
+-- This table stores all book records used in the Book Management page.
+
+CREATE TABLE IF NOT EXISTS book (
+    BookID INT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Links each book to a category from the BookCategory table.
+    CategoryID INT NOT NULL,
+
+    -- Main book details shown in the catalogue.
+    Title VARCHAR(200) NOT NULL,
+    ISBN VARCHAR(13) NOT NULL UNIQUE,
+
+    -- Number of copies currently available for borrowing.
+    AvailableCopies INT NOT NULL,
+
+    -- Original publication date of the book.
+    PublicationDate DATE NOT NULL,
+
+    -- Shows whether the book can be borrowed or is reference-only.
+    IsBorrowable BOOLEAN NOT NULL,
+
+    -- Connects CategoryID to the BookCategory table.
+    CONSTRAINT fk_book_category
+      FOREIGN KEY (CategoryID) REFERENCES BookCategory(CategoryID),
+
+    -- Prevents available copies from becoming negative.
+    CONSTRAINT chk_book_available_copies
+      CHECK (AvailableCopies >= 0)
+);
+
 -- =============================================================================
 -- TABLE: LoanedBook
 -- Developer: Arun Shrestha

@@ -1,6 +1,9 @@
 /* ─── LibraryShared.css ─── */
+
+/* Google fonts used across the shared library pages. */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:wght@300;400;600&display=swap');
 
+/* Reusable colors, fonts, shadows, and radius values for the whole library UI. */
 :root {
   --brown-dark:    #3a2e22;
   --brown-mid:     #6b5c45;
@@ -30,8 +33,14 @@
   --font-body:     'Source Serif 4', Georgia, serif;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Reset default spacing and make sizing easier to control. */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
+/* Base page styling shared by the library pages. */
 body {
   font-family: var(--font-body);
   background: var(--bg-page);
@@ -39,6 +48,7 @@ body {
 }
 
 /* ─── NAVBAR ─── */
+/* Sticky top navigation bar. */
 .lib-nav {
   background: var(--bg-card);
   border-bottom: 2px solid var(--brown-soft);
@@ -53,6 +63,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* Logo area inside the navbar. */
 .lib-nav-logo {
   display: flex;
   align-items: center;
@@ -70,7 +81,11 @@ body {
   justify-content: center;
 }
 
-.lib-nav-logo-icon svg { width: 20px; height: 20px; fill: #fff; }
+.lib-nav-logo-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: #fff;
+}
 
 .lib-nav-logo-text {
   font-family: var(--font-display);
@@ -80,7 +95,10 @@ body {
 }
 
 /* ─── DROPDOWN ─── */
-.lib-dropdown-wrap { position: relative; }
+/* User dropdown wrapper and trigger button. */
+.lib-dropdown-wrap {
+  position: relative;
+}
 
 .lib-dropdown-trigger {
   display: flex;
@@ -101,6 +119,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* Small circular avatar shown in the dropdown trigger. */
 .lib-avatar {
   width: 34px;
   height: 34px;
@@ -134,8 +153,11 @@ body {
   line-height: 1;
 }
 
-.lib-chevron.open { transform: rotate(180deg); }
+.lib-chevron.open {
+  transform: rotate(180deg);
+}
 
+/* Dropdown menu opened from the navbar user area. */
 .lib-dropdown {
   position: absolute;
   top: calc(100% + 10px);
@@ -149,9 +171,17 @@ body {
   animation: lib-drop-in 0.16s ease;
 }
 
+/* Small dropdown opening animation. */
 @keyframes lib-drop-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .lib-dropdown-header {
@@ -172,6 +202,7 @@ body {
   margin-top: 2px;
 }
 
+/* Each clickable item inside the dropdown. */
 .lib-dropdown-item {
   display: flex;
   align-items: center;
@@ -188,10 +219,17 @@ body {
   transition: background 0.15s;
 }
 
-.lib-dropdown-item:hover { background: var(--bg-muted); }
+.lib-dropdown-item:hover {
+  background: var(--bg-muted);
+}
 
-.lib-dropdown-item.danger { color: var(--rust); }
-.lib-dropdown-item.danger:hover { background: #fff5f0; }
+.lib-dropdown-item.danger {
+  color: var(--rust);
+}
+
+.lib-dropdown-item.danger:hover {
+  background: #fff5f0;
+}
 
 .lib-dropdown-divider {
   height: 1px;
@@ -219,9 +257,12 @@ body {
   font-weight: 700;
 }
 
-.lib-badge-count.red { background: var(--rust); }
+.lib-badge-count.red {
+  background: var(--rust);
+}
 
 /* ─── MODAL ─── */
+/* Full-screen overlay behind modals. */
 .lib-overlay {
   position: fixed;
   inset: 0;
@@ -236,9 +277,16 @@ body {
 }
 
 @keyframes lib-fade-in {
-  from { opacity: 0; } to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
+/* Main modal box. */
 .lib-modal {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -254,8 +302,15 @@ body {
 }
 
 @keyframes lib-slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .lib-modal-header {
@@ -289,12 +344,22 @@ body {
   line-height: 1;
 }
 
-.lib-modal-close:hover { background: var(--brown-border); color: var(--brown-dark); }
+.lib-modal-close:hover {
+  background: var(--brown-border);
+  color: var(--brown-dark);
+}
 
-.lib-modal-body { overflow-y: auto; flex: 1; }
+.lib-modal-body {
+  overflow-y: auto;
+  flex: 1;
+}
 
 /* ─── TABLE ─── */
-.lib-table { width: 100%; border-collapse: collapse; }
+/* Shared table styling used inside modals or library pages. */
+.lib-table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
 .lib-table th {
   background: var(--brown-mid);
@@ -314,7 +379,9 @@ body {
   border-bottom: 1px solid var(--bg-page);
 }
 
-.lib-table tbody tr:hover { background: var(--bg-muted); }
+.lib-table tbody tr:hover {
+  background: var(--bg-muted);
+}
 
 .lib-table-empty {
   text-align: center;
@@ -325,6 +392,7 @@ body {
 }
 
 /* ─── STATUS BADGE ─── */
+/* Reusable status labels for loans, fines, or records. */
 .lib-status {
   display: inline-block;
   padding: 3px 10px;
@@ -334,14 +402,38 @@ body {
   text-transform: capitalize;
 }
 
-.lib-status.active   { background: var(--green-bg);  color: var(--green-badge); }
-.lib-status.returned { background: var(--blue-bg);   color: var(--blue-badge); }
-.lib-status.overdue  { background: var(--red-bg);    color: var(--red-badge); }
-.lib-status.paid     { background: var(--green-bg);  color: var(--green-badge); }
-.lib-status.pending  { background: var(--amber-bg);  color: var(--amber-badge); }
-.lib-status.waived   { background: #f3e5f5;           color: #6a1b9a; }
+.lib-status.active {
+  background: var(--green-bg);
+  color: var(--green-badge);
+}
+
+.lib-status.returned {
+  background: var(--blue-bg);
+  color: var(--blue-badge);
+}
+
+.lib-status.overdue {
+  background: var(--red-bg);
+  color: var(--red-badge);
+}
+
+.lib-status.paid {
+  background: var(--green-bg);
+  color: var(--green-badge);
+}
+
+.lib-status.pending {
+  background: var(--amber-bg);
+  color: var(--amber-badge);
+}
+
+.lib-status.waived {
+  background: #f3e5f5;
+  color: #6a1b9a;
+}
 
 /* ─── BUTTONS ─── */
+/* Shared button base style. */
 .lib-btn {
   display: inline-flex;
   align-items: center;
@@ -360,23 +452,37 @@ body {
   background: var(--brown-mid);
   color: #fff;
 }
-.lib-btn-primary:hover { background: var(--brown-dark); }
+
+.lib-btn-primary:hover {
+  background: var(--brown-dark);
+}
 
 .lib-btn-danger {
   background: var(--rust);
   color: #fff;
 }
-.lib-btn-danger:hover { background: var(--rust-hover); }
+
+.lib-btn-danger:hover {
+  background: var(--rust-hover);
+}
 
 .lib-btn-outline {
   background: none;
   border: 1.5px solid var(--brown-mid);
   color: var(--brown-mid);
 }
-.lib-btn-outline:hover { background: var(--bg-muted); }
+
+.lib-btn-outline:hover {
+  background: var(--bg-muted);
+}
 
 /* ─── FORM ─── */
-.lib-form-group { display: flex; flex-direction: column; gap: 6px; }
+/* Shared form field layout. */
+.lib-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
 .lib-label {
   font-size: 0.78rem;
@@ -405,6 +511,7 @@ body {
 }
 
 /* ─── PAGE LAYOUT ─── */
+/* General page wrapper and spacing utilities. */
 .lib-page {
   min-height: 100vh;
   background: var(--bg-page);
@@ -435,8 +542,13 @@ body {
   font-size: 0.95rem;
 }
 
-.lib-section { padding: 0 2rem 3rem; max-width: 1200px; margin: 0 auto; }
+.lib-section {
+  padding: 0 2rem 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
+/* Small section heading with a line beside it. */
 .lib-section-heading {
   display: flex;
   align-items: center;
@@ -460,6 +572,7 @@ body {
 }
 
 /* ─── CATEGORY CARDS ─── */
+/* Grid layout for category cards. */
 .lib-category-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -484,7 +597,7 @@ body {
   border-color: var(--brown-border);
 }
 
-/* ── Cover image (top of card) ── */
+/* Cover image area at the top of each category card. */
 .lib-category-cover {
   width: 100%;
   height: 180px;
@@ -506,7 +619,7 @@ body {
   transform: scale(1.04);
 }
 
-/* Placeholder when no image set */
+/* Placeholder shown when a category does not have an image. */
 .lib-category-cover-placeholder {
   width: 100%;
   height: 100%;
@@ -533,7 +646,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* Set-image button overlaid on cover */
+/* Button used to set or change the category image. */
 .lib-category-set-img-btn {
   position: absolute;
   bottom: 8px;
@@ -554,9 +667,11 @@ body {
   z-index: 2;
 }
 
-.lib-category-set-img-btn:hover { background: rgba(58,46,34,0.95); }
+.lib-category-set-img-btn:hover {
+  background: rgba(58,46,34,0.95);
+}
 
-/* Path input panel — slides down from cover when editing */
+/* Small input panel used when editing a category image path. */
 .lib-category-path-panel {
   background: var(--bg-muted);
   border-top: 1px solid var(--brown-soft);
@@ -599,7 +714,9 @@ body {
   flex-shrink: 0;
 }
 
-.lib-category-path-apply:hover { background: var(--brown-dark); }
+.lib-category-path-apply:hover {
+  background: var(--brown-dark);
+}
 
 .lib-category-path-cancel {
   background: none;
@@ -614,9 +731,12 @@ body {
   flex-shrink: 0;
 }
 
-.lib-category-path-cancel:hover { border-color: var(--brown-mid); color: var(--brown-mid); }
+.lib-category-path-cancel:hover {
+  border-color: var(--brown-mid);
+  color: var(--brown-mid);
+}
 
-/* ── Card body below cover ── */
+/* Text content inside each category card. */
 .lib-category-card-body {
   padding: 1rem 1.25rem 0.5rem;
   display: flex;
@@ -637,6 +757,7 @@ body {
   color: var(--brown-light);
 }
 
+/* Small book preview list inside category cards. */
 .lib-category-books {
   border-top: 1px solid var(--bg-page);
   padding: 0.6rem 1.25rem 1rem;
@@ -667,6 +788,7 @@ body {
 }
 
 /* ─── PROFILE PAGE ─── */
+/* Profile page wrapper and centered profile card. */
 .lib-profile-page {
   min-height: 100vh;
   background: var(--bg-page);
@@ -686,6 +808,7 @@ body {
   box-shadow: var(--shadow-md);
 }
 
+/* Top colored area of the profile card. */
 .lib-profile-card-hero {
   background: var(--brown-mid);
   padding: 2rem 2rem 3.5rem;
@@ -705,6 +828,7 @@ body {
   color: rgba(255,255,255,0.7);
 }
 
+/* Large profile avatar overlapping the hero and body. */
 .lib-profile-avatar-wrap {
   position: absolute;
   bottom: -38px;
@@ -735,6 +859,7 @@ body {
   gap: 1.1rem;
 }
 
+/* Profile summary values such as role or account details. */
 .lib-profile-meta {
   display: flex;
   justify-content: center;
@@ -762,6 +887,7 @@ body {
   margin-top: 2px;
 }
 
+/* Profile action buttons section. */
 .lib-profile-actions {
   display: flex;
   flex-direction: column;
@@ -787,6 +913,7 @@ body {
   gap: 8px;
 }
 
+/* Success and error messages used on profile or form pages. */
 .lib-success-msg {
   background: var(--green-bg);
   color: var(--green-badge);

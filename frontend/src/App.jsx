@@ -17,6 +17,8 @@ import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
 
+// PrivateRoute protects pages that should only be opened by logged-in users.
+// If a role is provided, the user must also have that matching role.
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
@@ -34,15 +36,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* PUBLIC ROUTES */}
+        {/* Public routes that anyone can open. */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Member login routes both use the same updated Login page */}
+        {/* Member login routes both use the same Login page. */}
         <Route path="/login" element={<Login />} />
         <Route path="/member-login" element={<Login />} />
 
-        {/* Staff/admin login uses the updated AdminLogin page */}
+        {/* Staff/admin login uses a separate AdminLogin page. */}
         <Route path="/admin-login" element={<AdminLogin />} />
 
         <Route path="/MemberDashboard" element={<MemberDashboard />} />
@@ -55,7 +56,7 @@ function App() {
 
         <Route path="/book/:id" element={<BookDetail />} />
 
-        {/* USER ROUTES */}
+        {/* Routes for logged-in users. */}
         <Route
           path="/profile"
           element={
@@ -83,7 +84,7 @@ function App() {
           }
         />
 
-        {/* LIBRARIAN ROUTES */}
+        {/* Routes only for librarians. */}
         <Route
           path="/dashboard"
           element={
@@ -137,7 +138,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
       </Routes>
     </BrowserRouter>
   );
