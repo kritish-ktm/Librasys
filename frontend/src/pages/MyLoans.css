@@ -1,3 +1,8 @@
+/*
+  Styles for the member My Loans page.
+  This page is simpler than the librarian loan table because it only shows the
+  logged-in member's own active, overdue, and returned loan records.
+*/
 .my-loans-page {
   min-height: 100vh;
   padding: 32px;

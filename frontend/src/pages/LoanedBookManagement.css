@@ -1,3 +1,9 @@
+/*
+  Styles for the librarian LoanedBookManagement page.
+  These classes control the sidebar layout, summary cards, loan table, filters,
+  searchable selectors, and custom create/edit/confirm modals for Arun's
+  LoanedBook workflow.
+*/
 .loan-page {
   min-height: 100vh;
   display: grid;

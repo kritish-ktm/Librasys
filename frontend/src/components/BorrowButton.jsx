@@ -1,3 +1,9 @@
+/*
+  BorrowButton component.
+  This is the member self-borrowing control shown on the Book Detail page. It
+  checks login state, member role, book availability, and then calls the
+  LoanedBook API to create the member's loan.
+*/
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { borrowBook } from "../services/loanedBookService";
@@ -14,6 +20,14 @@ function BorrowButton({ book, onBorrowed }) {
   const availableCopies = Number(book?.AvailableCopies || 0);
   const canBorrow = Boolean(book?.IsBorrowable) && availableCopies > 0;
 
+  /*
+    Main member borrow flow:
+    - redirect guests to login,
+    - block non-member roles,
+    - block unavailable books,
+    - call the backend to create the loan,
+    - refresh the parent Book Detail page after success so stock is updated.
+  */
   const handleBorrow = async () => {
     setMessage("");
     setError("");

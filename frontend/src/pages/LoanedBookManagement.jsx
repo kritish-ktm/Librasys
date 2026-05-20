@@ -1,3 +1,10 @@
+/*
+  LoanedBookManagement page.
+  This is the librarian-facing React page for Arun Shrestha's LoanedBook / Loan
+  and Borrowing System component. It connects to the loan API service to create
+  loans, edit/correct loan records, return books, delete incorrect returned
+  records, search/filter records, paginate the table, and show loading/alert UI.
+*/
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -34,6 +41,7 @@ const statusFilters = [
   { value: "returned", label: "Returned" },
 ];
 
+// Default shapes keep the UI stable before the first API response arrives.
 const emptyPagination = {
   page: 1,
   limit: 10,
@@ -60,15 +68,32 @@ const ALERT_FADE_MS = 260;
 const MIN_LOADER_MS = 650;
 
 function LoanedBookManagement() {
+  /*
+    Main table state:
+    loans is the current page of records, summary drives the four stat cards,
+    and pagination stores page/limit/total values from the backend.
+  */
   const [loans, setLoans] = useState([]);
   const [summary, setSummary] = useState(emptySummary);
   const [pagination, setPagination] = useState(emptyPagination);
+
+  /*
+    Create modal state.
+    Search-first lookup is used instead of long dropdowns because real library
+    systems can have many members and many books.
+  */
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedBook, setSelectedBook] = useState(null);
   const [userQuery, setUserQuery] = useState("");
   const [bookQuery, setBookQuery] = useState("");
   const [userResults, setUserResults] = useState([]);
   const [bookResults, setBookResults] = useState([]);
+
+  /*
+    Edit modal state.
+    The edit modal keeps separate selected member/book values so editing an
+    existing loan does not interfere with the create-loan form.
+  */
   const [editLoan, setEditLoan] = useState(null);
   const [editForm, setEditForm] = useState(emptyEditForm);
   const [editSelectedUser, setEditSelectedUser] = useState(null);
@@ -77,20 +102,28 @@ function LoanedBookManagement() {
   const [editBookQuery, setEditBookQuery] = useState("");
   const [editUserResults, setEditUserResults] = useState([]);
   const [editBookResults, setEditBookResults] = useState([]);
+
+  // Search/filter/pagination controls for the librarian loan table.
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [borrowedFrom, setBorrowedFrom] = useState("");
   const [borrowedTo, setBorrowedTo] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+
+  // Feedback state for inline errors and auto-dismissing success/error alerts.
   const [error, setError] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [alertType, setAlertType] = useState("success");
   const [showAlert, setShowAlert] = useState(false);
   const [isAlertLeaving, setIsAlertLeaving] = useState(false);
+
+  // Modal state controls create, edit, return confirmation, and delete confirmation.
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+
+  // Loading state controls the page-level overlay and disables duplicate actions.
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingOverlayVisible, setIsLoadingOverlayVisible] = useState(false);
@@ -101,6 +134,7 @@ function LoanedBookManagement() {
   const [loadingEditUsers, setLoadingEditUsers] = useState(false);
   const [loadingEditBooks, setLoadingEditBooks] = useState(false);
 
+  // New loans use today's date and a fixed 14-day due date, matching backend rules.
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
   const dueDate = useMemo(() => {
     const date = new Date();
@@ -113,6 +147,7 @@ function LoanedBookManagement() {
   const loaderStartedAtRef = useRef(0);
   const isBusy = isLoading || isSaving || isLoadingOverlayVisible;
 
+  // Clear timers when the page unmounts so old alerts/loaders do not update state later.
   useEffect(() => {
     return () => {
       clearTimeout(alertTimerRef.current);
@@ -121,6 +156,11 @@ function LoanedBookManagement() {
     };
   }, []);
 
+  /*
+    Shows a temporary alert above the loan panel.
+    If a second message appears before the first one finishes, the old timers
+    are cleared and the new message gets a fresh 3-second display window.
+  */
   const showFeedback = (text, type = "success") => {
     clearTimeout(alertTimerRef.current);
     clearTimeout(alertFadeTimerRef.current);
@@ -145,6 +185,10 @@ function LoanedBookManagement() {
     showFeedback(text, "error");
   };
 
+  /*
+    Shows the custom loading overlay with an action-specific message. The page
+    also uses this state to disable buttons and prevent duplicate API requests.
+  */
   const showLoader = (message, subtext = "Please wait...") => {
     clearTimeout(loaderTimerRef.current);
     loaderStartedAtRef.current = Date.now();
@@ -163,6 +207,12 @@ function LoanedBookManagement() {
   };
 
   // ===== LOAD LOAN TABLE =====
+  /*
+    Fetches the librarian loan table from the backend.
+    The backend performs server-side search, filtering, and pagination. The
+    older array fallback is kept so the page still works if an older API shape
+    is returned during development.
+  */
   const fetchLoans = async (message = "Fetching loan records...") => {
     showLoader(message);
     setIsLoading(true);
@@ -206,6 +256,10 @@ function LoanedBookManagement() {
   }, [search, statusFilter, borrowedFrom, borrowedTo, page, limit]);
 
   // ===== SEARCH MEMBER BOX =====
+  /*
+    Debounced member search for the create form.
+    Waiting 250ms avoids sending an API request on every single keystroke.
+  */
   useEffect(() => {
     const query = userQuery.trim();
     if (query.length < 2) {
@@ -229,6 +283,7 @@ function LoanedBookManagement() {
   }, [userQuery]);
 
   // ===== SEARCH BOOK BOX =====
+  // Debounced book search for the create form, using title/ISBN/BookID matching.
   useEffect(() => {
     const query = bookQuery.trim();
     if (query.length < 2) {
@@ -252,6 +307,10 @@ function LoanedBookManagement() {
   }, [bookQuery]);
 
   // ===== EDIT MODAL MEMBER SEARCH =====
+  /*
+    Debounced member search inside the edit modal. It is disabled when the modal
+    is closed or the query already matches the selected member name.
+  */
   useEffect(() => {
     const query = editUserQuery.trim();
     if (!isEditOpen || query.length < 2 || query === editSelectedUser?.FullName) {
@@ -275,6 +334,7 @@ function LoanedBookManagement() {
   }, [editUserQuery, editSelectedUser, isEditOpen]);
 
   // ===== EDIT MODAL BOOK SEARCH =====
+  // Debounced book search inside the edit modal.
   useEffect(() => {
     const query = editBookQuery.trim();
     if (!isEditOpen || query.length < 2 || query === editSelectedBook?.Title) {
@@ -303,6 +363,7 @@ function LoanedBookManagement() {
     Number(selectedBook.AvailableCopies || 0) > 0 &&
     !isBusy;
 
+  // Clears the create modal after a successful loan or when the modal closes.
   const resetForm = () => {
     setSelectedUser(null);
     setSelectedBook(null);
@@ -312,6 +373,7 @@ function LoanedBookManagement() {
     setBookResults([]);
   };
 
+  // Clears edit-specific state so the next edit starts with fresh loan details.
   const resetEditForm = () => {
     setEditLoan(null);
     setEditForm(emptyEditForm);
@@ -325,6 +387,7 @@ function LoanedBookManagement() {
   };
 
   // ===== CLEAR TABLE FILTERS =====
+  // Resets all table controls back to their default view.
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("all");
@@ -334,6 +397,12 @@ function LoanedBookManagement() {
   };
 
   // ===== CREATE LOAN =====
+  /*
+    Handles librarian-created loans.
+    The frontend checks that a member and book have been selected and that the
+    chosen book has available copies. The backend repeats the important checks
+    before inserting the loan and reducing Book.AvailableCopies.
+  */
   const handleCreateLoan = async (event) => {
     event.preventDefault();
     setError("");
@@ -375,6 +444,11 @@ function LoanedBookManagement() {
   };
 
   // ===== OPEN EDIT MODAL =====
+  /*
+    Opens the edit/correction modal.
+    The page first fetches the latest version of the loan by LoanID so a
+    librarian edits current database data, not a stale table row.
+  */
   const openEditModal = async (loan) => {
     showLoader("Loading loan details...");
     setIsLoading(true);
@@ -422,6 +496,11 @@ function LoanedBookManagement() {
   };
 
   // ===== SAVE EDIT MODAL =====
+  /*
+    Saves changes from the edit modal.
+    LoanID is not edited. Status is translated into ReturnDate because the
+    backend calculates active/overdue/returned state from dates.
+  */
   const handleEditSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -466,6 +545,11 @@ function LoanedBookManagement() {
   };
 
   // ===== CONFIRM ACTIONS =====
+  /*
+    Handles custom confirmation modal actions.
+    Return sets ReturnDate and restores availability. Delete is blocked for
+    active loans so an active borrowing record cannot disappear without a return.
+  */
   const handleConfirmAction = async () => {
     if (!confirmAction?.loan) return;
 
@@ -501,6 +585,7 @@ function LoanedBookManagement() {
   };
 
   // ===== FILTER CHANGE =====
+  // Any filter change returns to page 1 because the old page may not exist anymore.
   const handleFilterChange = (setter) => (event) => {
     setter(event.target.value);
     setPage(1);
@@ -513,6 +598,7 @@ function LoanedBookManagement() {
 
   return (
     <div className="loan-page">
+      {/* Page-level loader covers the content during API work and prevents repeat clicks. */}
       <LoadingOverlay show={isBusy} message={loadingMessage} subtext={loadingSubtext} />
       <Sidebar />
 
@@ -549,6 +635,7 @@ function LoanedBookManagement() {
           />
         </section>
 
+        {/* Auto-dismissing feedback for create, edit, return, delete, and errors. */}
         {showAlert && (
           <div className={`loan-alert ${alertType} ${isAlertLeaving ? "is-hiding" : ""}`}>
             {alertMessage}
@@ -781,6 +868,7 @@ function LoanedBookManagement() {
         </section>
       </section>
 
+      {/* ===== CREATE LOAN MODAL ===== */}
       {isCreateOpen && (
         <div className="loan-modal-backdrop" role="presentation">
           <section className="loan-modal" role="dialog" aria-modal="true" aria-labelledby="create-loan-title">
@@ -807,6 +895,7 @@ function LoanedBookManagement() {
             {error && <div className="loan-alert error">{error}</div>}
 
             <form className="loan-form" onSubmit={handleCreateLoan}>
+              {/* Search-first selectors keep the form usable with many members/books. */}
               <SearchSelector
                 label="1. Search Member"
                 query={userQuery}
@@ -879,6 +968,7 @@ function LoanedBookManagement() {
         </div>
       )}
 
+      {/* ===== EDIT / CORRECT LOAN MODAL ===== */}
       {isEditOpen && editLoan && (
         <div className="loan-modal-backdrop" role="presentation">
           <section className="loan-modal loan-edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-loan-title">
@@ -927,6 +1017,7 @@ function LoanedBookManagement() {
                 </label>
               </div>
 
+              {/* Returned loans show read-only member/book cards because stock has already moved. */}
               {editLoan.ReturnDate ? (
                 <ReadOnlySelectionCard label="Member" type="user" item={editSelectedUser} />
               ) : (
@@ -1032,6 +1123,7 @@ function LoanedBookManagement() {
         </div>
       )}
 
+      {/* ===== RETURN / DELETE CONFIRMATION MODAL ===== */}
       {confirmAction && (
         <div className="loan-modal-backdrop" role="presentation">
           <section className="loan-modal loan-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-loan-title">
@@ -1098,6 +1190,7 @@ function LoanedBookManagement() {
 }
 
 // ===== SUMMARY CARD COMPONENT =====
+// Small reusable card for the four counters at the top of the page.
 function SummaryCard({ title, value, detail, icon: Icon, tone }) {
   return (
     <article className={`loan-stat-card ${tone}`}>
@@ -1114,6 +1207,11 @@ function SummaryCard({ title, value, detail, icon: Icon, tone }) {
 }
 
 // ===== SEARCH RESULT COMPONENT =====
+/*
+  Reusable searchable selector used by both create and edit forms.
+  It receives search results from the parent page, renders them in a small list,
+  and then shows the selected member/book as a compact card.
+*/
 function SearchSelector({
   label,
   query,
@@ -1176,6 +1274,7 @@ function SearchSelector({
 }
 
 // ===== MEMBER RESULT CARD =====
+// Displays one member result or selected member card.
 function UserResult({ user }) {
   return (
     <>
@@ -1190,6 +1289,7 @@ function UserResult({ user }) {
 }
 
 // ===== BOOK RESULT CARD =====
+// Displays one book result or selected book card, including available copies.
 function BookResult({ book, selected }) {
   return (
     <>
@@ -1205,6 +1305,7 @@ function BookResult({ book, selected }) {
   );
 }
 
+// Used when a returned loan is being viewed in edit mode and member/book cannot change.
 function ReadOnlySelectionCard({ label, type, item }) {
   return (
     <div className="loan-lookup">
@@ -1217,17 +1318,24 @@ function ReadOnlySelectionCard({ label, type, item }) {
 }
 
 // ===== STATUS BADGE =====
+// Converts date/overdue data into the visible status badge shown in the table.
 function renderStatus(loan) {
   if (loan.ReturnDate) return <span className="loan-status returned">Returned</span>;
   if (loan.IsOverdue) return <span className="loan-status overdue">Overdue</span>;
   return <span className="loan-status active">Active</span>;
 }
 
+// Keeps API date strings in yyyy-mm-dd format for table cells and date inputs.
 function formatDateForDisplay(value) {
   if (!value) return "-";
   return String(value).split("T")[0];
 }
 
+/*
+  Frontend validation for the edit modal.
+  These checks give quick feedback before the API call. The backend still repeats
+  the important rules so direct API requests cannot bypass validation.
+*/
 function validateEditForm({ editLoan, editForm, editSelectedUser, editSelectedBook }) {
   if (!editLoan) return "Loan record is missing.";
   if (!editSelectedUser?.UserID) return "Selected member must exist.";
@@ -1268,6 +1376,7 @@ function isTruthy(value) {
   return value === true || value === 1 || value === "1";
 }
 
+// Builds initials for member avatars in the loan table and search result cards.
 function getInitials(name) {
   return String(name || "?")
     .split(" ")

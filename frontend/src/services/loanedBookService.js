@@ -1,7 +1,17 @@
+/*
+  LoanedBook API service layer.
+  This file is the single frontend place that knows the loan API URLs. React
+  pages/components call these helper functions instead of repeating axios calls
+  everywhere.
+*/
 import axios from "axios";
 
 const API_URL = "http://localhost:5000/loans";
 
+/*
+  Member self-service routes need the JWT token because the backend uses it to
+  identify whose "My Loans" records or return request is being handled.
+*/
 const authConfig = () => ({
   headers: {
     Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -9,6 +19,11 @@ const authConfig = () => ({
 });
 
 // ===== GET LOANS WITH FILTERS =====
+/*
+  Loads the librarian loan table.
+  The query parameters match the table controls: keyword search, status tab,
+  borrowed date range, current page, and page size.
+*/
 export const getLoans = async ({
   search = "",
   status = "all",
@@ -24,12 +39,14 @@ export const getLoans = async ({
 };
 
 // ===== OLD FORM OPTIONS =====
+// Kept for compatibility with older form code; the current UI prefers search APIs.
 export const getLoanOptions = async () => {
   const response = await axios.get(`${API_URL}/options`);
   return response.data;
 };
 
 // ===== SEARCH MEMBERS =====
+// Returns a small list of matching active members for the searchable member input.
 export const searchLoanUsers = async (query) => {
   const response = await axios.get(`${API_URL}/search/users`, {
     params: { q: query },
@@ -38,6 +55,7 @@ export const searchLoanUsers = async (query) => {
 };
 
 // ===== SEARCH BOOKS =====
+// Returns a small list of matching borrowable books for the searchable book input.
 export const searchLoanBooks = async (query) => {
   const response = await axios.get(`${API_URL}/search/books`, {
     params: { q: query },
@@ -46,36 +64,42 @@ export const searchLoanBooks = async (query) => {
 };
 
 // ===== GET ONE LOAN =====
+// Used before opening the edit modal so the modal has fresh loan details.
 export const getLoanById = async (id) => {
   const response = await axios.get(`${API_URL}/${id}`);
   return response.data;
 };
 
 // ===== GET USER LOANS =====
+// Librarian lookup for a selected member's loan history.
 export const getLoansByUser = async (userId) => {
   const response = await axios.get(`${API_URL}/user/${userId}`);
   return response.data;
 };
 
 // ===== GET OVERDUE LOANS =====
+// Librarian overdue list. Overdue means not returned and past the due date.
 export const getOverdueLoans = async () => {
   const response = await axios.get(`${API_URL}/user/overdue`);
   return response.data;
 };
 
 // ===== MEMBER: MY LOANS =====
+// Member page data. The backend reads the member id from the JWT token.
 export const getMyLoans = async () => {
   const response = await axios.get(`${API_URL}/me`, authConfig());
   return response.data;
 };
 
 // ===== CREATE LOAN =====
+// Librarian creates a loan for a selected member and book.
 export const addLoan = async (loanData) => {
   const response = await axios.post(API_URL, loanData);
   return response.data;
 };
 
 // ===== MEMBER BORROW BOOK =====
+// Member borrows directly from the Book Detail page.
 export const borrowBook = async (bookId) => {
   const response = await axios.post(
     `${API_URL}/me`,
@@ -86,24 +110,28 @@ export const borrowBook = async (bookId) => {
 };
 
 // ===== UPDATE LOAN =====
+// Librarian saves corrections from the edit loan modal.
 export const updateLoan = async (id, loanData) => {
   const response = await axios.put(`${API_URL}/${id}`, loanData);
   return response.data;
 };
 
 // ===== RETURN BOOK =====
+// Librarian marks any managed loan as returned.
 export const returnLoan = async (id) => {
   const response = await axios.put(`${API_URL}/${id}/return`);
   return response.data;
 };
 
 // ===== MEMBER RETURN BOOK =====
+// Member marks only their own loan as returned.
 export const returnMyLoan = async (id) => {
   const response = await axios.put(`${API_URL}/me/${id}/return`, {}, authConfig());
   return response.data;
 };
 
 // ===== DELETE LOAN =====
+// Librarian deletes an incorrect returned loan record.
 export const deleteLoan = async (id) => {
   const response = await axios.delete(`${API_URL}/${id}`);
   return response.data;
