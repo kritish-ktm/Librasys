@@ -1,700 +1,798 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Sidebar from '../components/Sidebar';
-import './UserManagement.css';
+import { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
+import {
+  CheckCircle2,
+  Filter,
+  Pencil,
+  Plus,
+  Search,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
+import LoadingOverlay from "../components/LoadingOverlay";
+import Sidebar from "../components/Sidebar";
+import "./UserManagement.css";
 
-// ─── Config ────────────────────────────────────────────────────────────────────
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = "http://localhost:5000";
+const USERS_PER_PAGE_OPTIONS = [5, 10, 20];
+const ALERT_DURATION_MS = 3000;
+const ALERT_FADE_MS = 260;
+const MIN_LOADER_MS = 650;
 
-/**
- * Returns Axios config with the JWT token from localStorage.
- * Every protected API call must include this header so the backend
- * can verify the logged-in user's identity.
- */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: { Authorization: `Bearer ${token}` }
-  };
+const initialForm = {
+  fullName: "",
+  email: "",
+  password: "",
+  role: "Member",
 };
 
-// ─── normalizeUser ─────────────────────────────────────────────────────────────
-/**
- * Converts raw database row fields into the shape the UI expects.
- *
- * WHY THIS EXISTS:
- * MySQL column names are PascalCase (e.g. FullName, IsActive), but our
- * React components use camelCase. This function bridges that gap in one place
- * so the rest of the code stays clean and consistent.
- *
- * SPECIAL CASE — IsActive (BIT column):
- * MySQL BIT(1) fields are sent over JSON as a Buffer-like object:
- *   { type: 'Buffer', data: [1] }   →  active
- *   { type: 'Buffer', data: [0] }   →  inactive
- *
- * We CANNOT use Node's `Buffer.isBuffer()` here because this code runs in
- * the browser, where Buffer doesn't exist. Instead we check for the
- * object shape that JSON.stringify produces for a Buffer.
- */
-const normalizeUser = (user) => {
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return {
+    headers: { Authorization: `Bearer ${token}` },
+  };
+}
+
+function normalizeUser(user) {
   const activeValue = user.IsActive ?? user.isActive;
+  let isActive = false;
 
-  let isActive;
-
-  if (
-    activeValue !== null &&
-    typeof activeValue === 'object' &&
-    Array.isArray(activeValue.data)
-  ) {
-    // MySQL BIT(1) arrives as { type: 'Buffer', data: [0|1] } after JSON serialisation
+  if (activeValue && typeof activeValue === "object" && Array.isArray(activeValue.data)) {
     isActive = activeValue.data[0] === 1;
   } else {
-    // Fallback: value is already a number (0/1) or boolean
-    isActive = Number(activeValue) === 1;
+    isActive = activeValue === true || activeValue === 1 || activeValue === "1";
   }
 
   return {
-    UserID:    user.UserID,
-    fullName:  user.FullName,
-    email:     user.Email,
-    role:      user.Role,
+    UserID: user.UserID,
+    fullName: user.FullName ?? user.fullName ?? "",
+    email: user.Email ?? user.email ?? "",
+    role: user.Role ?? user.role ?? "Member",
     isActive,
-    createdAt: user.DateRegistered
+    createdAt: user.DateRegistered ?? user.createdAt ?? "",
   };
-};
+}
 
-// ─── Component ─────────────────────────────────────────────────────────────────
 function UserManagement() {
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [error, setError] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertType, setAlertType] = useState("success");
+  const [showAlert, setShowAlert] = useState(false);
+  const [isAlertLeaving, setIsAlertLeaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingOverlayVisible, setIsLoadingOverlayVisible] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Fetching users...");
+  const [loadingSubtext, setLoadingSubtext] = useState("Please wait...");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editUser, setEditUser] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [form, setForm] = useState(initialForm);
 
-  // ── Table / page state ──────────────────────────────────────────────────────
-  const [users, setUsers]               = useState([]);        // all users from API
-  const [search, setSearch]             = useState('');        // search input value
-  const [roleFilter, setRoleFilter]     = useState('All');     // dropdown: All | Librarian | Member
-  const [statusFilter, setStatusFilter] = useState('All');     // dropdown: All | Active | Inactive
-  const [pageError, setPageError]       = useState('');        // banner error message
-  const [loading, setLoading]           = useState(false);     // table loading spinner
-  const [statusLoadingId, setStatusLoadingId] = useState(null);// tracks which row is toggling
-  const [currentPage, setCurrentPage]   = useState(1);        // current pagination page
+  const alertTimerRef = useRef(null);
+  const alertFadeTimerRef = useRef(null);
+  const loaderTimerRef = useRef(null);
+  const loaderStartedAtRef = useRef(0);
+  const isBusy = isLoading || isSaving || isLoadingOverlayVisible;
 
-  const USERS_PER_PAGE = 10;
-
-  // ── Modal state ─────────────────────────────────────────────────────────────
-  const [showAddModal, setShowAddModal] = useState(false); // controls Add User modal
-  const [editUser, setEditUser]         = useState(null);  // null = closed; object = editing that user
-
-  // ── Add-user form state ─────────────────────────────────────────────────────
-  const [newUser, setNewUser] = useState({
-    fullName: '',
-    email:    '',
-    password: '',
-    role:     'Member'
-  });
-
-  // ── Shared form feedback ────────────────────────────────────────────────────
-  const [formError, setFormError]     = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
-
-  // ── Fetch users on mount ────────────────────────────────────────────────────
   useEffect(() => {
     fetchUsers();
+
+    return () => {
+      clearTimeout(alertTimerRef.current);
+      clearTimeout(alertFadeTimerRef.current);
+      clearTimeout(loaderTimerRef.current);
+    };
   }, []);
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
+  const summary = useMemo(() => {
+    const active = users.filter((user) => user.isActive).length;
+    const librarians = users.filter((user) => user.role === "Librarian").length;
 
-  /** Basic email format guard — prevents obviously bad addresses. */
-  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return {
+      total: users.length,
+      active,
+      inactive: users.length - active,
+      librarians,
+    };
+  }, [users]);
 
-  // ─── API Calls ─────────────────────────────────────────────────────────────
+  const filteredUsers = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
 
-  /**
-   * Loads all users from the backend.
-   *
-   * The `?t=` cache-buster timestamp forces the browser to skip its HTTP cache
-   * and always fetch fresh data. Without it, the browser may return a 304 (Not
-   * Modified) and show stale data after create/update/delete operations.
-   */
-  const fetchUsers = async () => {
+    return users.filter((user) => {
+      const matchesSearch =
+        !keyword ||
+        String(user.UserID).includes(keyword) ||
+        user.fullName.toLowerCase().includes(keyword) ||
+        user.email.toLowerCase().includes(keyword);
+
+      const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && user.isActive) ||
+        (statusFilter === "inactive" && !user.isActive);
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / limit));
+  const visibleUsers = filteredUsers.slice((page - 1) * limit, page * limit);
+  const firstRecord = filteredUsers.length ? (page - 1) * limit + 1 : 0;
+  const lastRecord = Math.min(page * limit, filteredUsers.length);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const showFeedback = (text, type = "success") => {
+    clearTimeout(alertTimerRef.current);
+    clearTimeout(alertFadeTimerRef.current);
+    setAlertMessage(text);
+    setAlertType(type);
+    setIsAlertLeaving(false);
+    setShowAlert(true);
+
+    alertTimerRef.current = setTimeout(() => {
+      setIsAlertLeaving(true);
+      alertFadeTimerRef.current = setTimeout(() => {
+        setShowAlert(false);
+        setAlertMessage("");
+        if (type === "error") setError("");
+        setIsAlertLeaving(false);
+      }, ALERT_FADE_MS);
+    }, ALERT_DURATION_MS);
+  };
+
+  const showError = (text) => {
+    setError(text);
+    showFeedback(text, "error");
+  };
+
+  const showLoader = (message, subtext = "Please wait...") => {
+    clearTimeout(loaderTimerRef.current);
+    loaderStartedAtRef.current = Date.now();
+    setLoadingMessage(message);
+    setLoadingSubtext(subtext);
+    setIsLoadingOverlayVisible(true);
+  };
+
+  const hideLoader = () => {
+    const elapsed = Date.now() - loaderStartedAtRef.current;
+    const remaining = Math.max(MIN_LOADER_MS - elapsed, 0);
+    clearTimeout(loaderTimerRef.current);
+    loaderTimerRef.current = setTimeout(() => {
+      setIsLoadingOverlayVisible(false);
+    }, remaining);
+  };
+
+  const fetchUsers = async (message = "Fetching users...") => {
+    showLoader(message);
+    setIsLoading(true);
+
     try {
-      setLoading(true);
-      setPageError('');
-
-      const res = await axios.get(
-        `${API_BASE_URL}/api/users?t=${Date.now()}`,
-        getAuthHeaders()
-      );
-
-      // Normalize every row before storing in state
-      const normalised = res.data.map(normalizeUser);
-      setUsers(normalised);
-
+      const response = await axios.get(`${API_BASE_URL}/api/users`, {
+        ...getAuthHeaders(),
+        params: { t: Date.now() },
+      });
+      setUsers(Array.isArray(response.data) ? response.data.map(normalizeUser) : []);
+      setError("");
     } catch (err) {
-      console.error('fetchUsers error:', err);
-      // Show the server's error message if available, otherwise a generic one
-      setPageError(err.response?.data?.error || 'Failed to load users.');
+      showError(err.response?.data?.error || "Failed to load users.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      hideLoader();
     }
   };
 
-  // ─── Add User ──────────────────────────────────────────────────────────────
+  const resetFilters = () => {
+    setSearch("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setPage(1);
+  };
 
-  /** Resets the add-user form fields back to their default empty values. */
-  const resetNewUser = () =>
-    setNewUser({ fullName: '', email: '', password: '', role: 'Member' });
+  const openCreateModal = () => {
+    setForm(initialForm);
+    setError("");
+    setIsCreateOpen(true);
+  };
 
-  /** Opens the Add User modal with a clean, empty form. */
-  const openAddModal = () => {
-    resetNewUser();
+  const closeCreateModal = () => {
+    setIsCreateOpen(false);
+    setForm(initialForm);
+    setError("");
+  };
+
+  const openEditModal = (user) => {
+    setEditUser(user);
+    setForm({
+      fullName: user.fullName,
+      email: user.email,
+      password: "",
+      role: user.role,
+    });
+    setError("");
+  };
+
+  const closeEditModal = () => {
     setEditUser(null);
-    setFormError('');
-    setFormSuccess('');
-    setShowAddModal(true);
+    setForm(initialForm);
+    setError("");
   };
 
-  /** Closes whichever modal is open and clears all form feedback. */
-  const closeModal = () => {
-    setShowAddModal(false);
-    setEditUser(null);
-    setFormError('');
-    setFormSuccess('');
+  const handleFilterChange = (setter) => (event) => {
+    setter(event.target.value);
+    setPage(1);
   };
 
-  /**
-   * Client-side validation for the Add User form.
-   * Returns an error string if invalid, or '' if everything is fine.
-   * Running this before the API call saves a round-trip for obvious mistakes.
-   */
-  const validateAddUser = () => {
-    if (!newUser.fullName.trim())               return 'Full name is required.';
-    if (newUser.fullName.trim().length < 2)     return 'Full name must be at least 2 characters.';
-    if (!newUser.email.trim())                  return 'Email is required.';
-    if (!isValidEmail(newUser.email.trim()))    return 'Please enter a valid email address.';
-    if (!newUser.password)                      return 'Password is required.';
-    if (newUser.password.length < 6)            return 'Password must be at least 6 characters.';
-    if (!['Librarian', 'Member'].includes(newUser.role)) return 'Please select a valid role.';
-    return '';
+  const validateForm = (mode) => {
+    if (!form.fullName.trim()) return "Full name is required.";
+    if (!form.email.trim()) return "Email is required.";
+    if (!isValidEmail(form.email.trim())) return "Please enter a valid email address.";
+    if (mode === "create" && !form.password) return "Password is required.";
+    if (mode === "create" && form.password.length < 6) return "Password must be at least 6 characters.";
+    if (!["Librarian", "Member"].includes(form.role)) return "Role is required.";
+    return "";
   };
 
-  /** Submits the Add User form. Validates first, then POSTs to the API. */
-  const handleAddUser = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
+  const handleCreateUser = async (event) => {
+    event.preventDefault();
+    setError("");
 
-    const validationError = validateAddUser();
-    if (validationError) {
-      setFormError(validationError);
+    const validationMessage = validateForm("create");
+    if (validationMessage) {
+      showError(validationMessage);
       return;
     }
+
+    showLoader("Creating user...");
+    setIsSaving(true);
 
     try {
       await axios.post(
         `${API_BASE_URL}/api/users`,
         {
-          fullName: newUser.fullName.trim(),
-          email:    newUser.email.trim(),
-          password: newUser.password,
-          role:     newUser.role
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          role: form.role,
         },
         getAuthHeaders()
       );
 
-      setFormSuccess('User added successfully.');
-      resetNewUser();
-      await fetchUsers(); // refresh table so new user appears immediately
-      setTimeout(() => closeModal(), 600); // brief delay so success message is visible
-
+      showFeedback("User added successfully.");
+      closeCreateModal();
+      await fetchUsers("Refreshing user list...");
     } catch (err) {
-      console.error('handleAddUser error:', err);
-      setFormError(err.response?.data?.error || 'Failed to add user.');
+      showError(err.response?.data?.error || "Failed to add user.");
+    } finally {
+      setIsSaving(false);
+      hideLoader();
     }
   };
 
-  // ─── Edit User ─────────────────────────────────────────────────────────────
+  const handleEditUser = async (event) => {
+    event.preventDefault();
+    if (!editUser) return;
+    setError("");
 
-  /**
-   * Populates the Edit modal with the selected user's current data.
-   * We copy only the editable fields — password is not editable here.
-   */
-  const openEditModal = (user) => {
-    setEditUser({
-      UserID:   user.UserID,
-      fullName: user.fullName,
-      email:    user.email,
-      role:     user.role
-    });
-    setShowAddModal(false); // make sure Add modal is closed
-    setFormError('');
-    setFormSuccess('');
-  };
-
-  /** Client-side validation for the Edit User form. */
-  const validateEditUser = () => {
-    if (!editUser.fullName.trim())              return 'Full name is required.';
-    if (editUser.fullName.trim().length < 2)    return 'Full name must be at least 2 characters.';
-    if (!editUser.email.trim())                 return 'Email is required.';
-    if (!isValidEmail(editUser.email.trim()))   return 'Please enter a valid email address.';
-    if (!['Librarian', 'Member'].includes(editUser.role)) return 'Please select a valid role.';
-    return '';
-  };
-
-  /** Submits the Edit User form. PUTs updated fields to the API. */
-  const handleEditUser = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
-
-    const validationError = validateEditUser();
-    if (validationError) {
-      setFormError(validationError);
+    const validationMessage = validateForm("edit");
+    if (validationMessage) {
+      showError(validationMessage);
       return;
     }
+
+    showLoader("Saving user changes...");
+    setIsSaving(true);
 
     try {
       await axios.put(
         `${API_BASE_URL}/api/users/${editUser.UserID}`,
         {
-          fullName: editUser.fullName.trim(),
-          email:    editUser.email.trim(),
-          role:     editUser.role
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          role: form.role,
         },
         getAuthHeaders()
       );
 
-      setFormSuccess('User updated successfully.');
-      await fetchUsers(); // refresh table to show updated name/email/role
-      setTimeout(() => closeModal(), 600);
-
+      showFeedback("User updated successfully.");
+      closeEditModal();
+      await fetchUsers("Refreshing user list...");
     } catch (err) {
-      console.error('handleEditUser error:', err);
-      setFormError(err.response?.data?.error || 'Failed to update user.');
+      showError(err.response?.data?.error || "Failed to update user.");
+    } finally {
+      setIsSaving(false);
+      hideLoader();
     }
   };
 
-  // ─── Toggle Active / Inactive ──────────────────────────────────────────────
-
-  /**
-   * Flips a user's active status between Active (1) and Inactive (0).
-   *
-   * OPTIMISTIC UPDATE: We update the row in local state immediately so the UI
-   * feels instant, then refetch from the server to confirm the real DB value.
-   * If the API call fails, the error banner appears and the next fetchUsers()
-   * will restore the correct state.
-   */
-  const handleToggleStatus = async (user) => {
-    const nextStatus = user.isActive ? 0 : 1; // flip the current value
+  const handleStatusChange = async (user) => {
+    const nextStatus = user.isActive ? 0 : 1;
+    setError("");
+    showLoader(user.isActive ? "Deactivating user..." : "Activating user...");
+    setIsSaving(true);
 
     try {
-      setPageError('');
-      setStatusLoadingId(user.UserID); // show "Saving..." on this row's button
-
       await axios.put(
         `${API_BASE_URL}/api/users/${user.UserID}/status`,
         { isActive: nextStatus },
         getAuthHeaders()
       );
 
-      // Optimistically update just this row so the UI doesn't flicker
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.UserID === user.UserID ? { ...u, isActive: nextStatus === 1 } : u
-        )
-      );
-
-      // Then fetch the full list to stay in sync with the database
-      await fetchUsers();
-
+      showFeedback(nextStatus === 1 ? "User activated successfully." : "User deactivated successfully.");
+      setConfirmAction(null);
+      await fetchUsers("Refreshing user list...");
     } catch (err) {
-      console.error('handleToggleStatus error:', err);
-      setPageError(err.response?.data?.error || 'Failed to update user status.');
+      showError(err.response?.data?.error || "Failed to update user status.");
     } finally {
-      setStatusLoadingId(null); // re-enable the button regardless of outcome
+      setIsSaving(false);
+      hideLoader();
     }
   };
 
-  // ─── Delete User ───────────────────────────────────────────────────────────
-
-  /**
-   * Permanently deletes a user after confirmation.
-   * Uses a native confirm() dialog as a simple guard against accidental clicks.
-   */
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+  const handleDeleteUser = async (user) => {
+    setError("");
+    showLoader("Deleting user...");
+    setIsSaving(true);
 
     try {
-      setPageError('');
-      await axios.delete(`${API_BASE_URL}/api/users/${id}`, getAuthHeaders());
-      await fetchUsers(); // remove the deleted row from the table
+      await axios.delete(`${API_BASE_URL}/api/users/${user.UserID}`, getAuthHeaders());
+      showFeedback("User deleted successfully.");
+      setConfirmAction(null);
+      await fetchUsers("Refreshing user list...");
     } catch (err) {
-      console.error('handleDelete error:', err);
-      setPageError(err.response?.data?.error || 'Failed to delete user.');
+      showError(err.response?.data?.error || "Failed to delete user.");
+    } finally {
+      setIsSaving(false);
+      hideLoader();
     }
   };
 
-  // ─── Search + Filter ───────────────────────────────────────────────────────
-
-  /**
-   * Derives the visible user list by applying search text, role, and status
-   * filters on top of the full `users` array.
-   * This runs on every render — no useEffect needed since it's pure computation.
-   */
-  const filteredUsers = users.filter((u) => {
-    const keyword = search.toLowerCase().trim();
-
-    const matchSearch =
-      u.fullName?.toLowerCase().includes(keyword) ||
-      u.email?.toLowerCase().includes(keyword) ||
-      String(u.UserID).includes(keyword);
-
-    const matchRole =
-      roleFilter === 'All' || u.role === roleFilter;
-
-    const matchStatus =
-      statusFilter === 'All' ||
-      (statusFilter === 'Active'   &&  u.isActive) ||
-      (statusFilter === 'Inactive' && !u.isActive);
-
-    return matchSearch && matchRole && matchStatus;
-  });
-
-  // ─── Pagination ────────────────────────────────────────────────────────────
-
-  // Total pages needed for the filtered result set
-  const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
-
-  // Slice out only the rows for the current page
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * USERS_PER_PAGE,
-    currentPage * USERS_PER_PAGE
-  );
-
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="um-layout">
+    <div className="um-page">
+      <LoadingOverlay show={isBusy} message={loadingMessage} subtext={loadingSubtext} />
       <Sidebar />
 
-      <main className="um-main">
-
-        {/* ── Page heading ──────────────────────────────────────────────────── */}
-        <div className="um-page-header">
-          <p className="um-breadcrumb">LIBRASYS USER ADMINISTRATION</p>
-          <h1 className="um-page-title">User Management</h1>
-          <p className="um-page-sub">
-            Manage librarian and member accounts, roles, and account status.
-          </p>
-        </div>
-
-        {/* ── Page-level error banner (API failures, status toggle errors, etc.) */}
-        {pageError && (
-          <div className="um-error-banner">{pageError}</div>
-        )}
-
-        {/* ── User table card ───────────────────────────────────────────────── */}
-        <section className="um-table-card">
-
-          {/* Topbar: title + search/filter toolbar */}
-          <div className="um-table-topbar">
-            <div>
-              <p className="um-section-label">LIBRARY USERS</p>
-              <h2 className="um-table-title">User List</h2>
-              <p className="um-showing">
-                Showing {filteredUsers.length} of {users.length} users
-              </p>
-            </div>
-
-            <div className="um-toolbar">
-              {/* Free-text search across name, email, and ID */}
-              <input
-                className="um-search"
-                type="text"
-                placeholder="Search name, email, or ID..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1); // reset to page 1 on every new search
-                }}
-              />
-
-              {/* Filter by user role */}
-              <select
-                className="um-role-select"
-                value={roleFilter}
-                onChange={(e) => {
-                  setRoleFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="All">All Roles</option>
-                <option value="Librarian">Librarian</option>
-                <option value="Member">Member</option>
-              </select>
-
-              {/* Filter by active / inactive status */}
-              <select
-                className="um-role-select"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="All">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-
-              <button className="um-add-btn" onClick={openAddModal}>
-                + Add User
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable table wrapper — horizontal scroll on small screens */}
-          <div className="um-table-wrap">
-            <table className="um-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Registered</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {loading ? (
-                  /* Show a single spanning cell while the API call is in-flight */
-                  <tr>
-                    <td colSpan="7" className="um-empty">Loading users...</td>
-                  </tr>
-                ) : paginatedUsers.length === 0 ? (
-                  /* No results after filtering */
-                  <tr>
-                    <td colSpan="7" className="um-empty">No users found.</td>
-                  </tr>
-                ) : (
-                  paginatedUsers.map((user) => (
-                    <tr key={user.UserID}>
-                      <td className="um-td-id">#{user.UserID}</td>
-                      <td className="um-td-name">{user.fullName}</td>
-                      <td className="um-td-email">{user.email}</td>
-
-                      {/* Colour-coded role badge */}
-                      <td>
-                        <span className={`um-role-badge ${user.role === 'Librarian' ? 'role-librarian' : 'role-member'}`}>
-                          {user.role}
-                        </span>
-                      </td>
-
-                      {/* Colour-coded active/inactive pill */}
-                      <td>
-                        <span className={`um-status-pill ${user.isActive ? 'pill-active' : 'pill-inactive'}`}>
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-
-                      {/* Format the ISO date string into a locale-aware short date */}
-                      <td className="um-td-date">
-                        {user.createdAt
-                          ? new Date(user.createdAt).toLocaleDateString()
-                          : '—'}
-                      </td>
-
-                      {/* Row actions: toggle status, edit, delete */}
-                      <td>
-                        <div className="um-actions">
-                          <button
-                            className={`um-btn-action ${user.isActive ? 'btn-deactivate' : 'btn-activate'}`}
-                            disabled={statusLoadingId === user.UserID}
-                            onClick={() => handleToggleStatus(user)}
-                          >
-                            {statusLoadingId === user.UserID
-                              ? 'Saving...'
-                              : user.isActive
-                                ? 'Deactivate'
-                                : 'Activate'}
-                          </button>
-
-                          <button
-                            className="um-btn-action btn-edit"
-                            onClick={() => openEditModal(user)}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            className="um-btn-action btn-delete"
-                            onClick={() => handleDelete(user.UserID)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* ── Pagination controls ──────────────────────────────────────────── */}
-          <div className="um-pagination">
-            <span className="um-pg-info">
-              {/* Show 0 of 0 when there are no results */}
-              Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
-            </span>
-
-            <div className="um-pg-btns">
-              {/* First page */}
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage(1)}>«</button>
-              {/* Previous page */}
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>‹</button>
-              {/* Current page indicator */}
-              <button className="active">{totalPages === 0 ? 0 : currentPage}</button>
-              {/* Next page */}
-              <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage((p) => p + 1)}>›</button>
-              {/* Last page */}
-              <button disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(totalPages)}>»</button>
-            </div>
-          </div>
+      <section className="um-main">
+        <section className="um-stats" aria-label="User summary">
+          <SummaryCard title="Total Users" value={summary.total} detail="All registered accounts" icon={Users} tone="total" />
+          <SummaryCard title="Active Users" value={summary.active} detail="Can access LibraSys" icon={CheckCircle2} tone="active" />
+          <SummaryCard title="Inactive Users" value={summary.inactive} detail="Access currently blocked" icon={UserRound} tone="inactive" />
+          <SummaryCard title="Librarians" value={summary.librarians} detail="Staff administrator roles" icon={ShieldCheck} tone="librarian" />
         </section>
 
-        {/* ── Add User Modal ────────────────────────────────────────────────── */}
-        {showAddModal && (
-          <div className="um-modal-overlay">
-            <div className="um-modal">
-
-              <div className="um-modal-header">
-                <div>
-                  <p className="um-panel-label">ADD USER</p>
-                  <h2 className="um-panel-title">Create User</h2>
-                </div>
-                <button className="um-close-btn" onClick={closeModal}>×</button>
-              </div>
-
-              {/* Inline form feedback */}
-              {formError   && <div className="um-panel-error">{formError}</div>}
-              {formSuccess && <div className="um-panel-success">{formSuccess}</div>}
-
-              <form onSubmit={handleAddUser}>
-                <div className="um-form-row">
-                  <div className="um-form-group">
-                    <label>Full Name <span className="um-required">*</span></label>
-                    <input
-                      type="text"
-                      value={newUser.fullName}
-                      onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
-                      placeholder="e.g., John Smith"
-                    />
-                  </div>
-
-                  <div className="um-form-group">
-                    <label>Role <span className="um-required">*</span></label>
-                    <select
-                      value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                    >
-                      <option value="Member">Member</option>
-                      <option value="Librarian">Librarian</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="um-form-group">
-                  <label>Email <span className="um-required">*</span></label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                    placeholder="e.g., user@email.com"
-                  />
-                </div>
-
-                <div className="um-form-group">
-                  <label>Password <span className="um-required">*</span></label>
-                  <input
-                    type="password"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    placeholder="Minimum 6 characters"
-                  />
-                </div>
-
-                <div className="um-form-actions">
-                  <button type="button" className="um-cancel-btn" onClick={closeModal}>Cancel</button>
-                  <button type="submit" className="um-submit-btn">Add User</button>
-                </div>
-              </form>
-            </div>
+        {showAlert && (
+          <div className={`um-alert ${alertType} ${isAlertLeaving ? "is-hiding" : ""}`}>
+            {alertMessage}
           </div>
         )}
 
-        {/* ── Edit User Modal ───────────────────────────────────────────────── */}
-        {editUser && (
-          <div className="um-modal-overlay">
-            <div className="um-modal">
-
-              <div className="um-modal-header">
-                <div>
-                  <p className="um-panel-label">EDIT USER</p>
-                  <h2 className="um-panel-title">Edit User</h2>
+        <section className="um-workspace">
+          <div className="um-grid">
+            <section className="um-panel um-table-panel">
+              <div className="um-list-head">
+                <div className="um-section-heading">
+                  <h2>User Management</h2>
+                  <p>View, filter and manage librarian and member accounts.</p>
                 </div>
-                <button className="um-close-btn" onClick={closeModal}>×</button>
+
+                <div className="um-list-actions">
+                  <button type="button" className="um-add-button" disabled={isBusy} onClick={openCreateModal}>
+                    <Plus size={18} />
+                    Add New User
+                  </button>
+
+                  <div className="um-search-box">
+                    <input
+                      value={search}
+                      disabled={isBusy}
+                      onChange={handleFilterChange(setSearch)}
+                      placeholder="Search by user ID, full name, or email..."
+                    />
+                    <button type="button" aria-label="Search users" disabled={isBusy}>
+                      <Search size={18} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* Inline form feedback */}
-              {formError   && <div className="um-panel-error">{formError}</div>}
-              {formSuccess && <div className="um-panel-success">{formSuccess}</div>}
+              <div className="um-filter-row">
+                <select value={roleFilter} onChange={handleFilterChange(setRoleFilter)} disabled={isBusy}>
+                  <option value="all">All Roles</option>
+                  <option value="librarian">Librarian</option>
+                  <option value="member">Member</option>
+                </select>
 
-              <form onSubmit={handleEditUser}>
-                <div className="um-form-row">
-                  <div className="um-form-group">
-                    <label>Full Name <span className="um-required">*</span></label>
-                    <input
-                      type="text"
-                      value={editUser.fullName}
-                      onChange={(e) => setEditUser({ ...editUser, fullName: e.target.value })}
-                      placeholder="Full name"
-                    />
-                  </div>
+                <select value={statusFilter} onChange={handleFilterChange(setStatusFilter)} disabled={isBusy}>
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
 
-                  <div className="um-form-group">
-                    <label>Role <span className="um-required">*</span></label>
-                    <select
-                      value={editUser.role}
-                      onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
-                    >
-                      <option value="Member">Member</option>
-                      <option value="Librarian">Librarian</option>
-                    </select>
-                  </div>
+                <button type="button" className="um-secondary" disabled={isBusy} onClick={resetFilters}>
+                  Clear
+                </button>
+
+                <button type="button" className="um-filter-button" disabled={isBusy} onClick={() => setPage(1)}>
+                  <Filter size={16} />
+                  Filter
+                </button>
+              </div>
+
+              <div className="um-tabs">
+                {["all", "active", "inactive"].map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={isBusy}
+                    className={statusFilter === status ? `active ${status}` : status}
+                    onClick={() => {
+                      setStatusFilter(status);
+                      setPage(1);
+                    }}
+                  >
+                    {formatStatusLabel(status)}
+                    <span>{countForStatus(status, summary)}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="um-table-wrap">
+                <table className="um-table">
+                  <thead>
+                    <tr>
+                      <th>User ID</th>
+                      <th>Full Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Registered</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan="7" className="um-empty">
+                          Loading users...
+                        </td>
+                      </tr>
+                    ) : visibleUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="um-empty">
+                          No user records match the current search or filter.
+                        </td>
+                      </tr>
+                    ) : (
+                      visibleUsers.map((user) => (
+                        <tr key={user.UserID}>
+                          <td>#{user.UserID}</td>
+                          <td>
+                            <div className="um-user-cell">
+                              <span className="um-table-avatar">{getInitials(user.fullName)}</span>
+                              <strong>{user.fullName}</strong>
+                            </div>
+                          </td>
+                          <td>
+                            <small>{user.email}</small>
+                          </td>
+                          <td>{renderRole(user.role)}</td>
+                          <td>{renderStatus(user.isActive)}</td>
+                          <td>{formatDate(user.createdAt)}</td>
+                          <td className="um-row-actions">
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              aria-label={user.isActive ? "Deactivate user" : "Activate user"}
+                              title={user.isActive ? "Deactivate user" : "Activate user"}
+                              onClick={() => setConfirmAction({ type: "status", user })}
+                            >
+                              <CheckCircle2 size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              aria-label="Edit user"
+                              title="Edit user"
+                              onClick={() => openEditModal(user)}
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              disabled={isBusy}
+                              aria-label="Delete user"
+                              title="Delete user"
+                              onClick={() => setConfirmAction({ type: "delete", user })}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="um-pagination">
+                <span>
+                  Showing {firstRecord} to {lastRecord} of {filteredUsers.length} users
+                </span>
+
+                <div className="um-page-buttons">
+                  <button type="button" disabled={isBusy || page <= 1} onClick={() => setPage(1)}>
+                    &laquo;
+                  </button>
+                  <button type="button" disabled={isBusy || page <= 1} onClick={() => setPage((current) => current - 1)}>
+                    &lsaquo;
+                  </button>
+                  <strong>{page}</strong>
+                  <button type="button" disabled={isBusy || page >= totalPages} onClick={() => setPage((current) => current + 1)}>
+                    &rsaquo;
+                  </button>
+                  <button type="button" disabled={isBusy || page >= totalPages} onClick={() => setPage(totalPages)}>
+                    &raquo;
+                  </button>
                 </div>
 
-                <div className="um-form-group">
-                  <label>Email <span className="um-required">*</span></label>
-                  <input
-                    type="email"
-                    value={editUser.email}
-                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
-                    placeholder="Email address"
-                  />
-                </div>
-
-                <div className="um-form-actions">
-                  <button type="button" className="um-cancel-btn" onClick={closeModal}>Cancel</button>
-                  <button type="submit" className="um-submit-btn">Save Changes</button>
-                </div>
-              </form>
-            </div>
+                <select
+                  value={limit}
+                  disabled={isBusy}
+                  onChange={(event) => {
+                    setLimit(Number(event.target.value));
+                    setPage(1);
+                  }}
+                >
+                  {USERS_PER_PAGE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option} / page
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </section>
           </div>
-        )}
+        </section>
+      </section>
 
-      </main>
+      {isCreateOpen && (
+        <UserFormModal
+          title="Create User"
+          description="Add a new librarian or member account."
+          submitLabel={isSaving ? "Creating..." : "Add User"}
+          form={form}
+          setForm={setForm}
+          error={error}
+          isBusy={isBusy}
+          mode="create"
+          onClose={closeCreateModal}
+          onSubmit={handleCreateUser}
+        />
+      )}
+
+      {editUser && (
+        <UserFormModal
+          title="Edit User"
+          description={`Update account details for #${editUser.UserID}.`}
+          submitLabel={isSaving ? "Saving..." : "Save Changes"}
+          form={form}
+          setForm={setForm}
+          error={error}
+          isBusy={isBusy}
+          mode="edit"
+          onClose={closeEditModal}
+          onSubmit={handleEditUser}
+        />
+      )}
+
+      {confirmAction && (
+        <ConfirmModal
+          action={confirmAction}
+          isBusy={isBusy}
+          isSaving={isSaving}
+          error={error}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={() =>
+            confirmAction.type === "delete"
+              ? handleDeleteUser(confirmAction.user)
+              : handleStatusChange(confirmAction.user)
+          }
+        />
+      )}
     </div>
   );
+}
+
+function SummaryCard({ title, value, detail, icon: Icon, tone }) {
+  return (
+    <article className={`um-stat-card ${tone}`}>
+      <span className="um-stat-icon">
+        <Icon size={32} strokeWidth={2.1} />
+      </span>
+      <span>
+        <small>{title}</small>
+        <strong>{value}</strong>
+        <em>{detail}</em>
+      </span>
+    </article>
+  );
+}
+
+function UserFormModal({ title, description, submitLabel, form, setForm, error, isBusy, mode, onClose, onSubmit }) {
+  return (
+    <div className="um-modal-backdrop" role="presentation">
+      <section className="um-modal" role="dialog" aria-modal="true" aria-labelledby="user-form-title">
+        <div className="um-modal-head">
+          <div className="um-section-heading">
+            <h2 id="user-form-title">{title}</h2>
+            <p>{description}</p>
+          </div>
+
+          <button type="button" className="um-modal-close" disabled={isBusy} aria-label="Close user form" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {error && <div className="um-alert error">{error}</div>}
+
+        <form className="um-form" onSubmit={onSubmit}>
+          <div className="um-modal-grid">
+            <label>
+              <span className="um-field-label">Full Name</span>
+              <input
+                value={form.fullName}
+                disabled={isBusy}
+                onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
+                placeholder="e.g., John Smith"
+              />
+            </label>
+
+            <label>
+              <span className="um-field-label">Role</span>
+              <select
+                value={form.role}
+                disabled={isBusy}
+                onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
+              >
+                <option value="Member">Member</option>
+                <option value="Librarian">Librarian</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span className="um-field-label">Email</span>
+            <input
+              type="email"
+              value={form.email}
+              disabled={isBusy}
+              onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+              placeholder="user@email.com"
+            />
+          </label>
+
+          {mode === "create" && (
+            <label>
+              <span className="um-field-label">Password</span>
+              <input
+                type="password"
+                value={form.password}
+                disabled={isBusy}
+                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                placeholder="Minimum 6 characters"
+              />
+            </label>
+          )}
+
+          <div className="um-modal-actions">
+            <button type="button" className="um-modal-cancel" disabled={isBusy} onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="um-primary" disabled={isBusy}>
+              {submitLabel}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function ConfirmModal({ action, isBusy, isSaving, error, onClose, onConfirm }) {
+  const isDelete = action.type === "delete";
+  const user = action.user;
+  const title = isDelete ? "Delete User" : user.isActive ? "Deactivate User" : "Activate User";
+  const message = isDelete
+    ? "This permanently removes the selected user account."
+    : user.isActive
+      ? "This blocks the user from accessing LibraSys."
+      : "This restores account access for the user.";
+
+  return (
+    <div className="um-modal-backdrop" role="presentation">
+      <section className="um-modal um-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-user-title">
+        <div className="um-modal-head">
+          <div className="um-section-heading">
+            <h2 id="confirm-user-title">{title}</h2>
+            <p>Confirm before changing this account.</p>
+          </div>
+
+          <button type="button" className="um-modal-close" disabled={isBusy} aria-label="Close confirmation" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {error && <div className="um-alert error">{error}</div>}
+
+        <div className={isDelete ? "um-warning danger" : "um-warning"}>
+          <strong>
+            {title} #{user.UserID}?
+          </strong>
+          <span>{user.fullName} - {message}</span>
+        </div>
+
+        <div className="um-modal-actions">
+          <button type="button" className="um-modal-cancel" disabled={isBusy} onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className={isDelete ? "um-primary danger" : "um-primary"} disabled={isBusy} onClick={onConfirm}>
+            {isSaving ? "Working..." : title}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function renderRole(role) {
+  return <span className={`um-role ${role === "Librarian" ? "librarian" : "member"}`}>{role}</span>;
+}
+
+function renderStatus(isActive) {
+  return <span className={`um-status ${isActive ? "active" : "inactive"}`}>{isActive ? "Active" : "Inactive"}</span>;
+}
+
+function countForStatus(status, summary) {
+  if (status === "all") return summary.total;
+  return status === "active" ? summary.active : summary.inactive;
+}
+
+function formatStatusLabel(status) {
+  if (status === "all") return "All";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  return String(value).split("T")[0];
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getInitials(name) {
+  return String(name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 export default UserManagement;

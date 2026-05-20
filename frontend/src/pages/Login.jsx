@@ -66,7 +66,7 @@ function Login() {
       if (res.data.role === "Librarian") {
         navigate("/dashboard");
       } else {
-        navigate("/profile");
+        navigate("/memberdashboard");
       }
     } catch (err) {
       console.error("Login error:", err);
