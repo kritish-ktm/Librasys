@@ -20,7 +20,12 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import Sidebar from "../components/Sidebar";
 import "./BookManagement.css";
 
-// Default form values used when adding a new book or resetting the form.
+/*
+  SYSTEM SETUP: Default Book Form Values
+
+  This object stores the default empty values for the book form.
+  It is used when adding a new book, resetting the form, or cancelling an edit.
+*/
 const emptyForm = {
   CategoryID: "",
   Title: "",
@@ -30,22 +35,52 @@ const emptyForm = {
   IsBorrowable: true,
 };
 
+/*
+  SYSTEM SETUP: Pagination Limit
+
+  This decides how many book records appear on one page.
+  It helps keep the table cleaner instead of showing all books at once.
+*/
 const booksPerPage = 8;
 
 function BookManagement() {
   const navigate = useNavigate();
 
-  // Main book data and form states.
+  /*
+    SYSTEM FUNCTION: Main Book State
+
+    books stores all book records loaded from the backend/database.
+    form stores the current input values in the add/edit form.
+    editingId stores the BookID of the book currently being edited.
+
+    If editingId is null, the form is being used for Add Book.
+    If editingId has a value, the form is being used for Edit Book.
+  */
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
-  // UI and loading states.
+  /*
+    SYSTEM FUNCTION: Loading and UI State
+
+    isFormOpen controls whether the add/edit form is visible.
+    loadingScreen controls the first loading overlay when the page opens.
+    dataLoading controls the loading overlay while book data is being fetched.
+  */
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loadingScreen, setLoadingScreen] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // States used for searching, filtering, sorting, and pagination.
+  /*
+    SYSTEM FUNCTION: Search Books, Filter Books, Sort Books, Pagination
+
+    search stores the text typed into the search box.
+    categoryFilter stores the selected category filter.
+    statusFilter stores whether the user wants all, borrowable, or reference books.
+    sortKey stores which column is being sorted.
+    sortDirection stores ascending or descending order.
+    currentPage stores which table page the user is currently viewing.
+  */
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -53,16 +88,33 @@ function BookManagement() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Message states used to give feedback after actions.
+  /*
+    SYSTEM FUNCTION: Success and Error Messages
+
+    message displays successful actions, such as add, update, delete, or export.
+    error displays validation errors or backend/database problems.
+  */
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  /*
+    SYSTEM FUNCTION: Role-Based Access
+
+    The logged-in user role is read from localStorage.
+    Librarian/admin users can add, edit, and delete books.
+    Other users can view/search/filter the catalogue but should not manage records.
+  */
   const userRole = localStorage.getItem("role") || "";
   const isLibrarian =
     userRole.toLowerCase() === "librarian" ||
     userRole.toLowerCase() === "admin";
 
-  // Loading uses the same overlay style as the other admin pages.
+  /*
+    SYSTEM FUNCTION: Loading Screen
+
+    This creates a short loading overlay when the page first opens.
+    It matches the shared admin loading style used in the project.
+  */
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingScreen(false);
@@ -71,10 +123,23 @@ function BookManagement() {
     return () => clearTimeout(timer);
   }, []);
 
+  /*
+    SYSTEM FUNCTION: View Books on Page Load
+
+    This runs once when Book Management opens.
+    It calls loadBooks(), which gets book records from the backend.
+  */
   useEffect(() => {
     loadBooks();
   }, []);
 
+  /*
+    SYSTEM FUNCTION: View Books
+
+    This function loads all book records from the backend.
+
+    This is what makes the book table display database records.
+  */
   const loadBooks = async () => {
     try {
       setDataLoading(true);
@@ -92,12 +157,27 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Reset Book Form
+
+    This clears the form and closes it.
+    It is used after Add Book, Edit Book, or when the user cancels the form.
+  */
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
     setIsFormOpen(false);
   };
 
+  /*
+    SYSTEM FUNCTION: Form Input Handling
+
+    This updates the form state whenever the user types into an input
+    or changes the IsBorrowable checkbox.
+
+    The input name, such as Title or ISBN, matches the property inside form.
+    This lets one function handle all form fields.
+  */
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
@@ -107,7 +187,21 @@ function BookManagement() {
     }));
   };
 
-  // Basic frontend validation before sending data to the backend.
+  /*
+    SYSTEM FUNCTION: Validation
+
+    This checks the book form before sending data to the backend.
+
+    It prevents common bad inputs:
+    missing title
+    missing ISBN
+    ISBN with invalid length
+    missing category
+    negative available copies
+
+    This is frontend validation. Backend validation is still important,
+    because frontend validation can be bypassed.
+  */
   const validateForm = () => {
     if (!form.Title.trim()) {
       setError("Book title is required.");
@@ -137,6 +231,23 @@ function BookManagement() {
     return true;
   };
 
+  /*
+    SYSTEM FUNCTION: Add Book and Edit Book
+
+    This function runs when the book form is submitted.
+
+    It handles two system functions:
+    Add Book
+    Edit Book
+
+    If editingId is null:
+    the user is adding a new book, so addBook() is called.
+
+    If editingId has a BookID:
+    the user is editing an existing book, so updateBook() is called.
+
+    After success, the form resets and loadBooks() refreshes the table.
+  */
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -147,6 +258,13 @@ function BookManagement() {
       return;
     }
 
+    /*
+      SYSTEM FUNCTION: Prepare Book Data
+
+      Form input values normally come as strings.
+      CategoryID and AvailableCopies are converted into numbers before
+      being sent to the backend.
+    */
     const bookPayload = {
       ...form,
       CategoryID: Number(form.CategoryID),
@@ -176,6 +294,14 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Add Book
+
+    This opens the form in Add Book mode.
+
+    It clears old messages/errors, removes any editing ID,
+    resets the form to empty values, and opens the form panel.
+  */
   const handleAddClick = () => {
     setMessage("");
     setError("");
@@ -184,6 +310,18 @@ function BookManagement() {
     setIsFormOpen(true);
   };
 
+  /*
+    SYSTEM FUNCTION: Edit Book
+
+    This opens the form in Edit Book mode.
+
+    When the user clicks the edit icon:
+    the selected book's data is copied into the form
+    editingId is set to the selected BookID
+    the same form is opened, but now it updates instead of adding
+
+    The actual update happens later in handleSubmit().
+  */
   const handleEdit = (book) => {
     setMessage("");
     setError("");
@@ -204,6 +342,16 @@ function BookManagement() {
     setIsFormOpen(true);
   };
 
+  /*
+    SYSTEM FUNCTION: Delete Book
+
+    This deletes a selected book record.
+
+    First it shows a confirmation popup to avoid accidental deletion.
+    If confirmed, deleteBook(bookId) sends the BookID to the backend.
+    The backend deletes the matching book record from the book table.
+    After deletion, loadBooks() refreshes the table.
+  */
   const handleDelete = async (bookId) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this book record?"
@@ -227,6 +375,14 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Sort Books
+
+    This sorts the table when the user clicks a column heading.
+
+    If the same column is clicked again, the sort direction switches
+    between ascending and descending.
+  */
   const handleSort = (key) => {
     if (sortKey === key) {
       setSortDirection((previousDirection) =>
@@ -238,6 +394,12 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Clear Search and Filters
+
+    This clears the search box, category filter, and status filter.
+    It also returns the user to page 1.
+  */
   const clearFilters = () => {
     setSearch("");
     setCategoryFilter("all");
@@ -245,6 +407,12 @@ function BookManagement() {
     setCurrentPage(1);
   };
 
+  /*
+    SYSTEM FUNCTION: Category Filter Options
+
+    This builds the category dropdown from the loaded book records.
+    Duplicate CategoryID values are removed so each category appears once.
+  */
   const categoryOptions = useMemo(() => {
     const categories = books
       .map((book) => book.CategoryID)
@@ -253,7 +421,23 @@ function BookManagement() {
     return [...new Set(categories)].sort((a, b) => Number(a) - Number(b));
   }, [books]);
 
-  // Applies search, category filter, status filter, and sorting.
+  /*
+    SYSTEM FUNCTION: Search Books, Filter Books, and Sort Books
+
+    This creates the final list of books shown in the table.
+
+    Search Books:
+    checks BookID, Title, ISBN, CategoryID, PublicationDate,
+    AvailableCopies, and status text.
+
+    Filter Books:
+    filters by CategoryID and borrowable/reference status.
+
+    Sort Books:
+    sorts the filtered result using the selected column and direction.
+
+    This is frontend-only. It does not change the database.
+  */
   const filteredBooks = useMemo(() => {
     const searchValue = search.toLowerCase().trim();
 
@@ -303,11 +487,26 @@ function BookManagement() {
     return result;
   }, [books, search, categoryFilter, statusFilter, sortKey, sortDirection]);
 
-  // Pagination calculations for the filtered result list.
+  /*
+    SYSTEM FUNCTION: Pagination Reset
+
+    When the user changes search or filter values, the table returns to page 1.
+    This avoids staying on a later page that may no longer have results.
+  */
   useEffect(() => {
     setCurrentPage(1);
   }, [search, categoryFilter, statusFilter]);
 
+  /*
+    SYSTEM FUNCTION: Pagination
+
+    These calculations decide which records appear on the current page.
+
+    totalPages calculates the number of pages.
+    safePage prevents invalid page numbers.
+    firstRecord and lastRecord show the visible range.
+    paginatedBooks contains only the books for the current page.
+  */
   const totalPages = Math.max(1, Math.ceil(filteredBooks.length / booksPerPage));
   const safePage = Math.min(currentPage, totalPages);
   const firstRecord = filteredBooks.length
@@ -320,6 +519,12 @@ function BookManagement() {
     safePage * booksPerPage
   );
 
+  /*
+    SYSTEM FUNCTION: Dashboard Statistics
+
+    These values are calculated from the loaded book records.
+    They are shown in the stat cards above the table.
+  */
   const totalBooks = books.length;
   const totalCopies = books.reduce((sum, book) => {
     return sum + Number(book.AvailableCopies || 0);
@@ -327,7 +532,17 @@ function BookManagement() {
   const borrowableBooks = books.filter((book) => Boolean(book.IsBorrowable)).length;
   const referenceBooks = books.filter((book) => !Boolean(book.IsBorrowable)).length;
 
-  // Exports the current filtered book list as a CSV file.
+  /*
+    SYSTEM FUNCTION: Export CSV
+
+    This exports the currently filtered book list as a CSV file.
+
+    If the user searches or filters first, only those matching records
+    are included in the export.
+
+    This is a frontend feature. It creates a downloadable file in the browser
+    and does not change the database.
+  */
   const handleExportBooks = () => {
     setMessage("");
     setError("");
@@ -767,6 +982,12 @@ function BookManagement() {
   );
 }
 
+/*
+  SYSTEM FUNCTION: Dashboard Stat Card
+
+  This reusable component displays one statistic card.
+  It is used for total books, total copies, borrowable books, and reference books.
+*/
 function StatCard({ title, value, detail, icon: Icon, tone }) {
   return (
     <article className={`book-stat-card ${tone}`}>
@@ -782,6 +1003,12 @@ function StatCard({ title, value, detail, icon: Icon, tone }) {
   );
 }
 
+/*
+  SYSTEM FUNCTION: Status Filter Count
+
+  This counts how many books belong to each status tab.
+  It is used for the All, Borrowable, and Reference filter buttons.
+*/
 function countForStatus(status, books) {
   if (status === "all") return books.length;
   if (status === "borrowable") {
@@ -790,6 +1017,12 @@ function countForStatus(status, books) {
   return books.filter((book) => !Boolean(book.IsBorrowable)).length;
 }
 
+/*
+  SYSTEM FUNCTION: Status Label Formatting
+
+  This converts internal status values into readable labels.
+  Example: "reference" becomes "Reference".
+*/
 function formatStatusLabel(status) {
   if (status === "all") return "All";
   if (status === "reference") return "Reference";
