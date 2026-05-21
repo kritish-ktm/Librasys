@@ -115,7 +115,7 @@ function Login() {
         navigate("/memberdashboard");
       }
 
-      navigate("/profile");
+
 
     } catch (err) {
       console.error("Login error:", err);
