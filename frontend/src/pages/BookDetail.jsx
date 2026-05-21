@@ -1,3 +1,10 @@
+/*
+  Book Detail page.
+  Most of this page belongs to the book module, but it connects to Arun's
+  LoanedBook workflow through BorrowButton. After a successful borrow,
+  BorrowButton calls loadBook again so the displayed available copy count stays
+  up to date.
+*/
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BorrowButton from "../components/BorrowButton";
@@ -11,6 +18,11 @@ function BookDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  /*
+    Loads the selected book record from the book API. The same function is
+    passed to BorrowButton as onBorrowed, so after a member borrows the book the
+    page reloads the book data and reflects the reduced AvailableCopies value.
+  */
   const loadBook = async () => {
     setLoading(true);
 
@@ -71,6 +83,7 @@ function BookDetail() {
               </dl>
             </div>
 
+            {/* Connects Book Detail to the member self-borrowing LoanedBook flow. */}
             <BorrowButton book={book} onBorrowed={loadBook} />
           </div>
         </section>

@@ -17,25 +17,11 @@ import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
 
-function clearSession() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('role');
-  localStorage.removeItem('name');
-  localStorage.removeItem('fullName');
-  localStorage.removeItem('userId');
-}
-
-function getTokenPayload(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch {
-    return null;
-  }
-}
-
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
+  const normalizedRole = String(userRole || '').trim().toLowerCase();
+  const requiredRole = String(role || '').trim().toLowerCase();
 
   if (!token) return <Navigate to="/login" replace />;
 
@@ -48,8 +34,7 @@ function PrivateRoute({ children, role }) {
   }
 
   if (role && userRole !== role) {
-    const redirect = role === 'Librarian' ? '/admin-login' : '/login';
-    return <Navigate to={redirect} replace />;
+    return <Navigate to="/login" />;
   }
 
   return children;
@@ -59,15 +44,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* PUBLIC ROUTES */}
+        {/* Public routes that anyone can open. */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Member login routes both use the same updated Login page */}
+        {/* Member login routes both use the same Login page. */}
         <Route path="/login" element={<Login />} />
         <Route path="/member-login" element={<Login />} />
 
-        {/* Staff/admin login uses the updated AdminLogin page */}
+        {/* Staff/admin login uses a separate AdminLogin page. */}
         <Route path="/admin-login" element={<AdminLogin />} />
 
         <Route
@@ -87,7 +71,7 @@ function App() {
 
         <Route path="/book/:id" element={<BookDetail />} />
 
-        {/* USER ROUTES */}
+        {/* Routes for logged-in users. */}
         <Route
           path="/profile"
           element={
@@ -115,7 +99,7 @@ function App() {
           }
         />
 
-        {/* LIBRARIAN ROUTES */}
+        {/* Routes only for librarians/admin staff. */}
         <Route
           path="/dashboard"
           element={
@@ -169,7 +153,6 @@ function App() {
             </PrivateRoute>
           }
         />
-
       </Routes>
     </BrowserRouter>
   );

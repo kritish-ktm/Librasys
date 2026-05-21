@@ -1,14 +1,31 @@
+/*
+  SYSTEM SETUP: Imports
+*/
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Download,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import {
   getBooks,
   addBook,
   updateBook,
   deleteBook,
 } from "../services/bookService";
+import LoadingOverlay from "../components/LoadingOverlay";
+import Sidebar from "../components/Sidebar";
 import "./BookManagement.css";
 
-// Empty form used for adding a new book.
+/*
+  SYSTEM SETUP: Default Book Form Values
+*/
 const emptyForm = {
   CategoryID: "",
   Title: "",
@@ -18,20 +35,31 @@ const emptyForm = {
   IsBorrowable: true,
 };
 
+/*
+  SYSTEM SETUP: Pagination Limit
+*/
+const booksPerPage = 8;
+
 function BookManagement() {
   const navigate = useNavigate();
 
-  // Main data states.
+  /*
+    SYSTEM FUNCTION: Main Book State
+  */
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
-  // UI states.
+  /*
+    SYSTEM FUNCTION: Loading and UI State
+  */
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loadingScreen, setLoadingScreen] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // Search, filter, sorting and pagination states.
+  /*
+    SYSTEM FUNCTION: Search Books, Filter Books, Sort Books, Pagination
+  */
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -39,20 +67,23 @@ function BookManagement() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Message states.
+  /*
+    SYSTEM FUNCTION: Success and Error Messages
+  */
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const booksPerPage = 8;
-
-  // Role is used so librarian/admin can manage books,
-  // while standard users can only browse.
+  /*
+    SYSTEM FUNCTION: Role-Based Access
+  */
   const userRole = localStorage.getItem("role") || "";
   const isLibrarian =
     userRole.toLowerCase() === "librarian" ||
     userRole.toLowerCase() === "admin";
 
-  // Small opening animation when the page loads.
+  /*
+    SYSTEM FUNCTION: Loading Screen
+  */
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingScreen(false);
@@ -61,20 +92,22 @@ function BookManagement() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Load books when component opens.
+  /*
+    SYSTEM FUNCTION: View Books on Page Load
+  */
   useEffect(() => {
     loadBooks();
   }, []);
 
+  /*
+    SYSTEM FUNCTION: View Books
+  */
   const loadBooks = async () => {
     try {
       setDataLoading(true);
       setError("");
 
       const response = await getBooks();
-
-      // Supports both response.data and direct array return,
-      // depending on how your bookService.js is written.
       const bookData = Array.isArray(response) ? response : response.data;
 
       setBooks(bookData || []);
@@ -86,14 +119,18 @@ function BookManagement() {
     }
   };
 
-  // Reset form back to default values.
+  /*
+    SYSTEM FUNCTION: Reset Book Form
+  */
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
     setIsFormOpen(false);
   };
 
-  // Handle normal input changes.
+  /*
+    SYSTEM FUNCTION: Form Input Handling
+  */
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
@@ -103,7 +140,9 @@ function BookManagement() {
     }));
   };
 
-  // Frontend validation before sending data to backend.
+  /*
+    SYSTEM FUNCTION: Validation
+  */
   const validateForm = () => {
     if (!form.Title.trim()) {
       setError("Book title is required.");
@@ -133,7 +172,9 @@ function BookManagement() {
     return true;
   };
 
-  // Add or update book.
+  /*
+    SYSTEM FUNCTION: Add Book and Edit Book
+  */
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -144,6 +185,9 @@ function BookManagement() {
       return;
     }
 
+    /*
+      SYSTEM FUNCTION: Prepare Book Data
+    */
     const bookPayload = {
       ...form,
       CategoryID: Number(form.CategoryID),
@@ -173,25 +217,23 @@ function BookManagement() {
     }
   };
 
-  // Open form for adding a new book.
+  /*
+    SYSTEM FUNCTION: Add Book
+  */
   const handleAddClick = () => {
     setMessage("");
     setError("");
     setEditingId(null);
     setForm(emptyForm);
     setIsFormOpen(true);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
   };
 
-  // Open form for editing a selected book.
+  /*
+    SYSTEM FUNCTION: Edit Book
+  */
   const handleEdit = (book) => {
     setMessage("");
     setError("");
-
     setEditingId(book.BookID);
 
     setForm({
@@ -207,14 +249,11 @@ function BookManagement() {
     });
 
     setIsFormOpen(true);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
   };
 
-  // Delete selected book.
+  /*
+    SYSTEM FUNCTION: Delete Book
+  */
   const handleDelete = async (bookId) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this book record?"
@@ -238,7 +277,9 @@ function BookManagement() {
     }
   };
 
-  // Sort table columns.
+  /*
+    SYSTEM FUNCTION: Sort Books
+  */
   const handleSort = (key) => {
     if (sortKey === key) {
       setSortDirection((previousDirection) =>
@@ -250,7 +291,29 @@ function BookManagement() {
     }
   };
 
-  // Get unique category IDs from available books.
+  /*
+    SYSTEM FUNCTION: Sort Indicator Icon
+  */
+  const getSortIcon = (key) => {
+    if (sortKey !== key) return <ArrowUpDown size={12} className="book-sort-icon inactive" />;
+    return sortDirection === "asc"
+      ? <ArrowUp size={12} className="book-sort-icon active" />
+      : <ArrowDown size={12} className="book-sort-icon active" />;
+  };
+
+  /*
+    SYSTEM FUNCTION: Clear Search and Filters
+  */
+  const clearFilters = () => {
+    setSearch("");
+    setCategoryFilter("all");
+    setStatusFilter("all");
+    setCurrentPage(1);
+  };
+
+  /*
+    SYSTEM FUNCTION: Category Filter Options
+  */
   const categoryOptions = useMemo(() => {
     const categories = books
       .map((book) => book.CategoryID)
@@ -259,7 +322,9 @@ function BookManagement() {
     return [...new Set(categories)].sort((a, b) => Number(a) - Number(b));
   }, [books]);
 
-  // Filter and sort books.
+  /*
+    SYSTEM FUNCTION: Search Books, Filter Books, and Sort Books
+  */
   const filteredBooks = useMemo(() => {
     const searchValue = search.toLowerCase().trim();
 
@@ -309,34 +374,39 @@ function BookManagement() {
     return result;
   }, [books, search, categoryFilter, statusFilter, sortKey, sortDirection]);
 
-  // Reset to first page when filters change.
+  /*
+    SYSTEM FUNCTION: Pagination Reset
+  */
   useEffect(() => {
     setCurrentPage(1);
   }, [search, categoryFilter, statusFilter]);
 
-  const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
+  /*
+    SYSTEM FUNCTION: Pagination
+  */
+  const totalPages = Math.max(1, Math.ceil(filteredBooks.length / booksPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const firstRecord = filteredBooks.length ? (safePage - 1) * booksPerPage + 1 : 0;
+  const lastRecord = Math.min(safePage * booksPerPage, filteredBooks.length);
 
   const paginatedBooks = filteredBooks.slice(
-    (currentPage - 1) * booksPerPage,
-    currentPage * booksPerPage
+    (safePage - 1) * booksPerPage,
+    safePage * booksPerPage
   );
 
-  // Dashboard stats.
+  /*
+    SYSTEM FUNCTION: Dashboard Statistics
+  */
   const totalBooks = books.length;
-
   const totalCopies = books.reduce((sum, book) => {
     return sum + Number(book.AvailableCopies || 0);
   }, 0);
+  const borrowableBooks = books.filter((book) => Boolean(book.IsBorrowable)).length;
+  const referenceBooks = books.filter((book) => !Boolean(book.IsBorrowable)).length;
 
-  const borrowableBooks = books.filter((book) =>
-    Boolean(book.IsBorrowable)
-  ).length;
-
-  const referenceBooks = books.filter(
-    (book) => !Boolean(book.IsBorrowable)
-  ).length;
-
-  // CSV export function.
+  /*
+    SYSTEM FUNCTION: Export CSV
+  */
   const handleExportBooks = () => {
     setMessage("");
     setError("");
@@ -396,204 +466,211 @@ function BookManagement() {
     setMessage("Book records exported successfully.");
   };
 
-  if (loadingScreen) {
-    return (
-      <div className="book-loading-screen">
-        <div className="book-loader-card">
-          <div className="book-flip-icon">📖</div>
-          <h2>Opening Book Catalogue</h2>
-          <p>Preparing library records...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <main className="book-management-page">
-      <section className="book-hero">
-        <div>
-          <p className="book-eyebrow">LibraSys Catalogue Module</p>
-          <h1>Book Management</h1>
-          <p className="book-hero-text">
-            Manage library catalogue records, availability, searching, filtering
-            and exports from one clean workspace.
-          </p>
-        </div>
+    <div className="book-management-shell">
+      {/* SYSTEM UI: Loading Overlay */}
+      <LoadingOverlay
+        show={loadingScreen || dataLoading}
+        message={loadingScreen ? "Opening Book Management..." : "Fetching books..."}
+        subtext="Please wait..."
+      />
 
-        <div className="book-hero-actions">
+      {/* SYSTEM UI: Sidebar */}
+      <Sidebar />
+
+      <main className="book-management-page">
+        {/* SYSTEM UI: Page Header */}
+        <section className="book-hero">
+          <div>
+            <p className="book-kicker">LIBRARY ADMINISTRATION</p>
+            <h1>Book Management</h1>
+            <p className="book-hero-text">
+              Manage library catalogue records, availability, searching,
+              filtering and exports.
+            </p>
+          </div>
+
           <button
-            className="secondary-action-btn"
+            type="button"
+            className="book-ghost-button"
             onClick={() => navigate("/dashboard")}
           >
-            ← Dashboard
+            Dashboard
           </button>
-
-          {isLibrarian && (
-            <button className="primary-action-btn" onClick={handleAddClick}>
-              + Add Book
-            </button>
-          )}
-
-          <button className="secondary-action-btn" onClick={handleExportBooks}>
-            Export CSV
-          </button>
-        </div>
-      </section>
-
-      {message && <div className="book-alert success-alert">{message}</div>}
-      {error && <div className="book-alert error-alert">{error}</div>}
-
-      <section className="book-stats-grid">
-        <article className="book-stat-card">
-          <span>Total Titles</span>
-          <strong>{totalBooks}</strong>
-          <p>All book records currently stored.</p>
-        </article>
-
-        <article className="book-stat-card">
-          <span>Total Copies</span>
-          <strong>{totalCopies}</strong>
-          <p>Combined copies across the catalogue.</p>
-        </article>
-
-        <article className="book-stat-card">
-          <span>Borrowable</span>
-          <strong>{borrowableBooks}</strong>
-          <p>Books available for normal lending.</p>
-        </article>
-
-        <article className="book-stat-card">
-          <span>Reference</span>
-          <strong>{referenceBooks}</strong>
-          <p>Books marked as non-borrowable.</p>
-        </article>
-      </section>
-
-      {isFormOpen && isLibrarian && (
-        <section className="book-form-panel">
-          <div className="book-section-heading">
-            <div>
-              <p className="book-eyebrow">Catalogue Form</p>
-              <h2>{editingId ? "Edit Book Record" : "Add New Book"}</h2>
-            </div>
-
-            <button className="ghost-btn" onClick={resetForm}>
-              Close
-            </button>
-          </div>
-
-          <form className="book-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="Title">Book Title</label>
-              <input
-                id="Title"
-                name="Title"
-                type="text"
-                value={form.Title}
-                onChange={handleChange}
-                placeholder="Enter book title"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="ISBN">ISBN</label>
-              <input
-                id="ISBN"
-                name="ISBN"
-                type="text"
-                value={form.ISBN}
-                onChange={handleChange}
-                placeholder="Enter ISBN"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="CategoryID">Category ID</label>
-              <input
-                id="CategoryID"
-                name="CategoryID"
-                type="number"
-                value={form.CategoryID}
-                onChange={handleChange}
-                placeholder="Example: 800"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="PublicationDate">Publication Date</label>
-              <input
-                id="PublicationDate"
-                name="PublicationDate"
-                type="date"
-                value={form.PublicationDate}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="AvailableCopies">Available Copies</label>
-              <input
-                id="AvailableCopies"
-                name="AvailableCopies"
-                type="number"
-                min="0"
-                value={form.AvailableCopies}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="checkbox-group">
-              <input
-                id="IsBorrowable"
-                name="IsBorrowable"
-                type="checkbox"
-                checked={form.IsBorrowable}
-                onChange={handleChange}
-              />
-              <label htmlFor="IsBorrowable">Book is borrowable</label>
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="ghost-btn" onClick={resetForm}>
-                Cancel
-              </button>
-
-              <button type="submit" className="primary-action-btn">
-                {editingId ? "Update Book" : "Save Book"}
-              </button>
-            </div>
-          </form>
         </section>
-      )}
 
-      <section className="book-catalogue-panel">
-        <div className="book-section-heading">
-          <div>
-            <p className="book-eyebrow">Catalogue Records</p>
-            <h2>Book Catalogue</h2>
+        {/* SYSTEM UI: Success and Error Messages */}
+        {message && <div className="book-alert success">{message}</div>}
+        {error && <div className="book-alert error">{error}</div>}
+
+        {/* SYSTEM UI: Summary Strip */}
+        <section className="book-summary-strip" aria-label="Book summary">
+          <div className="book-summary-item">
+            <span>Total Titles</span>
+            <strong>{totalBooks}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Total Copies</span>
+            <strong>{totalCopies}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Borrowable</span>
+            <strong>{borrowableBooks}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Reference</span>
+            <strong>{referenceBooks}</strong>
+          </div>
+        </section>
+
+        {/* SYSTEM UI: Add/Edit Book Form */}
+        {isFormOpen && isLibrarian && (
+          <section className="book-form-panel book-form-enter">
+            <div className="book-panel-header">
+              <div>
+                <p className="book-kicker">CATALOGUE FORM</p>
+                <h2>{editingId ? "Edit Book Record" : "Add New Book"}</h2>
+                <span>
+                  {editingId
+                    ? "Update the selected catalogue record."
+                    : "Create a new catalogue record."}
+                </span>
+              </div>
+
+              <button type="button" className="book-ghost-button" onClick={resetForm}>
+                Close
+              </button>
+            </div>
+
+            <form className="book-form" onSubmit={handleSubmit}>
+              <label className="book-field">
+                <span>Book Title</span>
+                <input
+                  name="Title"
+                  type="text"
+                  value={form.Title}
+                  onChange={handleChange}
+                  placeholder="Enter book title"
+                />
+              </label>
+
+              <label className="book-field">
+                <span>ISBN</span>
+                <input
+                  name="ISBN"
+                  type="text"
+                  value={form.ISBN}
+                  onChange={handleChange}
+                  placeholder="Enter ISBN"
+                />
+              </label>
+
+              <label className="book-field">
+                <span>Category ID</span>
+                <input
+                  name="CategoryID"
+                  type="number"
+                  value={form.CategoryID}
+                  onChange={handleChange}
+                  placeholder="Example: 800"
+                />
+              </label>
+
+              <label className="book-field">
+                <span>Publication Date</span>
+                <input
+                  name="PublicationDate"
+                  type="date"
+                  value={form.PublicationDate}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="book-field">
+                <span>Available Copies</span>
+                <input
+                  name="AvailableCopies"
+                  type="number"
+                  min="0"
+                  value={form.AvailableCopies}
+                  onChange={handleChange}
+                />
+              </label>
+
+              <label className="book-toggle-row">
+                <input
+                  name="IsBorrowable"
+                  type="checkbox"
+                  checked={form.IsBorrowable}
+                  onChange={handleChange}
+                />
+                <span>Book is borrowable</span>
+              </label>
+
+              <div className="book-form-actions">
+                <button type="button" className="book-ghost-button" onClick={resetForm}>
+                  Cancel
+                </button>
+
+                <button type="submit" className="book-primary-button">
+                  {editingId ? "Update Book" : "Save Book"}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {/* SYSTEM UI: Book Catalogue Panel */}
+        <section className="book-catalogue-panel">
+          <div className="book-catalogue-header">
+            <div>
+              <h2>Book Catalogue</h2>
+              <p>
+                Manage, search, filter, and export book records.
+              </p>
+            </div>
+
+            <div className="book-catalogue-actions">
+              {isLibrarian && (
+                <button
+                  type="button"
+                  className="book-primary-button"
+                  onClick={handleAddClick}
+                >
+                  <Plus size={17} />
+                  Add Book
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="book-ghost-button"
+                onClick={handleExportBooks}
+              >
+                <Download size={17} />
+                Export CSV
+              </button>
+            </div>
           </div>
 
-          <p className="book-count-text">
-            Showing {paginatedBooks.length} of {filteredBooks.length} records
-          </p>
-        </div>
+          {/* SYSTEM UI: Search and Filter Toolbar */}
+          <div className="book-toolbar">
+            <div className="book-search-box">
+              <input
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search by title, ISBN, ID or category..."
+              />
+              <button
+                type="button"
+                aria-label="Search books"
+              >
+                <Search size={17} />
+              </button>
+            </div>
 
-        <div className="book-toolbar">
-          <div className="search-box">
-            <label htmlFor="book-search">Search Books</label>
-            <input
-              id="book-search"
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, ISBN, ID or category"
-            />
-          </div>
-
-          <div className="filter-box">
-            <label htmlFor="category-filter">Category</label>
             <select
-              id="category-filter"
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
             >
@@ -604,12 +681,8 @@ function BookManagement() {
                 </option>
               ))}
             </select>
-          </div>
 
-          <div className="filter-box">
-            <label htmlFor="status-filter">Status</label>
             <select
-              id="status-filter"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
             >
@@ -617,127 +690,155 @@ function BookManagement() {
               <option value="borrowable">Borrowable</option>
               <option value="reference">Reference Only</option>
             </select>
+
+            <button type="button" className="book-secondary-button" onClick={clearFilters}>
+              Clear
+            </button>
           </div>
-        </div>
 
-        {dataLoading ? (
-          <div className="table-empty-state">
-            <div className="mini-loader">📚</div>
-            <h3>Loading books...</h3>
-            <p>The catalogue is being fetched from the backend.</p>
-          </div>
-        ) : (
-          <>
-            <div className="book-table-wrapper">
-              <table className="book-table">
-                <thead>
-                  <tr>
-                    <th onClick={() => handleSort("BookID")}>ID</th>
-                    <th onClick={() => handleSort("Title")}>Title</th>
-                    <th onClick={() => handleSort("ISBN")}>ISBN</th>
-                    <th onClick={() => handleSort("CategoryID")}>Category</th>
-                    <th onClick={() => handleSort("PublicationDate")}>
-                      Published
-                    </th>
-                    <th onClick={() => handleSort("AvailableCopies")}>
-                      Copies
-                    </th>
-                    <th>Status</th>
-                    {isLibrarian && <th>Actions</th>}
-                  </tr>
-                </thead>
+          {/* SYSTEM UI: Book Table */}
+          <div className="book-table-wrapper">
+            <table className="book-table">
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort("BookID")}>
+                    <span className="book-th-inner">ID {getSortIcon("BookID")}</span>
+                  </th>
+                  <th onClick={() => handleSort("Title")}>
+                    <span className="book-th-inner">Title {getSortIcon("Title")}</span>
+                  </th>
+                  <th onClick={() => handleSort("ISBN")}>
+                    <span className="book-th-inner">ISBN {getSortIcon("ISBN")}</span>
+                  </th>
+                  <th onClick={() => handleSort("CategoryID")}>
+                    <span className="book-th-inner">Category {getSortIcon("CategoryID")}</span>
+                  </th>
+                  <th onClick={() => handleSort("PublicationDate")}>
+                    <span className="book-th-inner">Published {getSortIcon("PublicationDate")}</span>
+                  </th>
+                  <th onClick={() => handleSort("AvailableCopies")}>
+                    <span className="book-th-inner">Copies {getSortIcon("AvailableCopies")}</span>
+                  </th>
+                  <th>Status</th>
+                  {isLibrarian && <th>Actions</th>}
+                </tr>
+              </thead>
 
-                <tbody>
-                  {paginatedBooks.length > 0 ? (
-                    paginatedBooks.map((book) => (
-                      <tr key={book.BookID}>
-                        <td>{book.BookID}</td>
-                        <td className="book-title-cell">{book.Title}</td>
-                        <td>{book.ISBN}</td>
-                        <td>Category {book.CategoryID}</td>
-                        <td>
-                          {book.PublicationDate
-                            ? String(book.PublicationDate).substring(0, 10)
-                            : "Not set"}
-                        </td>
-                        <td>{book.AvailableCopies}</td>
-                        <td>
-                          <span
-                            className={
-                              book.IsBorrowable
-                                ? "status-badge borrowable"
-                                : "status-badge reference"
-                            }
-                          >
-                            {book.IsBorrowable ? "Borrowable" : "Reference"}
-                          </span>
-                        </td>
-
-                        {isLibrarian && (
-                          <td>
-                            <div className="table-actions">
-                              <button
-                                className="edit-btn"
-                                onClick={() => handleEdit(book)}
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                className="delete-btn"
-                                onClick={() => handleDelete(book.BookID)}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={isLibrarian ? "8" : "7"}
-                        className="empty-table-message"
-                      >
-                        No book records match your search or filters.
+              <tbody>
+                {paginatedBooks.length > 0 ? (
+                  paginatedBooks.map((book, index) => (
+                    <tr key={book.BookID} className={index % 2 === 0 ? "book-row-even" : "book-row-odd"}>
+                      <td className="book-id">#{book.BookID}</td>
+                      <td className="book-title-cell">{book.Title}</td>
+                      <td>{book.ISBN}</td>
+                      <td>Category {book.CategoryID}</td>
+                      <td>
+                        {book.PublicationDate
+                          ? String(book.PublicationDate).substring(0, 10)
+                          : "Not set"}
                       </td>
+                      <td>
+                        <span className="book-count-badge">
+                          {book.AvailableCopies}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={
+                            book.IsBorrowable
+                              ? "book-status borrowable"
+                              : "book-status reference"
+                          }
+                        >
+                          {book.IsBorrowable ? "Borrowable" : "Reference"}
+                        </span>
+                      </td>
+
+                      {isLibrarian && (
+                        <td className="book-row-actions">
+                          <button
+                            type="button"
+                            aria-label="Edit book"
+                            title="Edit book"
+                            onClick={() => handleEdit(book)}
+                          >
+                            <Pencil size={15} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className="danger"
+                            aria-label="Delete book"
+                            title="Delete book"
+                            onClick={() => handleDelete(book.BookID)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={isLibrarian ? "8" : "7"}
+                      className="book-empty"
+                    >
+                      No book records match your search or filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-            <div className="pagination-bar">
+          {/* SYSTEM UI: Pagination */}
+          <div className="book-pagination">
+            <span>
+              Showing {firstRecord} to {lastRecord} of {filteredBooks.length} records
+            </span>
+
+            <div className="book-page-buttons" aria-label="Book pagination">
               <button
-                className="pagination-btn"
-                disabled={currentPage === 1}
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setCurrentPage(1)}
+              >
+                &laquo;
+              </button>
+              <button
+                type="button"
+                disabled={safePage <= 1}
                 onClick={() =>
-                  setCurrentPage((previousPage) => previousPage - 1)
+                  setCurrentPage((previousPage) => Math.max(1, previousPage - 1))
                 }
               >
-                Previous
+                &lsaquo;
               </button>
-
-              <span>
-                Page {totalPages === 0 ? 1 : currentPage} of{" "}
-                {totalPages === 0 ? 1 : totalPages}
-              </span>
-
+              <strong>{safePage}</strong>
               <button
-                className="pagination-btn"
-                disabled={currentPage === totalPages || totalPages === 0}
+                type="button"
+                disabled={safePage >= totalPages}
                 onClick={() =>
-                  setCurrentPage((previousPage) => previousPage + 1)
+                  setCurrentPage((previousPage) =>
+                    Math.min(totalPages, previousPage + 1)
+                  )
                 }
               >
-                Next
+                &rsaquo;
+              </button>
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setCurrentPage(totalPages)}
+              >
+                &raquo;
               </button>
             </div>
-          </>
-        )}
-      </section>
-    </main>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }
 

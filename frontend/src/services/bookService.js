@@ -10,6 +10,7 @@ export const getBooks = async () => {
   return response.data;
 };
 
+// Get one book record by BookID.
 export const getBookById = async (id) => {
   const response = await axios.get(`${API_URL}/${id}`);
   return response.data;

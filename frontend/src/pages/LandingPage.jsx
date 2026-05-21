@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import {
-  BarChart3,
   BookCheck,
   BookOpen,
   Boxes,
@@ -10,7 +9,6 @@ import {
   Database,
   Library,
   LockKeyhole,
-  Search,
   ShieldCheck,
   Sparkles,
   Tags,
@@ -24,6 +22,7 @@ import encyclopaediaImg from "../assets/books/encyclopaedia-reference.jpg";
 
 import "./LandingPage.css";
 
+// Featured books displayed near the top of the landing page.
 const featuredBooks = [
   {
     title: "Clean Code",
@@ -51,6 +50,7 @@ const featuredBooks = [
   },
 ];
 
+// Main catalogue categories shown before users open the full catalogue.
 const categories = [
   {
     icon: <BookOpen size={22} />,
@@ -90,6 +90,7 @@ const categories = [
   },
 ];
 
+// Summary numbers used in the Library Snapshot section.
 const snapshotStats = [
   {
     icon: <Database size={23} />,
@@ -113,6 +114,7 @@ const snapshotStats = [
   },
 ];
 
+// Actions shown in the member access card.
 const memberActions = [
   "Browse the public catalogue",
   "Search books by title, ISBN, or category",
@@ -120,6 +122,7 @@ const memberActions = [
   "Create and access a member profile",
 ];
 
+// Actions shown in the staff access card.
 const staffActions = [
   "Add, update, and maintain book records",
   "Manage borrowable and reference-only items",
@@ -132,6 +135,7 @@ export default function LandingPage() {
 
   return (
     <div className="lp-root">
+      {/* Header with logo, navigation links, and login buttons. */}
       <header className="lp-header">
         <div className="lp-header-inner">
           <button
@@ -180,6 +184,7 @@ export default function LandingPage() {
       </header>
 
       <main>
+        {/* Hero section introduces the LibraSys system. */}
         <section className="lp-hero">
           <div className="lp-hero-image" aria-hidden="true" />
           <div className="lp-hero-overlay" aria-hidden="true" />
@@ -216,6 +221,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Featured books section uses the featuredBooks array above. */}
         <section
           className="lp-section lp-featured"
           aria-labelledby="featured-books"
@@ -247,6 +253,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Category preview section uses the categories array above. */}
         <section
           className="lp-section lp-categories"
           aria-labelledby="browse-category"
@@ -293,6 +300,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Snapshot section shows quick library statistics. */}
         <section className="lp-snapshot" aria-labelledby="library-snapshot">
           <div className="lp-snapshot-inner">
             <div className="lp-snapshot-copy">
@@ -316,7 +324,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="lp-access-paths" id="about" aria-labelledby="access-paths">
+        {/* Access paths explain what members and staff can do. */}
+        <section
+          className="lp-access-paths"
+          id="about"
+          aria-labelledby="access-paths"
+        >
           <div className="lp-access-paths-inner">
             <div className="lp-section-heading lp-section-heading--dark lp-path-heading">
               <span className="lp-section-label">Why LibraSys</span>
@@ -392,6 +405,7 @@ export default function LandingPage() {
         </section>
       </main>
 
+      {/* Footer with extra navigation and project information. */}
       <footer className="lp-footer">
         <div className="lp-footer-inner">
           <div className="lp-footer-brand">
@@ -449,6 +463,7 @@ export default function LandingPage() {
   );
 }
 
+// Small reusable icon used beside each access path list item.
 function CheckDot() {
   return (
     <span className="lp-check-dot" aria-hidden="true">

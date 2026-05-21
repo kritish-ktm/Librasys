@@ -1,9 +1,11 @@
 const db = require("../config/db");
 
-// Converts empty optional fields into values MySQL can store.
+// SYSTEM HELPER: Prepare book values before saving to MySQL
 const prepareBookValues = (book) => {
   const categoryId =
-    book.CategoryID === "" || book.CategoryID === undefined || book.CategoryID === null
+    book.CategoryID === "" ||
+    book.CategoryID === undefined ||
+    book.CategoryID === null
       ? null
       : Number(book.CategoryID);
 
@@ -24,7 +26,7 @@ const prepareBookValues = (book) => {
   };
 };
 
-// Backend validation protects the database from invalid Book records.
+// SYSTEM VALIDATION: Check book data before Add/Edit reaches the database
 const validateBook = (book) => {
   if (!book.Title || book.Title.trim() === "") {
     return "Book title is required";
@@ -47,7 +49,7 @@ const validateBook = (book) => {
   return "";
 };
 
-// List all books from the MySQL Book table.
+// SYSTEM FUNCTION: View Books
 exports.getBooks = (req, res) => {
   const sql = `
     SELECT 
@@ -62,7 +64,7 @@ exports.getBooks = (req, res) => {
     ORDER BY BookID DESC
   `;
 
-  // db.query uses the shared MySQL connection pool from config/db.js.
+  // DATABASE ACCESS: Run SELECT query and send books back to frontend
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Get books error:", err);
@@ -75,6 +77,7 @@ exports.getBooks = (req, res) => {
   });
 };
 
+// SYSTEM FUNCTION: Get Book By ID
 exports.getBookById = (req, res) => {
   const sql = `
     SELECT
@@ -91,6 +94,7 @@ exports.getBookById = (req, res) => {
     WHERE b.BookID = ?
   `;
 
+  // DATABASE ACCESS: Run SELECT query for one book
   db.query(sql, [req.params.id], (err, results) => {
     if (err) {
       console.error("Get book error:", err);
@@ -107,7 +111,7 @@ exports.getBookById = (req, res) => {
   });
 };
 
-// Add a new book after validation passes.
+// SYSTEM FUNCTION: Add Book
 exports.addBook = (req, res) => {
   const validationError = validateBook(req.body);
 
@@ -132,6 +136,7 @@ exports.addBook = (req, res) => {
     book.IsBorrowable,
   ];
 
+  // DATABASE ACCESS: Run INSERT query to save a new book
   db.query(sql, values, (err, result) => {
     if (err) {
       console.error("Add book error:", err);
@@ -154,7 +159,7 @@ exports.addBook = (req, res) => {
   });
 };
 
-// Update an existing book by its BookID.
+// SYSTEM FUNCTION: Edit Book
 exports.updateBook = (req, res) => {
   const { id } = req.params;
   const validationError = validateBook(req.body);
@@ -187,6 +192,7 @@ exports.updateBook = (req, res) => {
     id,
   ];
 
+  // DATABASE ACCESS: Run UPDATE query using the selected BookID
   db.query(sql, values, (err, result) => {
     if (err) {
       console.error("Update book error:", err);
@@ -210,18 +216,20 @@ exports.updateBook = (req, res) => {
   });
 };
 
-// Delete a book if it is not linked to another record.
+// SYSTEM FUNCTION: Delete Book
 exports.deleteBook = (req, res) => {
   const { id } = req.params;
   const sql = "DELETE FROM book WHERE BookID = ?";
 
+  // DATABASE ACCESS: Run DELETE query using the selected BookID
   db.query(sql, [id], (err, result) => {
     if (err) {
       console.error("Delete book error:", err);
 
       if (err.code === "ER_ROW_IS_REFERENCED_2") {
         return res.status(400).json({
-          error: "Cannot delete this book because it is connected to another record",
+          error:
+            "Cannot delete this book because it is connected to another record",
         });
       }
 

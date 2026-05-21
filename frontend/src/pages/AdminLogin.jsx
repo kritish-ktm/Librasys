@@ -16,6 +16,24 @@ import {
 
 import "./Login.css";
 
+// Only these roles are allowed to use the staff/admin login page.
+const staffRoles = ["admin", "librarian"];
+
+// Reads the role safely, even if the backend sends it in a slightly different shape.
+const getRoleValue = (data) => {
+  return String(data?.role || data?.Role || data?.user?.role || data?.user?.Role || "")
+    .trim()
+    .toLowerCase();
+};
+
+// Clears any login data before showing an access denied message.
+const clearLoginStorage = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("name");
+  localStorage.removeItem("fullName");
+};
+
 function AdminLogin() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -49,11 +67,16 @@ function AdminLogin() {
         form
       );
 
-      if (res.data.role !== "Librarian") {
+      const role = getRoleValue(res.data);
+
+      // Member users are blocked from the staff login page.
+      if (!staffRoles.includes(role)) {
+        clearLoginStorage();
         setError("Access denied. This login is for authorised staff only.");
         return;
       }
 
+      // Save login data only after the role has passed validation.
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
       localStorage.setItem("name", res.data.name);
@@ -186,7 +209,7 @@ function AdminLogin() {
 
           <div className="auth-security-note auth-security-note-admin">
             <ShieldCheck size={18} />
-            <span>Staff access is restricted to users with Librarian role.</span>
+            <span>Staff access is restricted to authorised admin or librarian users.</span>
           </div>
         </section>
       </section>
