@@ -698,7 +698,7 @@ function UserFormModal({ title, description, submitLabel, form, setForm, error, 
               />
             </label>
           )}
-
+ 
           <div className="um-modal-actions">
             <button type="button" className="um-modal-cancel" disabled={isBusy} onClick={onClose}>
               Cancel

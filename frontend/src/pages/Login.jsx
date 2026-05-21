@@ -62,11 +62,13 @@ function Login() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
       localStorage.setItem("name", res.data.name);
+      localStorage.setItem("fullName", res.data.name);
+      localStorage.setItem("userId", String(res.data.userId || ""));
 
       if (res.data.role === "Librarian") {
         navigate("/dashboard");
       } else {
-        navigate("/profile");
+        navigate("/memberdashboard");
       }
     } catch (err) {
       console.error("Login error:", err);

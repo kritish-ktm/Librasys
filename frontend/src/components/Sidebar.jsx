@@ -22,11 +22,16 @@ const navItems = [
 function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const name = localStorage.getItem("name") || "Arun Shrestha";
+  const name = localStorage.getItem("name") || "LibraSys User";
+  const role = localStorage.getItem("role") || "Librarian";
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("name");
+    localStorage.removeItem("fullName");
+    localStorage.removeItem("userId");
+    navigate("/", { replace: true });
   };
 
   return (
@@ -62,7 +67,7 @@ function Sidebar() {
         <span>{getInitials(name)}</span>
         <div>
           <strong>{name}</strong>
-          <small>Librarian</small>
+          <small>{role}</small>
         </div>
       </div>
 

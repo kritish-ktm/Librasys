@@ -23,14 +23,25 @@ function AdminLogin() {
 
   const navigate = useNavigate();
 
+  const validate = () => {
+    if (!form.email.trim() || !form.password.trim()) {
+      setError("Email and password are required.");
+      return false;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!form.email.trim() || !form.password.trim()) {
-      setError("Email and password are required.");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       const res = await axios.post(
@@ -46,6 +57,8 @@ function AdminLogin() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
       localStorage.setItem("name", res.data.name);
+      localStorage.setItem("fullName", res.data.name);
+      localStorage.setItem("userId", String(res.data.userId || ""));
 
       navigate("/dashboard");
     } catch (err) {

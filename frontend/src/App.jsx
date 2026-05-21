@@ -17,14 +17,39 @@ import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
 
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('name');
+  localStorage.removeItem('fullName');
+  localStorage.removeItem('userId');
+}
+
+function getTokenPayload(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
+
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
 
-  if (!token) return <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" replace />;
+
+  const payload = getTokenPayload(token);
+  const isExpired = payload?.exp && payload.exp * 1000 <= Date.now();
+
+  if (!payload || isExpired || payload.role !== userRole) {
+    clearSession();
+    return <Navigate to="/login" replace />;
+  }
 
   if (role && userRole !== role) {
-    return <Navigate to="/login" />;
+    const redirect = role === 'Librarian' ? '/admin-login' : '/login';
+    return <Navigate to={redirect} replace />;
   }
 
   return children;
@@ -45,7 +70,14 @@ function App() {
         {/* Staff/admin login uses the updated AdminLogin page */}
         <Route path="/admin-login" element={<AdminLogin />} />
 
-        <Route path="/MemberDashboard" element={<MemberDashboard />} />
+        <Route
+          path="/MemberDashboard"
+          element={
+            <PrivateRoute role="Member">
+              <MemberDashboard />
+            </PrivateRoute>
+          }
+        />
         <Route path="/register" element={<Register />} />
 
         <Route

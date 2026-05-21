@@ -259,8 +259,10 @@ function Dashboard() {
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
+    localStorage.removeItem("name");
     localStorage.removeItem("fullName");
-    navigate("/login");
+    localStorage.removeItem("userId");
+    navigate("/login", { replace: true });
   }
 
   return (
