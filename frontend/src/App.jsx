@@ -17,15 +17,32 @@ import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
 
-// PrivateRoute protects pages that should only be opened by logged-in users.
-// If a role is provided, the user must also have that matching role.
+// Staff roles can open protected admin/librarian pages.
+const staffRoles = ['admin', 'librarian'];
+
+// Member roles can open protected member pages.
+const memberRoles = ['user', 'member', 'standard user'];
+
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
+  const normalizedRole = String(userRole || '').trim().toLowerCase();
+  const requiredRole = String(role || '').trim().toLowerCase();
 
   if (!token) return <Navigate to="/login" />;
 
-  if (role && userRole !== role) {
+  // Admin pages use role="Librarian", but both Admin and Librarian are allowed.
+  if (requiredRole === 'librarian' && !staffRoles.includes(normalizedRole)) {
+    return <Navigate to="/login" />;
+  }
+
+  // Member pages use role="Member", but similar member role names are allowed.
+  if (requiredRole === 'member' && !memberRoles.includes(normalizedRole)) {
+    return <Navigate to="/login" />;
+  }
+
+  // Fallback for any future route that requires one exact role.
+  if (role && requiredRole !== 'librarian' && requiredRole !== 'member' && normalizedRole !== requiredRole) {
     return <Navigate to="/login" />;
   }
 
@@ -84,7 +101,7 @@ function App() {
           }
         />
 
-        {/* Routes only for librarians. */}
+        {/* Routes only for librarians/admin staff. */}
         <Route
           path="/dashboard"
           element={
