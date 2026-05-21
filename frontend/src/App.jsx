@@ -16,6 +16,21 @@ import MemberDashboard from './pages/MemberDashboard';
 import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
+function getTokenPayload(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
+
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('name');
+  localStorage.removeItem('fullName');
+  localStorage.removeItem('userId');
+}
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
