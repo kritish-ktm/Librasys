@@ -1,10 +1,13 @@
+/*
+  SYSTEM SETUP: Imports
+*/
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BookCheck,
-  BookOpen,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Download,
-  FileText,
   Pencil,
   Plus,
   Search,
@@ -22,9 +25,6 @@ import "./BookManagement.css";
 
 /*
   SYSTEM SETUP: Default Book Form Values
-
-  This object stores the default empty values for the book form.
-  It is used when adding a new book, resetting the form, or cancelling an edit.
 */
 const emptyForm = {
   CategoryID: "",
@@ -37,9 +37,6 @@ const emptyForm = {
 
 /*
   SYSTEM SETUP: Pagination Limit
-
-  This decides how many book records appear on one page.
-  It helps keep the table cleaner instead of showing all books at once.
 */
 const booksPerPage = 8;
 
@@ -48,13 +45,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Main Book State
-
-    books stores all book records loaded from the backend/database.
-    form stores the current input values in the add/edit form.
-    editingId stores the BookID of the book currently being edited.
-
-    If editingId is null, the form is being used for Add Book.
-    If editingId has a value, the form is being used for Edit Book.
   */
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -62,10 +52,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Loading and UI State
-
-    isFormOpen controls whether the add/edit form is visible.
-    loadingScreen controls the first loading overlay when the page opens.
-    dataLoading controls the loading overlay while book data is being fetched.
   */
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loadingScreen, setLoadingScreen] = useState(true);
@@ -73,13 +59,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Search Books, Filter Books, Sort Books, Pagination
-
-    search stores the text typed into the search box.
-    categoryFilter stores the selected category filter.
-    statusFilter stores whether the user wants all, borrowable, or reference books.
-    sortKey stores which column is being sorted.
-    sortDirection stores ascending or descending order.
-    currentPage stores which table page the user is currently viewing.
   */
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -90,19 +69,12 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Success and Error Messages
-
-    message displays successful actions, such as add, update, delete, or export.
-    error displays validation errors or backend/database problems.
   */
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   /*
     SYSTEM FUNCTION: Role-Based Access
-
-    The logged-in user role is read from localStorage.
-    Librarian/admin users can add, edit, and delete books.
-    Other users can view/search/filter the catalogue but should not manage records.
   */
   const userRole = localStorage.getItem("role") || "";
   const isLibrarian =
@@ -111,9 +83,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Loading Screen
-
-    This creates a short loading overlay when the page first opens.
-    It matches the shared admin loading style used in the project.
   */
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -125,9 +94,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: View Books on Page Load
-
-    This runs once when Book Management opens.
-    It calls loadBooks(), which gets book records from the backend.
   */
   useEffect(() => {
     loadBooks();
@@ -135,10 +101,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: View Books
-
-    This function loads all book records from the backend.
-
-    This is what makes the book table display database records.
   */
   const loadBooks = async () => {
     try {
@@ -159,9 +121,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Reset Book Form
-
-    This clears the form and closes it.
-    It is used after Add Book, Edit Book, or when the user cancels the form.
   */
   const resetForm = () => {
     setForm(emptyForm);
@@ -171,12 +130,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Form Input Handling
-
-    This updates the form state whenever the user types into an input
-    or changes the IsBorrowable checkbox.
-
-    The input name, such as Title or ISBN, matches the property inside form.
-    This lets one function handle all form fields.
   */
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -189,18 +142,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Validation
-
-    This checks the book form before sending data to the backend.
-
-    It prevents common bad inputs:
-    missing title
-    missing ISBN
-    ISBN with invalid length
-    missing category
-    negative available copies
-
-    This is frontend validation. Backend validation is still important,
-    because frontend validation can be bypassed.
   */
   const validateForm = () => {
     if (!form.Title.trim()) {
@@ -233,20 +174,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Add Book and Edit Book
-
-    This function runs when the book form is submitted.
-
-    It handles two system functions:
-    Add Book
-    Edit Book
-
-    If editingId is null:
-    the user is adding a new book, so addBook() is called.
-
-    If editingId has a BookID:
-    the user is editing an existing book, so updateBook() is called.
-
-    After success, the form resets and loadBooks() refreshes the table.
   */
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -260,10 +187,6 @@ function BookManagement() {
 
     /*
       SYSTEM FUNCTION: Prepare Book Data
-
-      Form input values normally come as strings.
-      CategoryID and AvailableCopies are converted into numbers before
-      being sent to the backend.
     */
     const bookPayload = {
       ...form,
@@ -296,11 +219,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Add Book
-
-    This opens the form in Add Book mode.
-
-    It clears old messages/errors, removes any editing ID,
-    resets the form to empty values, and opens the form panel.
   */
   const handleAddClick = () => {
     setMessage("");
@@ -312,15 +230,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Edit Book
-
-    This opens the form in Edit Book mode.
-
-    When the user clicks the edit icon:
-    the selected book's data is copied into the form
-    editingId is set to the selected BookID
-    the same form is opened, but now it updates instead of adding
-
-    The actual update happens later in handleSubmit().
   */
   const handleEdit = (book) => {
     setMessage("");
@@ -344,13 +253,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Delete Book
-
-    This deletes a selected book record.
-
-    First it shows a confirmation popup to avoid accidental deletion.
-    If confirmed, deleteBook(bookId) sends the BookID to the backend.
-    The backend deletes the matching book record from the book table.
-    After deletion, loadBooks() refreshes the table.
   */
   const handleDelete = async (bookId) => {
     const confirmDelete = window.confirm(
@@ -377,11 +279,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Sort Books
-
-    This sorts the table when the user clicks a column heading.
-
-    If the same column is clicked again, the sort direction switches
-    between ascending and descending.
   */
   const handleSort = (key) => {
     if (sortKey === key) {
@@ -395,10 +292,17 @@ function BookManagement() {
   };
 
   /*
-    SYSTEM FUNCTION: Clear Search and Filters
+    SYSTEM FUNCTION: Sort Indicator Icon
+  */
+  const getSortIcon = (key) => {
+    if (sortKey !== key) return <ArrowUpDown size={12} className="book-sort-icon inactive" />;
+    return sortDirection === "asc"
+      ? <ArrowUp size={12} className="book-sort-icon active" />
+      : <ArrowDown size={12} className="book-sort-icon active" />;
+  };
 
-    This clears the search box, category filter, and status filter.
-    It also returns the user to page 1.
+  /*
+    SYSTEM FUNCTION: Clear Search and Filters
   */
   const clearFilters = () => {
     setSearch("");
@@ -409,9 +313,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Category Filter Options
-
-    This builds the category dropdown from the loaded book records.
-    Duplicate CategoryID values are removed so each category appears once.
   */
   const categoryOptions = useMemo(() => {
     const categories = books
@@ -423,20 +324,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Search Books, Filter Books, and Sort Books
-
-    This creates the final list of books shown in the table.
-
-    Search Books:
-    checks BookID, Title, ISBN, CategoryID, PublicationDate,
-    AvailableCopies, and status text.
-
-    Filter Books:
-    filters by CategoryID and borrowable/reference status.
-
-    Sort Books:
-    sorts the filtered result using the selected column and direction.
-
-    This is frontend-only. It does not change the database.
   */
   const filteredBooks = useMemo(() => {
     const searchValue = search.toLowerCase().trim();
@@ -489,9 +376,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Pagination Reset
-
-    When the user changes search or filter values, the table returns to page 1.
-    This avoids staying on a later page that may no longer have results.
   */
   useEffect(() => {
     setCurrentPage(1);
@@ -499,19 +383,10 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Pagination
-
-    These calculations decide which records appear on the current page.
-
-    totalPages calculates the number of pages.
-    safePage prevents invalid page numbers.
-    firstRecord and lastRecord show the visible range.
-    paginatedBooks contains only the books for the current page.
   */
   const totalPages = Math.max(1, Math.ceil(filteredBooks.length / booksPerPage));
   const safePage = Math.min(currentPage, totalPages);
-  const firstRecord = filteredBooks.length
-    ? (safePage - 1) * booksPerPage + 1
-    : 0;
+  const firstRecord = filteredBooks.length ? (safePage - 1) * booksPerPage + 1 : 0;
   const lastRecord = Math.min(safePage * booksPerPage, filteredBooks.length);
 
   const paginatedBooks = filteredBooks.slice(
@@ -521,9 +396,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Dashboard Statistics
-
-    These values are calculated from the loaded book records.
-    They are shown in the stat cards above the table.
   */
   const totalBooks = books.length;
   const totalCopies = books.reduce((sum, book) => {
@@ -534,14 +406,6 @@ function BookManagement() {
 
   /*
     SYSTEM FUNCTION: Export CSV
-
-    This exports the currently filtered book list as a CSV file.
-
-    If the user searches or filters first, only those matching records
-    are included in the export.
-
-    This is a frontend feature. It creates a downloadable file in the browser
-    and does not change the database.
   */
   const handleExportBooks = () => {
     setMessage("");
@@ -604,15 +468,18 @@ function BookManagement() {
 
   return (
     <div className="book-management-shell">
+      {/* SYSTEM UI: Loading Overlay */}
       <LoadingOverlay
         show={loadingScreen || dataLoading}
         message={loadingScreen ? "Opening Book Management..." : "Fetching books..."}
         subtext="Please wait..."
       />
 
+      {/* SYSTEM UI: Sidebar */}
       <Sidebar />
 
       <main className="book-management-page">
+        {/* SYSTEM UI: Page Header */}
         <section className="book-hero">
           <div>
             <p className="book-kicker">LIBRARY ADMINISTRATION</p>
@@ -632,42 +499,33 @@ function BookManagement() {
           </button>
         </section>
 
+        {/* SYSTEM UI: Success and Error Messages */}
         {message && <div className="book-alert success">{message}</div>}
         {error && <div className="book-alert error">{error}</div>}
 
-        <section className="book-stats-grid" aria-label="Book summary">
-          <StatCard
-            title="Total Titles"
-            value={totalBooks}
-            detail="All book records"
-            icon={BookOpen}
-            tone="total"
-          />
-          <StatCard
-            title="Total Copies"
-            value={totalCopies}
-            detail="Copies in catalogue"
-            icon={BookCheck}
-            tone="copies"
-          />
-          <StatCard
-            title="Borrowable"
-            value={borrowableBooks}
-            detail="Available for lending"
-            icon={BookOpen}
-            tone="borrowable"
-          />
-          <StatCard
-            title="Reference"
-            value={referenceBooks}
-            detail="In-library only"
-            icon={FileText}
-            tone="reference"
-          />
+        {/* SYSTEM UI: Summary Strip */}
+        <section className="book-summary-strip" aria-label="Book summary">
+          <div className="book-summary-item">
+            <span>Total Titles</span>
+            <strong>{totalBooks}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Total Copies</span>
+            <strong>{totalCopies}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Borrowable</span>
+            <strong>{borrowableBooks}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Reference</span>
+            <strong>{referenceBooks}</strong>
+          </div>
         </section>
 
+        {/* SYSTEM UI: Add/Edit Book Form */}
         {isFormOpen && isLibrarian && (
-          <section className="book-form-panel">
+          <section className="book-form-panel book-form-enter">
             <div className="book-panel-header">
               <div>
                 <p className="book-kicker">CATALOGUE FORM</p>
@@ -762,16 +620,17 @@ function BookManagement() {
           </section>
         )}
 
-        <section className="book-table-panel">
-          <div className="book-table-header">
+        {/* SYSTEM UI: Book Catalogue Panel */}
+        <section className="book-catalogue-panel">
+          <div className="book-catalogue-header">
             <div>
               <h2>Book Catalogue</h2>
               <p>
-                View, search and manage all book records ({filteredBooks.length}).
+                Manage, search, filter, and export book records.
               </p>
             </div>
 
-            <div className="book-table-tools">
+            <div className="book-catalogue-actions">
               {isLibrarian && (
                 <button
                   type="button"
@@ -794,6 +653,7 @@ function BookManagement() {
             </div>
           </div>
 
+          {/* SYSTEM UI: Search and Filter Toolbar */}
           <div className="book-toolbar">
             <div className="book-search-box">
               <input
@@ -802,7 +662,10 @@ function BookManagement() {
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by title, ISBN, ID or category..."
               />
-              <button type="button" aria-label="Search books">
+              <button
+                type="button"
+                aria-label="Search books"
+              >
                 <Search size={17} />
               </button>
             </div>
@@ -833,33 +696,29 @@ function BookManagement() {
             </button>
           </div>
 
-          <div className="book-filter-tabs" aria-label="Filter books by status">
-            {["all", "borrowable", "reference"].map((status) => (
-              <button
-                key={status}
-                type="button"
-                className={statusFilter === status ? "active" : ""}
-                onClick={() => {
-                  setStatusFilter(status);
-                  setCurrentPage(1);
-                }}
-              >
-                {formatStatusLabel(status)}
-                <span>{countForStatus(status, books)}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="book-table-wrap">
+          {/* SYSTEM UI: Book Table */}
+          <div className="book-table-wrapper">
             <table className="book-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort("BookID")}>ID</th>
-                  <th onClick={() => handleSort("Title")}>Title</th>
-                  <th onClick={() => handleSort("ISBN")}>ISBN</th>
-                  <th onClick={() => handleSort("CategoryID")}>Category</th>
-                  <th onClick={() => handleSort("PublicationDate")}>Published</th>
-                  <th onClick={() => handleSort("AvailableCopies")}>Copies</th>
+                  <th onClick={() => handleSort("BookID")}>
+                    <span className="book-th-inner">ID {getSortIcon("BookID")}</span>
+                  </th>
+                  <th onClick={() => handleSort("Title")}>
+                    <span className="book-th-inner">Title {getSortIcon("Title")}</span>
+                  </th>
+                  <th onClick={() => handleSort("ISBN")}>
+                    <span className="book-th-inner">ISBN {getSortIcon("ISBN")}</span>
+                  </th>
+                  <th onClick={() => handleSort("CategoryID")}>
+                    <span className="book-th-inner">Category {getSortIcon("CategoryID")}</span>
+                  </th>
+                  <th onClick={() => handleSort("PublicationDate")}>
+                    <span className="book-th-inner">Published {getSortIcon("PublicationDate")}</span>
+                  </th>
+                  <th onClick={() => handleSort("AvailableCopies")}>
+                    <span className="book-th-inner">Copies {getSortIcon("AvailableCopies")}</span>
+                  </th>
                   <th>Status</th>
                   {isLibrarian && <th>Actions</th>}
                 </tr>
@@ -867,8 +726,8 @@ function BookManagement() {
 
               <tbody>
                 {paginatedBooks.length > 0 ? (
-                  paginatedBooks.map((book) => (
-                    <tr key={book.BookID}>
+                  paginatedBooks.map((book, index) => (
+                    <tr key={book.BookID} className={index % 2 === 0 ? "book-row-even" : "book-row-odd"}>
                       <td className="book-id">#{book.BookID}</td>
                       <td className="book-title-cell">{book.Title}</td>
                       <td>{book.ISBN}</td>
@@ -933,6 +792,7 @@ function BookManagement() {
             </table>
           </div>
 
+          {/* SYSTEM UI: Pagination */}
           <div className="book-pagination">
             <span>
               Showing {firstRecord} to {lastRecord} of {filteredBooks.length} records
@@ -980,53 +840,6 @@ function BookManagement() {
       </main>
     </div>
   );
-}
-
-/*
-  SYSTEM FUNCTION: Dashboard Stat Card
-
-  This reusable component displays one statistic card.
-  It is used for total books, total copies, borrowable books, and reference books.
-*/
-function StatCard({ title, value, detail, icon: Icon, tone }) {
-  return (
-    <article className={`book-stat-card ${tone}`}>
-      <span className="book-stat-icon">
-        <Icon size={30} strokeWidth={2.1} />
-      </span>
-      <span>
-        <small>{title}</small>
-        <strong>{value}</strong>
-        <em>{detail}</em>
-      </span>
-    </article>
-  );
-}
-
-/*
-  SYSTEM FUNCTION: Status Filter Count
-
-  This counts how many books belong to each status tab.
-  It is used for the All, Borrowable, and Reference filter buttons.
-*/
-function countForStatus(status, books) {
-  if (status === "all") return books.length;
-  if (status === "borrowable") {
-    return books.filter((book) => Boolean(book.IsBorrowable)).length;
-  }
-  return books.filter((book) => !Boolean(book.IsBorrowable)).length;
-}
-
-/*
-  SYSTEM FUNCTION: Status Label Formatting
-
-  This converts internal status values into readable labels.
-  Example: "reference" becomes "Reference".
-*/
-function formatStatusLabel(status) {
-  if (status === "all") return "All";
-  if (status === "reference") return "Reference";
-  return "Borrowable";
 }
 
 export default BookManagement;
