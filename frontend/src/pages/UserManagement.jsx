@@ -238,6 +238,7 @@ function UserManagement() {
 
   const validateForm = (mode) => {
     if (!form.fullName.trim()) return "Full name is required.";
+    if (form.fullName.trim().length < 2) return "Full name must be at least 2 characters.";
     if (!form.email.trim()) return "Email is required.";
     if (!isValidEmail(form.email.trim())) return "Please enter a valid email address.";
     if (mode === "create" && !form.password) return "Password is required.";
@@ -697,7 +698,7 @@ function UserFormModal({ title, description, submitLabel, form, setForm, error, 
               />
             </label>
           )}
-
+ 
           <div className="um-modal-actions">
             <button type="button" className="um-modal-cancel" disabled={isBusy} onClick={onClose}>
               Cancel

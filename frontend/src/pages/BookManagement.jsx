@@ -1,10 +1,13 @@
+/*
+  SYSTEM SETUP: Imports
+*/
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BookCheck,
-  BookOpen,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Download,
-  FileText,
   Pencil,
   Plus,
   Search,
@@ -20,7 +23,9 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import Sidebar from "../components/Sidebar";
 import "./BookManagement.css";
 
-// Default form values used when adding a new book or resetting the form.
+/*
+  SYSTEM SETUP: Default Book Form Values
+*/
 const emptyForm = {
   CategoryID: "",
   Title: "",
@@ -30,22 +35,31 @@ const emptyForm = {
   IsBorrowable: true,
 };
 
+/*
+  SYSTEM SETUP: Pagination Limit
+*/
 const booksPerPage = 8;
 
 function BookManagement() {
   const navigate = useNavigate();
 
-  // Main book data and form states.
+  /*
+    SYSTEM FUNCTION: Main Book State
+  */
   const [books, setBooks] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
 
-  // UI and loading states.
+  /*
+    SYSTEM FUNCTION: Loading and UI State
+  */
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loadingScreen, setLoadingScreen] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // States used for searching, filtering, sorting, and pagination.
+  /*
+    SYSTEM FUNCTION: Search Books, Filter Books, Sort Books, Pagination
+  */
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -53,16 +67,28 @@ function BookManagement() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Message states used to give feedback after actions.
+  /*
+    SYSTEM FUNCTION: Success and Error Messages
+  */
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  /*
+    SYSTEM FUNCTION: Role-Based Access
+  */
   const userRole = localStorage.getItem("role") || "";
   const isLibrarian =
     userRole.toLowerCase() === "librarian" ||
     userRole.toLowerCase() === "admin";
 
-  // Loading uses the same overlay style as the other admin pages.
+  /*
+    SYSTEM SETUP: Current Date for Validation
+  */
+  const todayDate = new Date().toISOString().substring(0, 10);
+
+  /*
+    SYSTEM FUNCTION: Loading Screen
+  */
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoadingScreen(false);
@@ -71,10 +97,16 @@ function BookManagement() {
     return () => clearTimeout(timer);
   }, []);
 
+  /*
+    SYSTEM FUNCTION: View Books on Page Load
+  */
   useEffect(() => {
     loadBooks();
   }, []);
 
+  /*
+    SYSTEM FUNCTION: View Books
+  */
   const loadBooks = async () => {
     try {
       setDataLoading(true);
@@ -92,12 +124,18 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Reset Book Form
+  */
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
     setIsFormOpen(false);
   };
 
+  /*
+    SYSTEM FUNCTION: Form Input Handling
+  */
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
 
@@ -107,20 +145,112 @@ function BookManagement() {
     }));
   };
 
-  // Basic frontend validation before sending data to the backend.
+  /*
+    SYSTEM HELPER: Format Date for Form Payload
+  */
+  const formatDateForPayload = (dateValue) => {
+    return dateValue ? String(dateValue).substring(0, 10) : "";
+  };
+
+  /*
+    SYSTEM HELPER: Prepare Existing Book Copy Update
+  */
+  const prepareExistingBookCopyPayload = (existingBook, copiesToAdd) => {
+    return {
+      CategoryID: Number(existingBook.CategoryID),
+      Title: existingBook.Title || "",
+      ISBN: existingBook.ISBN || "",
+      PublicationDate: formatDateForPayload(existingBook.PublicationDate),
+      AvailableCopies:
+        Number(existingBook.AvailableCopies || 0) + Number(copiesToAdd),
+      IsBorrowable: Boolean(existingBook.IsBorrowable),
+    };
+  };
+
+  /*
+    SYSTEM FUNCTION: Edit Impact Warning
+  */
+  const buildEditImpactWarnings = (originalBook, updatedBook) => {
+    if (!originalBook) {
+      return [];
+    }
+
+    const warnings = [];
+
+    const originalISBN = String(originalBook.ISBN || "").trim();
+    const updatedISBN = String(updatedBook.ISBN || "").trim();
+
+    const originalCategory = String(originalBook.CategoryID || "");
+    const updatedCategory = String(updatedBook.CategoryID || "");
+
+    const originalCopies = Number(originalBook.AvailableCopies || 0);
+    const updatedCopies = Number(updatedBook.AvailableCopies || 0);
+
+    const originalBorrowable = Boolean(originalBook.IsBorrowable);
+    const updatedBorrowable = Boolean(updatedBook.IsBorrowable);
+
+    if (originalISBN !== updatedISBN) {
+      warnings.push(
+        `ISBN will change from ${originalISBN} to ${updatedISBN}. This changes the book identity used in the catalogue.`
+      );
+    }
+
+    if (originalCategory !== updatedCategory) {
+      warnings.push(
+        `Category will change from ${originalCategory} to ${updatedCategory}. This may affect searching and filtering.`
+      );
+    }
+
+    if (originalCopies !== updatedCopies) {
+      warnings.push(
+        `Available copies will change from ${originalCopies} to ${updatedCopies}. This may affect borrowing availability.`
+      );
+    }
+
+    if (originalBorrowable !== updatedBorrowable) {
+      warnings.push(
+        `Borrowable status will change from ${
+          originalBorrowable ? "Borrowable" : "Reference Only"
+        } to ${
+          updatedBorrowable ? "Borrowable" : "Reference Only"
+        }. This may affect whether users can borrow this book.`
+      );
+    }
+
+    return warnings;
+  };
+
+  /*
+    SYSTEM FUNCTION: Validation
+  */
   const validateForm = () => {
-    if (!form.Title.trim()) {
+    const title = form.Title.trim();
+    const isbn = form.ISBN.trim();
+    const categoryId = Number(form.CategoryID);
+    const availableCopies = Number(form.AvailableCopies);
+
+    if (!title) {
       setError("Book title is required.");
       return false;
     }
 
-    if (!form.ISBN.trim()) {
+    if (title.length > 150) {
+      setError("Book title cannot be longer than 150 characters.");
+      return false;
+    }
+
+    if (!isbn) {
       setError("ISBN is required.");
       return false;
     }
 
-    if (form.ISBN.trim().length < 10 || form.ISBN.trim().length > 13) {
-      setError("ISBN must be between 10 and 13 characters.");
+    if (!/^\d+$/.test(isbn)) {
+      setError("ISBN must contain digits only.");
+      return false;
+    }
+
+    if (isbn.length !== 10 && isbn.length !== 13) {
+      setError("ISBN must be exactly 10 or 13 digits.");
       return false;
     }
 
@@ -129,14 +259,48 @@ function BookManagement() {
       return false;
     }
 
-    if (Number(form.AvailableCopies) < 0) {
-      setError("Available copies cannot be negative.");
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
+      setError("Category ID must be a valid whole number.");
       return false;
+    }
+
+    if (
+      form.AvailableCopies === "" ||
+      form.AvailableCopies === undefined ||
+      form.AvailableCopies === null
+    ) {
+      setError("Available copies is required.");
+      return false;
+    }
+
+    if (!Number.isInteger(availableCopies) || availableCopies < 0) {
+      setError("Available copies must be a whole number of 0 or more.");
+      return false;
+    }
+
+    if (form.PublicationDate) {
+      const publicationDate = new Date(form.PublicationDate);
+      const today = new Date();
+
+      today.setHours(0, 0, 0, 0);
+
+      if (Number.isNaN(publicationDate.getTime())) {
+        setError("Publication date must be a valid date.");
+        return false;
+      }
+
+      if (publicationDate > today) {
+        setError("Publication date cannot be in the future.");
+        return false;
+      }
     }
 
     return true;
   };
 
+  /*
+    SYSTEM FUNCTION: Add Book and Edit Book
+  */
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -147,6 +311,9 @@ function BookManagement() {
       return;
     }
 
+    /*
+      SYSTEM FUNCTION: Prepare Book Data
+    */
     const bookPayload = {
       ...form,
       CategoryID: Number(form.CategoryID),
@@ -156,11 +323,76 @@ function BookManagement() {
 
     try {
       if (editingId) {
+        /*
+          SYSTEM FUNCTION: Edit Book Impact Warning
+        */
+        const originalBook = books.find((book) => {
+          return Number(book.BookID) === Number(editingId);
+        });
+
+        const impactWarnings = buildEditImpactWarnings(originalBook, bookPayload);
+
+        if (impactWarnings.length > 0) {
+          const confirmEdit = window.confirm(
+            `You are changing important catalogue fields:\n\n- ${impactWarnings.join(
+              "\n- "
+            )}\n\nDo you want to continue with this update?`
+          );
+
+          if (!confirmEdit) {
+            setError("Update cancelled. No changes were saved.");
+            return;
+          }
+        }
+
         await updateBook(editingId, bookPayload);
         setMessage("Book record updated successfully.");
       } else {
-        await addBook(bookPayload);
-        setMessage("Book record added successfully.");
+        /*
+          SYSTEM FUNCTION: Duplicate ISBN Add Copy Check
+        */
+        const existingBook = books.find((book) => {
+          return String(book.ISBN).trim() === String(bookPayload.ISBN).trim();
+        });
+
+        if (existingBook) {
+          const copiesToAdd = Number(bookPayload.AvailableCopies);
+
+          if (copiesToAdd <= 0) {
+            setError(
+              "This ISBN already exists. Enter at least 1 available copy to add copies to the existing book."
+            );
+            return;
+          }
+
+          const confirmAddCopy = window.confirm(
+            `A book with this ISBN already exists: "${existingBook.Title}".\n\nDo you want to add ${copiesToAdd} ${
+              copiesToAdd === 1 ? "copy" : "copies"
+            } to the existing book instead of creating a duplicate record?`
+          );
+
+          if (!confirmAddCopy) {
+            setError(
+              "A book with this ISBN already exists. No duplicate record was created."
+            );
+            return;
+          }
+
+          const addCopyPayload = prepareExistingBookCopyPayload(
+            existingBook,
+            copiesToAdd
+          );
+
+          await updateBook(existingBook.BookID, addCopyPayload);
+          setMessage(
+            `Book already existed. Added ${copiesToAdd} ${
+              copiesToAdd === 1 ? "copy" : "copies"
+            } to "${existingBook.Title}".`
+          );
+        } else {
+          await addBook(bookPayload);
+          setMessage("Book record added successfully.");
+        }
       }
 
       resetForm();
@@ -168,7 +400,9 @@ function BookManagement() {
     } catch (err) {
       console.error("Error saving book:", err);
 
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
       } else {
         setError("Could not save the book record.");
@@ -176,6 +410,9 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Add Book
+  */
   const handleAddClick = () => {
     setMessage("");
     setError("");
@@ -184,6 +421,9 @@ function BookManagement() {
     setIsFormOpen(true);
   };
 
+  /*
+    SYSTEM FUNCTION: Edit Book
+  */
   const handleEdit = (book) => {
     setMessage("");
     setError("");
@@ -204,6 +444,9 @@ function BookManagement() {
     setIsFormOpen(true);
   };
 
+  /*
+    SYSTEM FUNCTION: Delete Book
+  */
   const handleDelete = async (bookId) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this book record?"
@@ -217,16 +460,22 @@ function BookManagement() {
       setMessage("");
       setError("");
 
-      await deleteBook(bookId);
+      const deleteResponse = await deleteBook(bookId);
 
-      setMessage("Book record deleted successfully.");
+      setMessage(deleteResponse?.message || "Book record deleted successfully.");
       loadBooks();
     } catch (err) {
       console.error("Error deleting book:", err);
-      setError("Could not delete the book record.");
+      setError(
+        err.response?.data?.error ||
+          "Could not delete the book record."
+      );
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Sort Books
+  */
   const handleSort = (key) => {
     if (sortKey === key) {
       setSortDirection((previousDirection) =>
@@ -238,6 +487,19 @@ function BookManagement() {
     }
   };
 
+  /*
+    SYSTEM FUNCTION: Sort Indicator Icon
+  */
+  const getSortIcon = (key) => {
+    if (sortKey !== key) return <ArrowUpDown size={12} className="book-sort-icon inactive" />;
+    return sortDirection === "asc"
+      ? <ArrowUp size={12} className="book-sort-icon active" />
+      : <ArrowDown size={12} className="book-sort-icon active" />;
+  };
+
+  /*
+    SYSTEM FUNCTION: Clear Search and Filters
+  */
   const clearFilters = () => {
     setSearch("");
     setCategoryFilter("all");
@@ -245,6 +507,9 @@ function BookManagement() {
     setCurrentPage(1);
   };
 
+  /*
+    SYSTEM FUNCTION: Category Filter Options
+  */
   const categoryOptions = useMemo(() => {
     const categories = books
       .map((book) => book.CategoryID)
@@ -253,7 +518,9 @@ function BookManagement() {
     return [...new Set(categories)].sort((a, b) => Number(a) - Number(b));
   }, [books]);
 
-  // Applies search, category filter, status filter, and sorting.
+  /*
+    SYSTEM FUNCTION: Search Books, Filter Books, and Sort Books
+  */
   const filteredBooks = useMemo(() => {
     const searchValue = search.toLowerCase().trim();
 
@@ -303,16 +570,19 @@ function BookManagement() {
     return result;
   }, [books, search, categoryFilter, statusFilter, sortKey, sortDirection]);
 
-  // Pagination calculations for the filtered result list.
+  /*
+    SYSTEM FUNCTION: Pagination Reset
+  */
   useEffect(() => {
     setCurrentPage(1);
   }, [search, categoryFilter, statusFilter]);
 
+  /*
+    SYSTEM FUNCTION: Pagination
+  */
   const totalPages = Math.max(1, Math.ceil(filteredBooks.length / booksPerPage));
   const safePage = Math.min(currentPage, totalPages);
-  const firstRecord = filteredBooks.length
-    ? (safePage - 1) * booksPerPage + 1
-    : 0;
+  const firstRecord = filteredBooks.length ? (safePage - 1) * booksPerPage + 1 : 0;
   const lastRecord = Math.min(safePage * booksPerPage, filteredBooks.length);
 
   const paginatedBooks = filteredBooks.slice(
@@ -320,6 +590,9 @@ function BookManagement() {
     safePage * booksPerPage
   );
 
+  /*
+    SYSTEM FUNCTION: Dashboard Statistics
+  */
   const totalBooks = books.length;
   const totalCopies = books.reduce((sum, book) => {
     return sum + Number(book.AvailableCopies || 0);
@@ -327,7 +600,9 @@ function BookManagement() {
   const borrowableBooks = books.filter((book) => Boolean(book.IsBorrowable)).length;
   const referenceBooks = books.filter((book) => !Boolean(book.IsBorrowable)).length;
 
-  // Exports the current filtered book list as a CSV file.
+  /*
+    SYSTEM FUNCTION: Export CSV
+  */
   const handleExportBooks = () => {
     setMessage("");
     setError("");
@@ -389,15 +664,18 @@ function BookManagement() {
 
   return (
     <div className="book-management-shell">
+      {/* SYSTEM UI: Loading Overlay */}
       <LoadingOverlay
         show={loadingScreen || dataLoading}
         message={loadingScreen ? "Opening Book Management..." : "Fetching books..."}
         subtext="Please wait..."
       />
 
+      {/* SYSTEM UI: Sidebar */}
       <Sidebar />
 
       <main className="book-management-page">
+        {/* SYSTEM UI: Page Header */}
         <section className="book-hero">
           <div>
             <p className="book-kicker">LIBRARY ADMINISTRATION</p>
@@ -417,42 +695,33 @@ function BookManagement() {
           </button>
         </section>
 
+        {/* SYSTEM UI: Success and Error Messages */}
         {message && <div className="book-alert success">{message}</div>}
         {error && <div className="book-alert error">{error}</div>}
 
-        <section className="book-stats-grid" aria-label="Book summary">
-          <StatCard
-            title="Total Titles"
-            value={totalBooks}
-            detail="All book records"
-            icon={BookOpen}
-            tone="total"
-          />
-          <StatCard
-            title="Total Copies"
-            value={totalCopies}
-            detail="Copies in catalogue"
-            icon={BookCheck}
-            tone="copies"
-          />
-          <StatCard
-            title="Borrowable"
-            value={borrowableBooks}
-            detail="Available for lending"
-            icon={BookOpen}
-            tone="borrowable"
-          />
-          <StatCard
-            title="Reference"
-            value={referenceBooks}
-            detail="In-library only"
-            icon={FileText}
-            tone="reference"
-          />
+        {/* SYSTEM UI: Summary Strip */}
+        <section className="book-summary-strip" aria-label="Book summary">
+          <div className="book-summary-item">
+            <span>Total Titles</span>
+            <strong>{totalBooks}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Total Copies</span>
+            <strong>{totalCopies}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Borrowable</span>
+            <strong>{borrowableBooks}</strong>
+          </div>
+          <div className="book-summary-item">
+            <span>Reference</span>
+            <strong>{referenceBooks}</strong>
+          </div>
         </section>
 
+        {/* SYSTEM UI: Add/Edit Book Form */}
         {isFormOpen && isLibrarian && (
-          <section className="book-form-panel">
+          <section className="book-form-panel book-form-enter">
             <div className="book-panel-header">
               <div>
                 <p className="book-kicker">CATALOGUE FORM</p>
@@ -489,6 +758,8 @@ function BookManagement() {
                   value={form.ISBN}
                   onChange={handleChange}
                   placeholder="Enter ISBN"
+                  inputMode="numeric"
+                  maxLength="13"
                 />
               </label>
 
@@ -497,6 +768,8 @@ function BookManagement() {
                 <input
                   name="CategoryID"
                   type="number"
+                  min="1"
+                  step="1"
                   value={form.CategoryID}
                   onChange={handleChange}
                   placeholder="Example: 800"
@@ -508,6 +781,7 @@ function BookManagement() {
                 <input
                   name="PublicationDate"
                   type="date"
+                  max={todayDate}
                   value={form.PublicationDate}
                   onChange={handleChange}
                 />
@@ -519,6 +793,7 @@ function BookManagement() {
                   name="AvailableCopies"
                   type="number"
                   min="0"
+                  step="1"
                   value={form.AvailableCopies}
                   onChange={handleChange}
                 />
@@ -547,16 +822,17 @@ function BookManagement() {
           </section>
         )}
 
-        <section className="book-table-panel">
-          <div className="book-table-header">
+        {/* SYSTEM UI: Book Catalogue Panel */}
+        <section className="book-catalogue-panel">
+          <div className="book-catalogue-header">
             <div>
               <h2>Book Catalogue</h2>
               <p>
-                View, search and manage all book records ({filteredBooks.length}).
+                Manage, search, filter, and export book records.
               </p>
             </div>
 
-            <div className="book-table-tools">
+            <div className="book-catalogue-actions">
               {isLibrarian && (
                 <button
                   type="button"
@@ -579,6 +855,7 @@ function BookManagement() {
             </div>
           </div>
 
+          {/* SYSTEM UI: Search and Filter Toolbar */}
           <div className="book-toolbar">
             <div className="book-search-box">
               <input
@@ -587,7 +864,10 @@ function BookManagement() {
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by title, ISBN, ID or category..."
               />
-              <button type="button" aria-label="Search books">
+              <button
+                type="button"
+                aria-label="Search books"
+              >
                 <Search size={17} />
               </button>
             </div>
@@ -618,33 +898,29 @@ function BookManagement() {
             </button>
           </div>
 
-          <div className="book-filter-tabs" aria-label="Filter books by status">
-            {["all", "borrowable", "reference"].map((status) => (
-              <button
-                key={status}
-                type="button"
-                className={statusFilter === status ? "active" : ""}
-                onClick={() => {
-                  setStatusFilter(status);
-                  setCurrentPage(1);
-                }}
-              >
-                {formatStatusLabel(status)}
-                <span>{countForStatus(status, books)}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="book-table-wrap">
+          {/* SYSTEM UI: Book Table */}
+          <div className="book-table-wrapper">
             <table className="book-table">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort("BookID")}>ID</th>
-                  <th onClick={() => handleSort("Title")}>Title</th>
-                  <th onClick={() => handleSort("ISBN")}>ISBN</th>
-                  <th onClick={() => handleSort("CategoryID")}>Category</th>
-                  <th onClick={() => handleSort("PublicationDate")}>Published</th>
-                  <th onClick={() => handleSort("AvailableCopies")}>Copies</th>
+                  <th onClick={() => handleSort("BookID")}>
+                    <span className="book-th-inner">ID {getSortIcon("BookID")}</span>
+                  </th>
+                  <th onClick={() => handleSort("Title")}>
+                    <span className="book-th-inner">Title {getSortIcon("Title")}</span>
+                  </th>
+                  <th onClick={() => handleSort("ISBN")}>
+                    <span className="book-th-inner">ISBN {getSortIcon("ISBN")}</span>
+                  </th>
+                  <th onClick={() => handleSort("CategoryID")}>
+                    <span className="book-th-inner">Category {getSortIcon("CategoryID")}</span>
+                  </th>
+                  <th onClick={() => handleSort("PublicationDate")}>
+                    <span className="book-th-inner">Published {getSortIcon("PublicationDate")}</span>
+                  </th>
+                  <th onClick={() => handleSort("AvailableCopies")}>
+                    <span className="book-th-inner">Copies {getSortIcon("AvailableCopies")}</span>
+                  </th>
                   <th>Status</th>
                   {isLibrarian && <th>Actions</th>}
                 </tr>
@@ -652,8 +928,8 @@ function BookManagement() {
 
               <tbody>
                 {paginatedBooks.length > 0 ? (
-                  paginatedBooks.map((book) => (
-                    <tr key={book.BookID}>
+                  paginatedBooks.map((book, index) => (
+                    <tr key={book.BookID} className={index % 2 === 0 ? "book-row-even" : "book-row-odd"}>
                       <td className="book-id">#{book.BookID}</td>
                       <td className="book-title-cell">{book.Title}</td>
                       <td>{book.ISBN}</td>
@@ -718,6 +994,7 @@ function BookManagement() {
             </table>
           </div>
 
+          {/* SYSTEM UI: Pagination */}
           <div className="book-pagination">
             <span>
               Showing {firstRecord} to {lastRecord} of {filteredBooks.length} records
@@ -765,35 +1042,6 @@ function BookManagement() {
       </main>
     </div>
   );
-}
-
-function StatCard({ title, value, detail, icon: Icon, tone }) {
-  return (
-    <article className={`book-stat-card ${tone}`}>
-      <span className="book-stat-icon">
-        <Icon size={30} strokeWidth={2.1} />
-      </span>
-      <span>
-        <small>{title}</small>
-        <strong>{value}</strong>
-        <em>{detail}</em>
-      </span>
-    </article>
-  );
-}
-
-function countForStatus(status, books) {
-  if (status === "all") return books.length;
-  if (status === "borrowable") {
-    return books.filter((book) => Boolean(book.IsBorrowable)).length;
-  }
-  return books.filter((book) => !Boolean(book.IsBorrowable)).length;
-}
-
-function formatStatusLabel(status) {
-  if (status === "all") return "All";
-  if (status === "reference") return "Reference";
-  return "Borrowable";
 }
 
 export default BookManagement;

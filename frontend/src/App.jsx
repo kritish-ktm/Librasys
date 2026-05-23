@@ -16,14 +16,37 @@ import MemberDashboard from './pages/MemberDashboard';
 import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
+function getTokenPayload(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
 
-// PrivateRoute protects pages that should only be opened by logged-in users.
-// If a role is provided, the user must also have that matching role.
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('name');
+  localStorage.removeItem('fullName');
+  localStorage.removeItem('userId');
+}
+
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('role');
+  const normalizedRole = String(userRole || '').trim().toLowerCase();
+  const requiredRole = String(role || '').trim().toLowerCase();
 
-  if (!token) return <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" replace />;
+
+  const payload = getTokenPayload(token);
+  const isExpired = payload?.exp && payload.exp * 1000 <= Date.now();
+
+  if (!payload || isExpired || payload.role !== userRole) {
+    clearSession();
+    return <Navigate to="/login" replace />;
+  }
 
   if (role && userRole !== role) {
     return <Navigate to="/login" />;
@@ -46,7 +69,14 @@ function App() {
         {/* Staff/admin login uses a separate AdminLogin page. */}
         <Route path="/admin-login" element={<AdminLogin />} />
 
-        <Route path="/MemberDashboard" element={<MemberDashboard />} />
+        <Route
+          path="/MemberDashboard"
+          element={
+            <PrivateRoute role="Member">
+              <MemberDashboard />
+            </PrivateRoute>
+          }
+        />
         <Route path="/register" element={<Register />} />
 
         <Route
@@ -84,7 +114,7 @@ function App() {
           }
         />
 
-        {/* Routes only for librarians. */}
+        {/* Routes only for librarians/admin staff. */}
         <Route
           path="/dashboard"
           element={

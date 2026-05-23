@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
@@ -15,6 +15,27 @@ import {
 
 import "./Login.css";
 
+// Staff roles are not allowed to enter through the member login page.
+const staffRoles = ["admin", "librarian"];
+
+// These roles are allowed to use the member login page.
+const memberRoles = ["user", "member", "standard user"];
+
+// Reads the role safely, even if the backend sends it in a slightly different shape.
+const getRoleValue = (data) => {
+  return String(data?.role || data?.Role || data?.user?.role || data?.user?.Role || "")
+    .trim()
+    .toLowerCase();
+};
+
+// Clears any login data before showing an access denied message.
+const clearLoginStorage = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("name");
+  localStorage.removeItem("fullName");
+};
+
 function Login() {
   const [form, setForm] = useState({
     email: "",
@@ -25,6 +46,11 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // /login and /member-login both use this same member login component.
+  const isMemberLoginPage =
+    location.pathname === "/member-login" || location.pathname === "/login";
 
   const validate = () => {
     if (!form.email.trim() || !form.password.trim()) {
@@ -59,15 +85,38 @@ function Login() {
         form
       );
 
+      const role = getRoleValue(res.data);
+
+      // Staff users must use the Staff Access login page instead.
+      if (isMemberLoginPage && staffRoles.includes(role)) {
+        clearLoginStorage();
+        setError("Access denied. Please use Staff Access for admin login.");
+        return;
+      }
+
+      // Unknown or non-member roles should not enter through member login.
+      if (isMemberLoginPage && !memberRoles.includes(role)) {
+        clearLoginStorage();
+        setError("Access denied. This login is for members only.");
+        return;
+      }
+
+      // Save login data only after the role has passed validation.
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("role", res.data.role);
       localStorage.setItem("name", res.data.name);
+      localStorage.setItem("fullName", res.data.name);
+      localStorage.setItem("userId", String(res.data.userId || ""));
+
 
       if (res.data.role === "Librarian") {
         navigate("/dashboard");
       } else {
         navigate("/memberdashboard");
       }
+
+
+
     } catch (err) {
       console.error("Login error:", err);
 
