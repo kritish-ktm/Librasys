@@ -1,7 +1,7 @@
-﻿/*
-  loanedbook model layer.
+/*
+  LoanedBook model layer.
   This file talks directly to the MySQL database for Arun Shrestha's
-  loanedbook / Loan and Borrowing System component. It contains the main
+  LoanedBook / Loan and Borrowing System component. It contains the main
   database rules for listing loans, creating loans, returning books, editing
   records, deleting records, and keeping Book.AvailableCopies consistent.
 */
@@ -37,7 +37,7 @@ const LOAN_SELECT = `
     b.Title AS Title,
     b.Title AS BookTitle,
     b.ISBN
-  FROM loanedbook l
+  FROM LoanedBook l
   INNER JOIN user u ON u.UserID = l.UserID
   INNER JOIN book b ON b.BookID = l.BookID
 `;
@@ -129,7 +129,7 @@ const getAll = (filters, callback) => {
   const dataSql = `${LOAN_SELECT} ${whereClause} ORDER BY l.LoanID DESC LIMIT ? OFFSET ?`;
   const countSql = `
     SELECT COUNT(*) AS total
-    FROM loanedbook l
+    FROM LoanedBook l
     INNER JOIN user u ON u.UserID = l.UserID
     INNER JOIN book b ON b.BookID = l.BookID
     ${whereClause}
@@ -140,7 +140,7 @@ const getAll = (filters, callback) => {
       SUM(CASE WHEN l.ReturnDate IS NULL AND CURDATE() <= l.DueDate THEN 1 ELSE 0 END) AS active,
       SUM(CASE WHEN l.ReturnDate IS NULL AND CURDATE() > l.DueDate THEN 1 ELSE 0 END) AS overdue,
       SUM(CASE WHEN l.ReturnDate IS NOT NULL THEN 1 ELSE 0 END) AS returned
-    FROM loanedbook l
+    FROM LoanedBook l
     INNER JOIN user u ON u.UserID = l.UserID
     INNER JOIN book b ON b.BookID = l.BookID
     ${summaryWhereClause}
@@ -303,7 +303,7 @@ const searchActiveUsers = (query, callback) => {
   Creates a borrowing transaction for a selected member and book.
 
   The loan insert and the book availability update happen inside one database
-  transaction. This matters because the system should never create a loanedbook
+  transaction. This matters because the system should never create a LoanedBook
   row without also reducing AvailableCopies, and it should never reduce stock
   without creating the matching loan.
 */
@@ -376,7 +376,7 @@ const create = ({ UserID, BookID }, callback) => {
             NULL means the existing copy has not been returned yet.
           */
           connection.query(
-            "SELECT LoanID FROM loanedbook WHERE UserID = ? AND BookID = ? AND ReturnDate IS NULL LIMIT 1",
+            "SELECT LoanID FROM LoanedBook WHERE UserID = ? AND BookID = ? AND ReturnDate IS NULL LIMIT 1",
             [UserID, BookID],
             (duplicateError, duplicates) => {
               if (duplicateError) {
@@ -395,7 +395,7 @@ const create = ({ UserID, BookID }, callback) => {
                 book is active until it is returned.
               */
               const loanSql = `
-                INSERT INTO loanedbook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
+                INSERT INTO LoanedBook (UserID, BookID, BorrowDate, DueDate, ReturnDate, IsOverdue)
                 VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 14 DAY), NULL, 0)
               `;
 
@@ -462,7 +462,7 @@ const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callbac
         state and cannot race with a return/delete happening at the same time.
       */
       connection.query(
-        "SELECT LoanID, UserID, BookID, ReturnDate FROM loanedbook WHERE LoanID = ? FOR UPDATE",
+        "SELECT LoanID, UserID, BookID, ReturnDate FROM LoanedBook WHERE LoanID = ? FOR UPDATE",
         [id],
         (loanError, loans) => {
           if (loanError) {
@@ -542,7 +542,7 @@ const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callbac
                   connection.query(
                     `
                       SELECT LoanID
-                      FROM loanedbook
+                      FROM LoanedBook
                       WHERE LoanID <> ?
                         AND UserID = ?
                         AND BookID = ?
@@ -567,7 +567,7 @@ const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callbac
                         a manual UI value.
                       */
                       const updateSql = `
-                        UPDATE loanedbook
+                        UPDATE LoanedBook
                         SET UserID = ?, BookID = ?, BorrowDate = ?, DueDate = ?, ReturnDate = ?,
                             IsOverdue = CASE WHEN ? IS NULL AND CURDATE() > ? THEN 1 ELSE 0 END
                         WHERE LoanID = ?
@@ -675,7 +675,7 @@ const markReturned = (id, callback) => {
         return;
       }
 
-      const loanSql = "SELECT LoanID, BookID, ReturnDate FROM loanedbook WHERE LoanID = ? FOR UPDATE";
+      const loanSql = "SELECT LoanID, BookID, ReturnDate FROM LoanedBook WHERE LoanID = ? FOR UPDATE";
       connection.query(loanSql, [id], (loanError, loans) => {
         if (loanError) {
           rollback(connection, loanError, callback);
@@ -694,7 +694,7 @@ const markReturned = (id, callback) => {
 
         // Mark the loan as returned before restoring the book copy.
         connection.query(
-          "UPDATE loanedbook SET ReturnDate = CURDATE(), IsOverdue = 0 WHERE LoanID = ?",
+          "UPDATE LoanedBook SET ReturnDate = CURDATE(), IsOverdue = 0 WHERE LoanID = ?",
           [id],
           (returnError, result) => {
             if (returnError) {
@@ -753,7 +753,7 @@ const markReturnedForUser = (id, userId, callback) => {
 
       const loanSql = `
         SELECT LoanID, BookID, ReturnDate
-        FROM loanedbook
+        FROM LoanedBook
         WHERE LoanID = ? AND UserID = ?
         FOR UPDATE
       `;
@@ -775,7 +775,7 @@ const markReturnedForUser = (id, userId, callback) => {
         }
 
         connection.query(
-          "UPDATE loanedbook SET ReturnDate = CURDATE(), IsOverdue = 0 WHERE LoanID = ?",
+          "UPDATE LoanedBook SET ReturnDate = CURDATE(), IsOverdue = 0 WHERE LoanID = ?",
           [id],
           (returnError, result) => {
             if (returnError) {
@@ -818,7 +818,7 @@ const markReturnedForUser = (id, userId, callback) => {
 */
 const updateOverdueFlags = (callback) => {
   const sql = `
-    UPDATE loanedbook
+    UPDATE LoanedBook
     SET IsOverdue = CASE
       WHEN ReturnDate IS NULL AND CURDATE() > DueDate THEN 1
       ELSE 0
@@ -835,7 +835,7 @@ const updateOverdueFlags = (callback) => {
   without restoring the borrowed book copy to AvailableCopies.
 */
 const remove = (id, callback) => {
-  db.query("SELECT LoanID, ReturnDate FROM loanedbook WHERE LoanID = ?", [id], (selectError, loans) => {
+  db.query("SELECT LoanID, ReturnDate FROM LoanedBook WHERE LoanID = ?", [id], (selectError, loans) => {
     if (selectError) {
       callback(selectError);
       return;
@@ -851,7 +851,7 @@ const remove = (id, callback) => {
       return;
     }
 
-    db.query("DELETE FROM loanedbook WHERE LoanID = ?", [id], callback);
+    db.query("DELETE FROM LoanedBook WHERE LoanID = ?", [id], callback);
   });
 };
 
@@ -892,4 +892,3 @@ module.exports = {
   updateOverdueFlags,
   remove,
 };
-

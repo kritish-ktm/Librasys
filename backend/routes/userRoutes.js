@@ -2,6 +2,7 @@ const express  = require('express');
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const db       = require('../config/db');
+const JWT_SECRET = process.env.JWT_SECRET || 'librasys-local-dev-secret';
 
 const router = express.Router();
 
@@ -40,7 +41,7 @@ function auth(req, res, next) {
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = jwt.verify(token, JWT_SECRET);
     next();
   } catch (err) {
     // JsonWebTokenError  → tampered or malformed

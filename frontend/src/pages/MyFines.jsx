@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import "./MyLoans.css";
 
 const API_BASE_URL = "http://localhost:5000";
+const DAILY_FINE_RATE = 1;
 const filters = [
   { value: "all", label: "All" },
-  { value: "paid", label: "Paid" },
   { value: "unpaid", label: "Unpaid" },
+  { value: "paid", label: "Paid" },
+  { value: "waived", label: "Waived" },
 ];
 
 function MyFines() {
@@ -19,35 +21,51 @@ function MyFines() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    setLoading(true);
-    axios.get(`${API_BASE_URL}/api/fines/my`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        setFines(Array.isArray(res.data) ? res.data : []);
+    const loadFines = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/fines/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const fineRows = Array.isArray(res.data) ? res.data : [];
+
+        if (fineRows.length) {
+          setFines(fineRows);
+          setError("");
+          return;
+        }
+
+        const loanRes = await axios.get(`${API_BASE_URL}/loans/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFines(calculateFinesFromLoans(Array.isArray(loanRes.data) ? loanRes.data : []));
         setError("");
-      })
-      .catch((err) => setError(err.response?.data?.error || "Unable to load your fines."))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        setError(err.response?.data?.error || "Unable to load your fines.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFines();
   }, [token]);
 
   const stats = useMemo(() => {
-    const paid = fines.filter((fine) => String(fine.Status || "").toLowerCase() === "paid").length;
-    const unpaid = fines.length - paid;
-    const totalAmount = fines.reduce((sum, fine) => sum + Number(fine.Amount || 0), 0);
-    return { total: fines.length, paid, unpaid, totalAmount };
+    const paid = fines.filter((fine) => getRawFineStatus(fine) === "paid").length;
+    const unpaid = fines.filter((fine) => getRawFineStatus(fine) === "unpaid").length;
+    const outstandingAmount = fines
+      .filter((fine) => getRawFineStatus(fine) === "unpaid")
+      .reduce((sum, fine) => sum + Number(fine.Amount || 0), 0);
+
+    return { total: fines.length, paid, unpaid, outstandingAmount };
   }, [fines]);
 
   const visibleFines = useMemo(() => {
-    if (statusFilter === "paid") {
-      return fines.filter((fine) => String(fine.Status || "").toLowerCase() === "paid");
+    if (statusFilter === "all") {
+      return fines;
     }
 
-    if (statusFilter === "unpaid") {
-      return fines.filter((fine) => String(fine.Status || "").toLowerCase() !== "paid");
-    }
-
-    return fines;
+    return fines.filter((fine) => getRawFineStatus(fine) === statusFilter);
   }, [fines, statusFilter]);
 
   return (
@@ -83,8 +101,8 @@ function MyFines() {
           <strong>{stats.paid}</strong>
         </article>
         <article>
-          <span>Amount</span>
-          <strong>${stats.totalAmount.toFixed(2)}</strong>
+          <span>Owed</span>
+          <strong>${stats.outstandingAmount.toFixed(2)}</strong>
         </article>
       </section>
 
@@ -121,10 +139,10 @@ function MyFines() {
               <article key={fine.FineID || index} className="my-loan-card fine-card">
                 <div>
                   <span className={`my-loan-status ${getFineStatus(fine)}`}>
-                    {fine.Status || "Pending"}
+                    {getFineLabel(fine)}
                   </span>
-                  <h3>{fine.Title || fine.BookTitle || "Fine record"}</h3>
-                  <p>{fine.Reason || "Library fine"}</p>
+                  <h3>{fine.Title || fine.BookTitle || "Linked loan book"}</h3>
+                  <p>{fine.Reason || `Fine for loan #${fine.LoanID || "not recorded"}`}</p>
                 </div>
 
                 <dl>
@@ -134,11 +152,11 @@ function MyFines() {
                   </div>
                   <div>
                     <dt>Status</dt>
-                    <dd>{fine.Status || "Pending"}</dd>
+                    <dd>{getFineLabel(fine)}</dd>
                   </div>
                   <div>
-                    <dt>Date</dt>
-                    <dd>{formatDate(fine.FineDate)}</dd>
+                    <dt>Issued</dt>
+                    <dd>{formatDate(fine.FineDate || fine.IssuedDate || fine.CreatedAt)}</dd>
                   </div>
                 </dl>
               </article>
@@ -151,7 +169,57 @@ function MyFines() {
 }
 
 function getFineStatus(fine) {
-  return String(fine.Status || "").toLowerCase() === "paid" ? "returned" : "overdue";
+  const status = getRawFineStatus(fine);
+  if (status === "paid") return "returned";
+  if (status === "waived") return "waived";
+  return "overdue";
+}
+
+function getRawFineStatus(fine) {
+  const raw = String(fine.Status || fine.status || fine.IsPaid || "").toLowerCase();
+  if (raw === "1" || raw === "true" || raw === "paid") return "paid";
+  if (raw === "waived") return "waived";
+  return "unpaid";
+}
+
+function getFineLabel(fine) {
+  const status = getRawFineStatus(fine);
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function calculateFinesFromLoans(loans) {
+  const today = new Date();
+
+  return loans
+    .filter((loan) => !loan.ReturnDate && (loan.IsOverdue || isPastDue(loan.DueDate, today)))
+    .map((loan) => {
+      const daysOverdue = Math.max(getDaysOverdue(loan.DueDate, today), 1);
+
+      return {
+        FineID: `calculated-${loan.LoanID}`,
+        LoanID: loan.LoanID,
+        BookTitle: loan.BookTitle || loan.Title,
+        Title: loan.Title || loan.BookTitle,
+        Amount: daysOverdue * DAILY_FINE_RATE,
+        Status: "Unpaid",
+        FineDate: loan.DueDate,
+        Reason: `Calculated from ${daysOverdue} overdue day(s)`,
+        IsCalculated: true,
+      };
+    });
+}
+
+function isPastDue(value, today) {
+  if (!value) return false;
+  const dueDate = new Date(value);
+  return dueDate < today;
+}
+
+function getDaysOverdue(value, today) {
+  if (!value) return 0;
+  const dueDate = new Date(value);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((today - dueDate) / msPerDay);
 }
 
 function formatDate(value) {

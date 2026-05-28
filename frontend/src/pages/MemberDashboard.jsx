@@ -5,6 +5,7 @@ import { getActiveCategories } from '../services/bookCategoryService';
 import './MemberDashboard.css';
 
 const API_BASE_URL = 'http://localhost:5000';
+const DAILY_FINE_RATE = 1;
 function MemberDashboard() {
   const [loans, setLoans] = useState([]);
   const [fines, setFines] = useState([]);
@@ -18,14 +19,20 @@ function MemberDashboard() {
     axios.get(`${API_BASE_URL}/loans/my`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then((res) => setLoans(res.data))
-      .catch((err) => console.error('Failed to load loans:', err));
+      .then((res) => {
+        const loanRows = Array.isArray(res.data) ? res.data : [];
+        setLoans(loanRows);
 
-    axios.get(`${API_BASE_URL}/api/fines/my`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((res) => setFines(res.data))
-      .catch((err) => console.error('Failed to load fines:', err));
+        axios.get(`${API_BASE_URL}/api/fines/my`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then((fineRes) => {
+            const fineRows = Array.isArray(fineRes.data) ? fineRes.data : [];
+            setFines(fineRows.length ? fineRows : calculateFinesFromLoans(loanRows));
+          })
+          .catch(() => setFines(calculateFinesFromLoans(loanRows)));
+      })
+      .catch((err) => console.error('Failed to load loans:', err));
 
     getActiveCategories()
       .then((res) => setCategories(Array.isArray(res) ? res : []))
@@ -172,6 +179,39 @@ function getCategoryStyle(category) {
   return {
     '--member-category-color': color,
   };
+}
+
+function calculateFinesFromLoans(loans) {
+  const today = new Date();
+
+  return loans
+    .filter((loan) => !loan.ReturnDate && (loan.IsOverdue || isPastDue(loan.DueDate, today)))
+    .map((loan) => {
+      const daysOverdue = Math.max(getDaysOverdue(loan.DueDate, today), 1);
+
+      return {
+        FineID: `calculated-${loan.LoanID}`,
+        LoanID: loan.LoanID,
+        BookTitle: loan.BookTitle || loan.Title,
+        Title: loan.Title || loan.BookTitle,
+        Amount: daysOverdue * DAILY_FINE_RATE,
+        Status: 'Unpaid',
+        FineDate: loan.DueDate,
+        Reason: `Calculated from ${daysOverdue} overdue day(s)`,
+        IsCalculated: true,
+      };
+    });
+}
+
+function isPastDue(value, today) {
+  if (!value) return false;
+  return new Date(value) < today;
+}
+
+function getDaysOverdue(value, today) {
+  if (!value) return 0;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.floor((today - new Date(value)) / msPerDay);
 }
 
 export default MemberDashboard;

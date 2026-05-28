@@ -1,0 +1,170 @@
+.fine-page .loan-stat-card strong {
+  font-size: 27px;
+}
+
+.fine-list-actions {
+  grid-template-columns: minmax(180px, 245px) minmax(180px, 245px);
+}
+
+.fine-list-actions .loan-search-box,
+.fine-search-error {
+  grid-column: 1 / -1;
+}
+
+.fine-secondary-button {
+  background: #f4efe5;
+  border: 1px solid #d9cbb8;
+  color: #315c2a;
+}
+
+.fine-manual-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 16px;
+  margin: 18px 0 8px;
+  border: 1px solid #e2d4bd;
+  border-radius: 8px;
+  background: #fbf8f1;
+}
+
+.fine-manual-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: #2f5129;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fine-manual-form input,
+.fine-manual-form select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #d9cbb8;
+  border-radius: 7px;
+  padding: 0 12px;
+  background: #fffdfa;
+  color: #1d271b;
+  font: inherit;
+}
+
+.fine-manual-form input:focus,
+.fine-manual-form select:focus {
+  outline: 2px solid rgba(49, 92, 42, 0.18);
+  border-color: #4f7b49;
+}
+
+.fine-form-wide {
+  grid-column: span 2;
+}
+
+.fine-form-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.fine-form-error {
+  grid-column: 1 / -1;
+  color: #b4492a;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.fine-table {
+  min-width: 1040px;
+}
+
+.fine-table th:nth-child(1),
+.fine-table td:nth-child(1) {
+  width: 82px;
+  white-space: nowrap;
+}
+
+.fine-table th:nth-child(2),
+.fine-table td:nth-child(2) {
+  width: 220px;
+}
+
+.fine-table th:nth-child(3),
+.fine-table td:nth-child(3) {
+  width: 260px;
+}
+
+.fine-table th:nth-child(4),
+.fine-table td:nth-child(4),
+.fine-table th:nth-child(5),
+.fine-table td:nth-child(5),
+.fine-table th:nth-child(6),
+.fine-table td:nth-child(6) {
+  width: 118px;
+  white-space: nowrap;
+}
+
+.fine-table th:nth-child(7),
+.fine-table td:nth-child(7) {
+  width: 96px;
+  text-align: center;
+}
+
+.fine-table th:nth-child(8),
+.fine-table td:nth-child(8) {
+  width: 162px;
+  text-align: right;
+}
+
+.fine-amount {
+  color: #a84626 !important;
+  font-weight: 900;
+}
+
+.fine-search-error {
+  color: #b4492a;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: -8px;
+}
+
+.loan-status.paid {
+  color: #47745d;
+  background: #e8f4eb;
+}
+
+.loan-status.waived {
+  color: #6b4c82;
+  background: #f1e8f5;
+}
+
+.fine-row-actions button.waive:hover {
+  background: #f1e8f5;
+  border-color: #d9c4e4;
+  color: #6b4c82;
+}
+
+@media (max-width: 1320px) {
+  .fine-list-actions {
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .fine-list-actions .loan-search-box,
+  .fine-search-error {
+    grid-column: auto;
+  }
+
+  .fine-manual-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .fine-manual-form {
+    grid-template-columns: 1fr;
+  }
+
+  .fine-form-wide {
+    grid-column: auto;
+  }
+}

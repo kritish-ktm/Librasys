@@ -75,14 +75,22 @@ function Dashboard() {
             fetch(`${API_BASE}/api/users`, requestOptions),
             fetch(`${API_BASE}/books`, requestOptions),
             fetch(`${API_BASE}/categories`, requestOptions),
-            fetch(`${API_BASE}/loans`, requestOptions),
-            fetch(`${API_BASE}/fines`, requestOptions),
+            fetch(`${API_BASE}/api/loans`, requestOptions),
+            fetch(`${API_BASE}/api/fines`, requestOptions),
           ]);
 
         async function safeJson(result) {
           if (result.status !== "fulfilled") return null;
-          if (!result.value.ok) return null;
-          return result.value.json();
+          if (!result.value.ok) {
+            console.error("Dashboard request failed:", result.value.url, result.value.status);
+            return null;
+          }
+          try {
+            return await result.value.json();
+          } catch (error) {
+            console.error("Dashboard JSON parse failed:", result.value.url, error);
+            return null;
+          }
         }
 
         const usersData = await safeJson(usersResponse);

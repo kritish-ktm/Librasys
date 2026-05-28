@@ -1,0 +1,255 @@
+
+> frontend@0.0.0 dev
+> vite --host localhost --port 5001
+
+[2m11.43.17[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
+
+  [32m[1mVITE[22m v8.0.13[39m  [2mready in [0m[1m227[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5001[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m11.48.30[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m12.10.30[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m14.38.23[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m14.38.51[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.css[22m
+[2m14.53.21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m14.53.22[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mUnable to load manual fine options: AxiosError: Request failed with status code 404
+    at settle (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:1725:14)
+    at XMLHttpRequest.onloadend (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:2077:4)
+[2m14.53.47[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.css[22m
+[2m15.00.24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.03.33[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.03.52[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.04.09[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.04.20[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.04.36[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.04.36[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: getFineType is not defined
+[39m > src/pages/FineManagement.jsx:651:40
+    649 |                              <button
+    650 |                                type="button"
+    651 |                                disabled={isBusy || getFineType(fine) !== "manual"}
+        |                                          ^
+    652 |                                title={getFineType(fine) === "manual" ? "Edit manual fine" : "Automatic fines are edite...
+    653 |                                aria-label="Edit manual fine"
+ > FineManagement src/pages/FineManagement.jsx:595:35
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+
+[2m16.04.36[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <FineManagement> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m16.04.44[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: getFineType is not defined
+[39m > src/pages/FineManagement.jsx:651:40
+    649 |                              <button
+    650 |                                type="button"
+    651 |                                disabled={isBusy || getFineType(fine) !== "manual"}
+        |                                          ^
+    652 |                                title={getFineType(fine) === "manual" ? "Edit manual fine" : "Automatic fines are edite...
+    653 |                                aria-label="Edit manual fine"
+ > FineManagement src/pages/FineManagement.jsx:595:35
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+
+[2m16.04.44[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <FineManagement> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m16.04.45[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [31m[Unhandled error] [1mReferenceError[22m: getFineType is not defined
+[39m > src/pages/FineManagement.jsx:651:40
+    649 |                              <button
+    650 |                                type="button"
+    651 |                                disabled={isBusy || getFineType(fine) !== "manual"}
+        |                                          ^
+    652 |                                title={getFineType(fine) === "manual" ? "Edit manual fine" : "Automatic fines are edite...
+    653 |                                aria-label="Edit manual fine"
+ > FineManagement src/pages/FineManagement.jsx:595:35
+ > Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:19
+ > renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:21
+ > updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:18
+ > beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:17
+ > runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:871:29
+ > performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:21
+ > workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:40
+
+[2m16.04.45[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mAn error occurred in the <FineManagement> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+[2m16.04.59[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m16.05.08[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.css[22m
+[2m13.42.03[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mUnable to load manual fine options: AxiosError: Request failed with status code 401
+    at settle (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:1725:14)
+    at XMLHttpRequest.onloadend (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:2077:4)
+[2m13.42.03[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mUnable to load manual fine options: AxiosError: Request failed with status code 401
+    at settle (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:1725:14)
+    at XMLHttpRequest.onloadend (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:2077:4)
+[2m13.42.09[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mUnable to load manual fine options: AxiosError: Request failed with status code 401
+    at settle (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:1725:14)
+    at XMLHttpRequest.onloadend (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:2077:4)
+[2m13.42.09[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mUnable to load manual fine options: AxiosError: Request failed with status code 401
+    at settle (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:1725:14)
+    at XMLHttpRequest.onloadend (http://localhost:5001/node_modules/.vite/deps/axios.js?v=fbb6c26f:2077:4)
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/api/users 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/categories 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/api/loans 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/api/fines 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/api/users 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/categories 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/api/loans 401
+[2m13.49.16[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mDashboard request failed: http://localhost:5000/api/fines 401
+[2m10.07.03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m10.07.03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m10.08.04[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m Pre-transform error: Transform failed with 2 errors:
+
+[31m[PARSE_ERROR] [0mMissing catch or finally clause
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:6 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m      │ 
+ [38;5;240m    │[0m      ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Either unwrap this try block or add catch / finally clause
+[38;5;246m─────╯[0m
+
+[31m[PARSE_ERROR] [0mExpected a semicolon or an implicit semicolon after a statement, but found none
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:13 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m             │ 
+ [38;5;240m    │[0m             ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Try inserting a semicolon here
+[38;5;246m─────╯[0m
+
+  Plugin: [35mvite:oxc[39m
+  File: [36mC:/xampp/htdocs/Librasys/Librasys/frontend/src/pages/FineManagement.jsx[39m
+[2m10.08.04[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 2 errors:
+
+[31m[PARSE_ERROR] [0mMissing catch or finally clause
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:6 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m      │ 
+ [38;5;240m    │[0m      ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Either unwrap this try block or add catch / finally clause
+[38;5;246m─────╯[0m
+
+[31m[PARSE_ERROR] [0mExpected a semicolon or an implicit semicolon after a statement, but found none
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:13 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m             │ 
+ [38;5;240m    │[0m             ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Try inserting a semicolon here
+[38;5;246m─────╯[0m
+[39m
+  Plugin: [35mvite:oxc[39m
+  File: [36mC:/xampp/htdocs/Librasys/Librasys/frontend/src/pages/FineManagement.jsx[39m
+      at transformWithOxc (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:3339:19)
+      at TransformPluginContext.transform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:3410:26)
+      at EnvironmentPluginContainer.transform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:30271:51)
+      at async loadAndTransform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:24532:26)
+      at async viteTransformMiddleware (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:24326:20)
+[2m10.08.24[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 2 errors:
+
+[31m[PARSE_ERROR] [0mMissing catch or finally clause
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:6 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m      │ 
+ [38;5;240m    │[0m      ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Either unwrap this try block or add catch / finally clause
+[38;5;246m─────╯[0m
+
+[31m[PARSE_ERROR] [0mExpected a semicolon or an implicit semicolon after a statement, but found none
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:13 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m             │ 
+ [38;5;240m    │[0m             ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Try inserting a semicolon here
+[38;5;246m─────╯[0m
+[39m
+  Plugin: [35mvite:oxc[39m
+  File: [36mC:/xampp/htdocs/Librasys/Librasys/frontend/src/pages/FineManagement.jsx[39m
+      at transformWithOxc (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:3339:19)
+      at TransformPluginContext.transform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:3410:26)
+      at EnvironmentPluginContainer.transform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:30271:51)
+      at async loadAndTransform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:24532:26)
+      at async viteTransformMiddleware (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:24326:20)
+[2m10.08.40[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m15.04.11[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m Pre-transform error: Transform failed with 2 errors:
+
+[31m[PARSE_ERROR] [0mMissing catch or finally clause
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:6 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m      │ 
+ [38;5;240m    │[0m      ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Either unwrap this try block or add catch / finally clause
+[38;5;246m─────╯[0m
+
+[31m[PARSE_ERROR] [0mExpected a semicolon or an implicit semicolon after a statement, but found none
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:13 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m             │ 
+ [38;5;240m    │[0m             ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Try inserting a semicolon here
+[38;5;246m─────╯[0m
+
+  Plugin: [35mvite:oxc[39m
+  File: [36mC:/xampp/htdocs/Librasys/Librasys/frontend/src/pages/FineManagement.jsx[39m
+[2m15.04.11[22m [31m[1m[vite][22m[39m [31mInternal server error: Transform failed with 2 errors:
+
+[31m[PARSE_ERROR] [0mMissing catch or finally clause
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:6 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m      │ 
+ [38;5;240m    │[0m      ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Either unwrap this try block or add catch / finally clause
+[38;5;246m─────╯[0m
+
+[31m[PARSE_ERROR] [0mExpected a semicolon or an implicit semicolon after a statement, but found none
+     [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m src/pages/FineManagement.jsx:354:13 [38;5;246m][0m
+     [38;5;246m│[0m
+ [38;5;246m354 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249m [0m[38;5;249m([0m[38;5;249me[0m[38;5;249mr[0m[38;5;249mr[0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m{[0m
+ [38;5;240m    │[0m             │ 
+ [38;5;240m    │[0m             ╰─ 
+ [38;5;240m    │[0m 
+ [38;5;240m    │[0m [38;5;115mHelp[0m: Try inserting a semicolon here
+[38;5;246m─────╯[0m
+[39m
+  Plugin: [35mvite:oxc[39m
+  File: [36mC:/xampp/htdocs/Librasys/Librasys/frontend/src/pages/FineManagement.jsx[39m
+      at transformWithOxc (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:3339:19)
+      at TransformPluginContext.transform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:3410:26)
+      at EnvironmentPluginContainer.transform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:30271:51)
+      at async loadAndTransform (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:24532:26)
+      at async viteTransformMiddleware (file:///C:/xampp/htdocs/Librasys/Librasys/frontend/node_modules/vite/dist/node/chunks/node.js:24326:20)
+[2m15.06.15[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m15.06.17[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m15.06.26[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m
+[2m15.07.39[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/FineManagement.jsx[22m

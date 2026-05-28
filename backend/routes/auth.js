@@ -3,6 +3,11 @@ const router  = express.Router();
 const bcrypt  = require('bcrypt');
 const jwt     = require('jsonwebtoken');
 const db      = require('../config/db');
+const JWT_SECRET = process.env.JWT_SECRET || 'librasys-local-dev-secret';
+
+if (!process.env.JWT_SECRET) {
+  console.warn('JWT_SECRET is not set. Using local development fallback secret.');
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -168,7 +173,7 @@ router.post('/login', (req, res) => {
       // authorise requests. Never include the password hash or sensitive PII.
       const token = jwt.sign(
         { id: user.UserID, role: user.Role },
-        process.env.JWT_SECRET,
+        JWT_SECRET,
         { expiresIn: '1d' }
       );
 

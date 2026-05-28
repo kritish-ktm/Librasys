@@ -5,7 +5,7 @@ const sortableColumns = {
   CategoryName: "bc.CategoryName",
   DeweyCode: "bc.DeweyCode",
   IsActive: "bc.IsActive",
-  CreatedAt: "bc.CreatedAt",
+  CreatedAt: "bc.UpdatedAt",
   UpdatedAt: "bc.UpdatedAt",
   BookCount: "BookCount",
 };
@@ -36,16 +36,16 @@ const getAll = (filters, callback) => {
       bc.DeweyCode,
       bc.Description,
       bc.IsActive,
-      bc.CategoryColor,
-      bc.CategoryImage,
-      bc.ArchiveReason,
-      bc.CreatedAt,
+      '#2f6b52' AS CategoryColor,
+      NULL AS CategoryImage,
+      NULL AS ArchiveReason,
+      NULL AS CreatedAt,
       bc.UpdatedAt,
       COUNT(b.BookID) AS BookCount
     FROM bookcategory bc
     LEFT JOIN book b ON b.CategoryID = bc.CategoryID
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.CategoryColor, bc.CategoryImage, bc.ArchiveReason, bc.CreatedAt, bc.UpdatedAt
+    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.UpdatedAt
     ORDER BY ${sortBy} ${sortDirection}, bc.CategoryName ASC
   `;
   db.query(sql, params, callback);
@@ -63,16 +63,16 @@ const getById = (id, callback) => {
       bc.DeweyCode,
       bc.Description,
       bc.IsActive,
-      bc.CategoryColor,
-      bc.CategoryImage,
-      bc.ArchiveReason,
-      bc.CreatedAt,
+      '#2f6b52' AS CategoryColor,
+      NULL AS CategoryImage,
+      NULL AS ArchiveReason,
+      NULL AS CreatedAt,
       bc.UpdatedAt,
       COUNT(b.BookID) AS BookCount
     FROM bookcategory bc
     LEFT JOIN book b ON b.CategoryID = bc.CategoryID
     WHERE bc.CategoryID = ?
-    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.CategoryColor, bc.CategoryImage, bc.ArchiveReason, bc.CreatedAt, bc.UpdatedAt
+    GROUP BY bc.CategoryID, bc.CategoryName, bc.DeweyCode, bc.Description, bc.IsActive, bc.UpdatedAt
   `;
   db.query(sql, [id], callback);
 };
@@ -95,17 +95,14 @@ const getBooksByCategory = (id, callback) => {
 
 const create = (data, callback) => {
   const sql = `
-    INSERT INTO bookcategory (CategoryName, DeweyCode, Description, IsActive, CategoryColor, CategoryImage, ArchiveReason)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO bookcategory (CategoryName, DeweyCode, Description, IsActive)
+    VALUES (?, ?, ?, ?)
   `;
   const values = [
     data.CategoryName,
     data.DeweyCode,
     data.Description,
     data.IsActive !== undefined ? (data.IsActive ? 1 : 0) : 1,
-    data.CategoryColor,
-    data.CategoryImage || null,
-    data.ArchiveReason || null,
   ];
   db.query(sql, values, callback);
 };
@@ -113,7 +110,7 @@ const create = (data, callback) => {
 const update = (id, data, callback) => {
   const sql = `
     UPDATE bookcategory
-    SET CategoryName = ?, DeweyCode = ?, Description = ?, IsActive = ?, CategoryColor = ?, CategoryImage = ?, ArchiveReason = ?, UpdatedAt = NOW()
+    SET CategoryName = ?, DeweyCode = ?, Description = ?, IsActive = ?, UpdatedAt = NOW()
     WHERE CategoryID = ?
   `;
   const values = [
@@ -121,9 +118,6 @@ const update = (id, data, callback) => {
     data.DeweyCode,
     data.Description,
     data.IsActive !== undefined ? (data.IsActive ? 1 : 0) : 1,
-    data.CategoryColor,
-    data.CategoryImage || null,
-    data.ArchiveReason || null,
     id,
   ];
   db.query(sql, values, callback);
@@ -132,10 +126,10 @@ const update = (id, data, callback) => {
 const updateStatus = (id, isActive, archiveReason, updatedBy, callback) => {
   const sql = `
     UPDATE bookcategory
-    SET IsActive = ?, ArchiveReason = ?, UpdatedAt = NOW()
+    SET IsActive = ?, UpdatedAt = NOW()
     WHERE CategoryID = ?
   `;
-  db.query(sql, [isActive ? 1 : 0, isActive ? null : archiveReason, id], callback);
+  db.query(sql, [isActive ? 1 : 0, id], callback);
 };
 
 const remove = (id, callback) => {

@@ -33,6 +33,7 @@ export const getLoans = async ({
   limit = 10,
 } = {}) => {
   const response = await axios.get(API_URL, {
+    ...authConfig(),
     params: { search, status, borrowedFrom, borrowedTo, page, limit },
   });
   return response.data;
@@ -41,7 +42,7 @@ export const getLoans = async ({
 // ===== OLD FORM OPTIONS =====
 // Kept for compatibility with older form code; the current UI prefers search APIs.
 export const getLoanOptions = async () => {
-  const response = await axios.get(`${API_URL}/options`);
+  const response = await axios.get(`${API_URL}/options`, authConfig());
   return response.data;
 };
 
@@ -49,6 +50,7 @@ export const getLoanOptions = async () => {
 // Returns a small list of matching active members for the searchable member input.
 export const searchLoanUsers = async (query) => {
   const response = await axios.get(`${API_URL}/search/users`, {
+    ...authConfig(),
     params: { q: query },
   });
   return response.data;
@@ -58,6 +60,7 @@ export const searchLoanUsers = async (query) => {
 // Returns a small list of matching borrowable books for the searchable book input.
 export const searchLoanBooks = async (query) => {
   const response = await axios.get(`${API_URL}/search/books`, {
+    ...authConfig(),
     params: { q: query },
   });
   return response.data;
@@ -66,21 +69,21 @@ export const searchLoanBooks = async (query) => {
 // ===== GET ONE LOAN =====
 // Used before opening the edit modal so the modal has fresh loan details.
 export const getLoanById = async (id) => {
-  const response = await axios.get(`${API_URL}/${id}`);
+  const response = await axios.get(`${API_URL}/${id}`, authConfig());
   return response.data;
 };
 
 // ===== GET USER LOANS =====
 // Librarian lookup for a selected member's loan history.
 export const getLoansByUser = async (userId) => {
-  const response = await axios.get(`${API_URL}/user/${userId}`);
+  const response = await axios.get(`${API_URL}/user/${userId}`, authConfig());
   return response.data;
 };
 
 // ===== GET OVERDUE LOANS =====
 // Librarian overdue list. Overdue means not returned and past the due date.
 export const getOverdueLoans = async () => {
-  const response = await axios.get(`${API_URL}/user/overdue`);
+  const response = await axios.get(`${API_URL}/user/overdue`, authConfig());
   return response.data;
 };
 
@@ -94,7 +97,7 @@ export const getMyLoans = async () => {
 // ===== CREATE LOAN =====
 // Librarian creates a loan for a selected member and book.
 export const addLoan = async (loanData) => {
-  const response = await axios.post(API_URL, loanData);
+  const response = await axios.post(API_URL, loanData, authConfig());
   return response.data;
 };
 
@@ -112,14 +115,14 @@ export const borrowBook = async (bookId) => {
 // ===== UPDATE LOAN =====
 // Librarian saves corrections from the edit loan modal.
 export const updateLoan = async (id, loanData) => {
-  const response = await axios.put(`${API_URL}/${id}`, loanData);
+  const response = await axios.put(`${API_URL}/${id}`, loanData, authConfig());
   return response.data;
 };
 
 // ===== RETURN BOOK =====
 // Librarian marks any managed loan as returned.
 export const returnLoan = async (id) => {
-  const response = await axios.put(`${API_URL}/${id}/return`);
+  const response = await axios.put(`${API_URL}/${id}/return`, {}, authConfig());
   return response.data;
 };
 
@@ -133,6 +136,6 @@ export const returnMyLoan = async (id) => {
 // ===== DELETE LOAN =====
 // Librarian deletes an incorrect returned loan record.
 export const deleteLoan = async (id) => {
-  const response = await axios.delete(`${API_URL}/${id}`);
+  const response = await axios.delete(`${API_URL}/${id}`, authConfig());
   return response.data;
 };

@@ -1,0 +1,556 @@
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+JWT_SECRET is not set. Using local development fallback secret.
+Server running on port 5000
+Connected to MySQL database {
+  host: 'localhost',
+  user: 'root',
+  database: 'librasys',
+  connectionLimit: 10
+}
+[http] { method: 'GET', url: '/', status: 200, elapsedMs: 11 }
+[http] { method: 'PUT', url: '/api/fines/17', status: 200, elapsedMs: 10 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 17
+}
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 14
+}
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 7 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 13
+}
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 11 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 20
+}
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 4 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 5 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 5 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 4 }
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 7 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 13
+}
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 6 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 11
+}
+[api:fines] { userId: null, rows: 5 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines', status: 401, elapsedMs: 12 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 401,
+  elapsedMs: 11
+}
+[http] { method: 'GET', url: '/api/fines', status: 401, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/fines/options', status: 401, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/fines', status: 401, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/fines/options', status: 401, elapsedMs: 9 }
+[http] { method: 'GET', url: '/api/fines', status: 401, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/fines/options', status: 401, elapsedMs: 8 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 2
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 12
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 13
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 2
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 1
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 1
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 4
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 1
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 3
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 401,
+  elapsedMs: 1
+}
+[http] {
+  method: 'GET',
+  url: '/api/users?t=1779563278118',
+  status: 401,
+  elapsedMs: 11
+}
+[http] {
+  method: 'GET',
+  url: '/api/users?t=1779563278120',
+  status: 401,
+  elapsedMs: 1
+}
+Login attempt for: admin@librasys.com
+[http] { method: 'POST', url: '/api/auth/login', status: 200, elapsedMs: 254 }
+[http] { method: 'GET', url: '/api/users', status: 200, elapsedMs: 12 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 200, elapsedMs: 8 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 29 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 29 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 22 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 16 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/api/loans', status: 200, elapsedMs: 50 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 12 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 8 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 5 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 200,
+  elapsedMs: 6
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 9
+}
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 6 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 10 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 18 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 8 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 8 }
+[api:fines] { userId: null, rows: 6 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 10 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 26 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/users', status: 401, elapsedMs: 8 }
+[http] { method: 'GET', url: '/categories', status: 401, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/loans', status: 401, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/fines', status: 401, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/users', status: 401, elapsedMs: 2 }
+[http] { method: 'GET', url: '/categories', status: 401, elapsedMs: 1 }
+[http] { method: 'GET', url: '/api/loans', status: 401, elapsedMs: 1 }
+[http] { method: 'GET', url: '/api/fines', status: 401, elapsedMs: 1 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 51 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/', status: 200, elapsedMs: 13 }
+[http] { method: 'GET', url: '/health/db', status: 200, elapsedMs: 27 }
+Login attempt for: admin@librasys.com
+[http] { method: 'POST', url: '/api/auth/login', status: 200, elapsedMs: 205 }
+Login attempt for: admin@librasys.com
+[http] { method: 'POST', url: '/api/auth/login', status: 200, elapsedMs: 152 }
+Login attempt for: admin@librasys.com
+[http] { method: 'POST', url: '/api/auth/login', status: 200, elapsedMs: 152 }
+Login attempt for: admin@librasys.com
+[http] { method: 'POST', url: '/api/auth/login', status: 200, elapsedMs: 196 }
+[http] { method: 'GET', url: '/api/users', status: 200, elapsedMs: 59 }
+[http] { method: 'GET', url: '/books', status: 200, elapsedMs: 74 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/categories', status: 200, elapsedMs: 62 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 200, elapsedMs: 47 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 13 }
+[http] { method: 'GET', url: '/api/loans', status: 200, elapsedMs: 75 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/fines/options', status: 200, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 5 }
+Login attempt for: admin@librasys.com
+[http] { method: 'POST', url: '/api/auth/login', status: 200, elapsedMs: 157 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 4 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 200, elapsedMs: 9 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/loans', status: 200, elapsedMs: 18 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 10 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 3 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 200,
+  elapsedMs: 12
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 31
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 10 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 12
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 6 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 9
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 6
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 10 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 11
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 15 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 14 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 16 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 5 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 27 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 8 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 4 }
+[http] {
+  method: 'PUT',
+  url: '/categories/11/status',
+  status: 200,
+  elapsedMs: 37
+}
+[http] { method: 'GET', url: '/categories', status: 200, elapsedMs: 5 }
+[http] {
+  method: 'PUT',
+  url: '/categories/11/status',
+  status: 200,
+  elapsedMs: 12
+}
+[http] { method: 'GET', url: '/categories', status: 200, elapsedMs: 3 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 13
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 13
+}
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 17
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 31 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 8 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 8
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 7
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 15 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 22
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 13 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 4 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 21 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 10 }
+[http] {
+  method: 'GET',
+  url: '/api/users?t=1779974539138',
+  status: 200,
+  elapsedMs: 5
+}
+[http] {
+  method: 'GET',
+  url: '/api/users?t=1779974539140',
+  status: 200,
+  elapsedMs: 5
+}
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 5 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 5 }
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 9
+}
+[http] {
+  method: 'GET',
+  url: '/loans?search=&status=all&borrowedFrom=&borrowedTo=&page=1&limit=10',
+  status: 304,
+  elapsedMs: 11
+}
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 2 }
+[http] {
+  method: 'GET',
+  url: '/api/users?t=1779974566813',
+  status: 200,
+  elapsedMs: 6
+}
+[http] {
+  method: 'GET',
+  url: '/api/users?t=1779974566814',
+  status: 200,
+  elapsedMs: 5
+}
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 5 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 16 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 20 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 11 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 8 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 1 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 8 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 5 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 5 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 12 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 2 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 30 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 30
+}
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 2 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 6 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 11 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 7 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 9 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 9 }
+[http] { method: 'GET', url: '/api/fines/options', status: 304, elapsedMs: 7 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 11 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] {
+  method: 'GET',
+  url: '/api/fines/options',
+  status: 304,
+  elapsedMs: 10
+}
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 1 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 2 }
+[http] { method: 'GET', url: '/api/users', status: 304, elapsedMs: 1 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 6 }
+[http] { method: 'GET', url: '/books', status: 304, elapsedMs: 2 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 4 }
+[http] { method: 'GET', url: '/categories', status: 304, elapsedMs: 3 }
+[api:fines] { userId: null, rows: 7 }
+[http] { method: 'GET', url: '/api/fines', status: 304, elapsedMs: 3 }
+[http] { method: 'GET', url: '/api/loans', status: 304, elapsedMs: 6 }

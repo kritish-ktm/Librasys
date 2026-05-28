@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
 
+const API_BASE_URL = 'http://localhost:5000';
+
 function Profile() {
   const [profile, setProfile] = useState({});
   const [form, setForm] = useState({
@@ -21,7 +23,7 @@ function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get('/api/users/profile', {
+      const res = await axios.get(`${API_BASE_URL}/api/users/profile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -42,7 +44,7 @@ function Profile() {
 
   const handleUpdate = async () => {
     try {
-      await axios.put('/api/users/profile', form, {
+      await axios.put(`${API_BASE_URL}/api/users/profile`, form, {
         headers: {
           Authorization: `Bearer ${token}`
         }

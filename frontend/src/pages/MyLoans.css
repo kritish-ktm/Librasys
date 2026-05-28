@@ -229,6 +229,11 @@
   background: #d9cfc3;
 }
 
+.my-loan-status.waived {
+  color: #5f3b73;
+  background: #eadcf0;
+}
+
 .my-loans-return:disabled {
   opacity: 0.65;
   cursor: not-allowed;

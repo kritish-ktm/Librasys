@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -52,10 +52,6 @@ app.use(
   "/loans",
   require("./modules/loan/loand.routes")
 );
-app.use(
-  "/api/loans",
-  require("./modules/loan/loand.routes")
-);
 
 // Fine routes are available under both paths for frontend compatibility.
 app.use("/api/fines", fineRoutes);
@@ -96,4 +92,3 @@ app.get("/health/db", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
