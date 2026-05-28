@@ -7,3 +7,5 @@ replit.md
 attached_assets/
 *.log
 safe-backup-*/
+backend/uploads/category-images/*
+!backend/uploads/category-images/.gitkeep
