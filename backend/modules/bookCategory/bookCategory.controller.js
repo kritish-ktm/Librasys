@@ -1,24 +1,39 @@
 const model = require("./bookCategory.model");
-const deweyPattern = /^\d{3}(?:\.\d{1,3})?$/;
-const colorPattern = /^#[0-9a-fA-F]{6}$/;
-const allowedArchiveReasons = new Set(["merged", "outdated", "temporary hidden"]);
+const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
+const {
+  parseCategoryImageUpload,
+  validateCategoryPayload,
+  validateStatusPayload,
+} = require("./bookCategory.validation");
 
-const normalizeCategoryStyle = (body) => {
-  const color = body.CategoryColor ? String(body.CategoryColor).trim() : "#2f6b52";
-  const image = body.CategoryImage ? String(body.CategoryImage).trim() : null;
-  const archiveReason = body.ArchiveReason ? String(body.ArchiveReason).trim() : null;
 
-  if (!colorPattern.test(color)) {
-    return { error: "Category color must be a valid hex color like #2f6b52" };
-  }
-  if (image && image.length > 850 * 1024) {
-    return { error: "Category image is too large. Please use a smaller image" };
-  }
-  if (archiveReason && archiveReason.length > 80) {
-    return { error: "Archive reason cannot exceed 80 characters" };
+
+exports.uploadCategoryImage = (req, res) => {
+  const validation = parseCategoryImageUpload(req.body);
+
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
 
-  return { CategoryColor: color, CategoryImage: image, ArchiveReason: archiveReason };
+  const { extension, fileName, imageBuffer } = validation.data;
+  const safeBaseName = path
+    .parse(fileName)
+    .name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40) || "category";
+  const uniqueName = `${safeBaseName}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.${extension}`;
+  const uploadDir = path.join(__dirname, "../../uploads/category-images");
+  const savedPath = path.join(uploadDir, uniqueName);
+
+  fs.mkdirSync(uploadDir, { recursive: true });
+  fs.writeFileSync(savedPath, imageBuffer);
+
+  const imageUrl = `${req.protocol}://${req.get("host")}/uploads/category-images/${uniqueName}`;
+  res.status(201).json({ imageUrl });
 };
 
 exports.getCategories = (req, res) => {
@@ -73,46 +88,14 @@ exports.getCategoryBooks = (req, res) => {
 };
 
 exports.createCategory = (req, res) => {
-  const { CategoryName, DeweyCode, Description, IsActive } = req.body;
-  const trimmedDescription = Description ? Description.trim() : "";
-  const style = normalizeCategoryStyle(req.body);
+  const validation = validateCategoryPayload(req.body);
 
-  if (style.error) {
-    return res.status(400).json({ error: style.error });
-  }
-  if (!CategoryName || CategoryName.trim() === "") {
-    return res.status(400).json({ error: "Category name is required" });
-  }
-  if (CategoryName.trim().length > 100) {
-    return res.status(400).json({ error: "Category name cannot exceed 100 characters" });
-  }
-  if (!DeweyCode || DeweyCode.trim() === "") {
-    return res.status(400).json({ error: "Dewey Code is required" });
-  }
-  if (DeweyCode.trim().length > 10) {
-    return res.status(400).json({ error: "Dewey Code cannot exceed 10 characters" });
-  }
-  if (!deweyPattern.test(DeweyCode.trim())) {
-    return res.status(400).json({ error: "Dewey Code must look like 500 or 500.1" });
-  }
-  if (!trimmedDescription) {
-    return res.status(400).json({ error: "Description is required" });
-  }
-  if (trimmedDescription.length > 200) {
-    return res.status(400).json({ error: "Description cannot exceed 200 characters" });
-  }
-  if (IsActive === false && !allowedArchiveReasons.has(style.ArchiveReason)) {
-    return res.status(400).json({ error: "Archive reason must be merged, outdated, or temporary hidden" });
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
 
   const data = {
-    CategoryName: CategoryName.trim(),
-    DeweyCode: DeweyCode.trim(),
-    Description: trimmedDescription,
-    IsActive: IsActive !== undefined ? IsActive : true,
-    CategoryColor: style.CategoryColor,
-    CategoryImage: style.CategoryImage,
-    ArchiveReason: IsActive === false ? style.ArchiveReason : null,
+    ...validation.data,
     CreatedBy: req.user?.id || null,
     UpdatedBy: req.user?.id || null,
   };
@@ -135,48 +118,14 @@ exports.createCategory = (req, res) => {
 
 exports.updateCategory = (req, res) => {
   const { id } = req.params;
-  const { CategoryName, DeweyCode, Description, IsActive, status } = req.body;
+  const validation = validateCategoryPayload(req.body, { allowStatusAlias: true });
 
-  const isActiveValue = IsActive !== undefined ? IsActive : (status !== undefined ? status : true);
-  const trimmedDescription = Description ? Description.trim() : "";
-  const style = normalizeCategoryStyle(req.body);
-
-  if (style.error) {
-    return res.status(400).json({ error: style.error });
-  }
-  if (!CategoryName || CategoryName.trim() === "") {
-    return res.status(400).json({ error: "Category name is required" });
-  }
-  if (CategoryName.trim().length > 100) {
-    return res.status(400).json({ error: "Category name cannot exceed 100 characters" });
-  }
-  if (!DeweyCode || DeweyCode.trim() === "") {
-    return res.status(400).json({ error: "Dewey Code is required" });
-  }
-  if (DeweyCode.trim().length > 10) {
-    return res.status(400).json({ error: "Dewey Code cannot exceed 10 characters" });
-  }
-  if (!deweyPattern.test(DeweyCode.trim())) {
-    return res.status(400).json({ error: "Dewey Code must look like 500 or 500.1" });
-  }
-  if (!trimmedDescription) {
-    return res.status(400).json({ error: "Description is required" });
-  }
-  if (trimmedDescription.length > 200) {
-    return res.status(400).json({ error: "Description cannot exceed 200 characters" });
-  }
-  if (!isActiveValue && !allowedArchiveReasons.has(style.ArchiveReason)) {
-    return res.status(400).json({ error: "Archive reason must be merged, outdated, or temporary hidden" });
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
 
   const data = {
-    CategoryName: CategoryName.trim(),
-    DeweyCode: DeweyCode.trim(),
-    Description: trimmedDescription,
-    IsActive: isActiveValue,
-    CategoryColor: style.CategoryColor,
-    CategoryImage: style.CategoryImage,
-    ArchiveReason: isActiveValue ? null : style.ArchiveReason,
+    ...validation.data,
     UpdatedBy: req.user?.id || null,
   };
 
@@ -201,17 +150,14 @@ exports.updateCategory = (req, res) => {
 
 exports.toggleStatus = (req, res) => {
   const { id } = req.params;
-  const { IsActive, ArchiveReason } = req.body;
+  const validation = validateStatusPayload(req.body);
 
-  if (IsActive === undefined) {
-    return res.status(400).json({ error: "IsActive value is required" });
-  }
-  const archiveReason = ArchiveReason ? String(ArchiveReason).trim() : "";
-  if (!IsActive && !allowedArchiveReasons.has(archiveReason)) {
-    return res.status(400).json({ error: "Archive reason must be merged, outdated, or temporary hidden" });
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
   }
 
-  model.updateStatus(id, IsActive, archiveReason, req.user?.id || null, (err, result) => {
+  const { IsActive, ArchiveReason } = validation.data;
+  model.updateStatus(id, IsActive, ArchiveReason, req.user?.id || null, (err, result) => {
     if (err) {
       console.error("Toggle status error:", err);
       return res.status(500).json({ error: "Database error while updating status" });

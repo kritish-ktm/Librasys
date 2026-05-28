@@ -8,6 +8,7 @@ router.get("/most-borrowed", auth, requireLibrarian, controller.getMostBorrowedB
 router.get("/", auth, requireLibrarian, controller.getCategories);
 router.get("/:id/books", auth, requireLibrarian, controller.getCategoryBooks);
 router.get("/:id", auth, requireLibrarian, controller.getCategoryById);
+router.post("/upload-image", auth, requireLibrarian, controller.uploadCategoryImage);
 router.post("/", auth, requireLibrarian, controller.createCategory);
 router.put("/:id/status", auth, requireLibrarian, controller.toggleStatus);
 router.put("/:id", auth, requireLibrarian, controller.updateCategory);

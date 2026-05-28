@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const fineRoutes = require("./routes/fineRoutes");
@@ -16,6 +17,9 @@ app.use(cors({
 
 // Allows the backend to read JSON data sent in request bodies.
 app.use(express.json({ limit: "12mb" }));
+
+// Serves uploaded category images so the frontend can display them by URL.
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Logs each incoming request in the terminal for easier debugging.
 app.use((req, res, next) => {
