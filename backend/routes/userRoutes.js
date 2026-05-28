@@ -1,17 +1,32 @@
+/* ================================
+   SYSTEM SETUP: Required Packages
+================================ */
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 
+/* ================================
+   SYSTEM SETUP: Router
+================================ */
 const router = express.Router();
 
+/* ================================
+   SYSTEM FUNCTION: Validate Email
+================================ */
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+/* ================================
+   SYSTEM FUNCTION: Validate User ID
+================================ */
 const parseId = (param) => {
   const n = parseInt(param, 10);
   return Number.isFinite(n) && n > 0 ? n : NaN;
 };
 
+/* ================================
+   SYSTEM FUNCTION: Check Active User
+================================ */
 const isActiveUser = (value) => {
   if (value === null || value === undefined) return false;
   if (Buffer.isBuffer(value)) return value[0] === 1;
@@ -19,6 +34,9 @@ const isActiveUser = (value) => {
   return value === true || value === 1 || value === '1';
 };
 
+/* ================================
+   SYSTEM FUNCTION: Authentication Check
+================================ */
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
 
@@ -37,6 +55,9 @@ function auth(req, res, next) {
   }
 }
 
+/* ================================
+   SYSTEM FUNCTION: Librarian Access Check
+================================ */
 function librarianOnly(req, res, next) {
   if (req.user.role !== 'Librarian') {
     return res.status(403).json({ error: 'Access denied. Librarians only.' });
@@ -44,6 +65,9 @@ function librarianOnly(req, res, next) {
   next();
 }
 
+/* ================================
+   SYSTEM FUNCTION: View Profile
+================================ */
 router.get('/profile', auth, (req, res) => {
   const sql = `
     SELECT UserID, FullName, Email, Role, IsActive, DateRegistered
@@ -71,6 +95,9 @@ router.get('/profile', auth, (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM FUNCTION: Update Profile
+================================ */
 router.put('/profile', auth, (req, res) => {
   const { fullName, email } = req.body;
 
@@ -111,6 +138,9 @@ router.put('/profile', auth, (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM FUNCTION: View Users
+================================ */
 router.get('/', auth, librarianOnly, (req, res) => {
   const sql = `
     SELECT UserID, FullName, Email, Role, IsActive, DateRegistered
@@ -128,6 +158,9 @@ router.get('/', auth, librarianOnly, (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM FUNCTION: Add User
+================================ */
 router.post('/', auth, librarianOnly, async (req, res) => {
   const { fullName, email, password, role } = req.body;
 
@@ -179,6 +212,9 @@ router.post('/', auth, librarianOnly, async (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM FUNCTION: Activate or Deactivate User
+================================ */
 router.put('/:id/status', auth, librarianOnly, (req, res) => {
   const userId = parseId(req.params.id);
 
@@ -221,6 +257,9 @@ router.put('/:id/status', auth, librarianOnly, (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM FUNCTION: Edit User
+================================ */
 router.put('/:id', auth, librarianOnly, (req, res) => {
   const userId = parseId(req.params.id);
 
@@ -281,6 +320,9 @@ router.put('/:id', auth, librarianOnly, (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM FUNCTION: Delete User
+================================ */
 router.delete('/:id', auth, librarianOnly, (req, res) => {
   const userId = parseId(req.params.id);
 
@@ -312,4 +354,7 @@ router.delete('/:id', auth, librarianOnly, (req, res) => {
   });
 });
 
+/* ================================
+   SYSTEM SETUP: Export Router
+================================ */
 module.exports = router;
