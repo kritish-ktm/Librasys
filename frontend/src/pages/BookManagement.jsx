@@ -82,6 +82,11 @@ function BookManagement() {
     userRole.toLowerCase() === "admin";
 
   /*
+    SYSTEM SETUP: Current Date for Validation
+  */
+  const todayDate = new Date().toISOString().substring(0, 10);
+
+  /*
     SYSTEM FUNCTION: Loading Screen
   */
   useEffect(() => {
@@ -141,21 +146,111 @@ function BookManagement() {
   };
 
   /*
+    SYSTEM HELPER: Format Date for Form Payload
+  */
+  const formatDateForPayload = (dateValue) => {
+    return dateValue ? String(dateValue).substring(0, 10) : "";
+  };
+
+  /*
+    SYSTEM HELPER: Prepare Existing Book Copy Update
+  */
+  const prepareExistingBookCopyPayload = (existingBook, copiesToAdd) => {
+    return {
+      CategoryID: Number(existingBook.CategoryID),
+      Title: existingBook.Title || "",
+      ISBN: existingBook.ISBN || "",
+      PublicationDate: formatDateForPayload(existingBook.PublicationDate),
+      AvailableCopies:
+        Number(existingBook.AvailableCopies || 0) + Number(copiesToAdd),
+      IsBorrowable: Boolean(existingBook.IsBorrowable),
+    };
+  };
+
+  /*
+    SYSTEM FUNCTION: Edit Impact Warning
+  */
+  const buildEditImpactWarnings = (originalBook, updatedBook) => {
+    if (!originalBook) {
+      return [];
+    }
+
+    const warnings = [];
+
+    const originalISBN = String(originalBook.ISBN || "").trim();
+    const updatedISBN = String(updatedBook.ISBN || "").trim();
+
+    const originalCategory = String(originalBook.CategoryID || "");
+    const updatedCategory = String(updatedBook.CategoryID || "");
+
+    const originalCopies = Number(originalBook.AvailableCopies || 0);
+    const updatedCopies = Number(updatedBook.AvailableCopies || 0);
+
+    const originalBorrowable = Boolean(originalBook.IsBorrowable);
+    const updatedBorrowable = Boolean(updatedBook.IsBorrowable);
+
+    if (originalISBN !== updatedISBN) {
+      warnings.push(
+        `ISBN will change from ${originalISBN} to ${updatedISBN}. This changes the book identity used in the catalogue.`
+      );
+    }
+
+    if (originalCategory !== updatedCategory) {
+      warnings.push(
+        `Category will change from ${originalCategory} to ${updatedCategory}. This may affect searching and filtering.`
+      );
+    }
+
+    if (originalCopies !== updatedCopies) {
+      warnings.push(
+        `Available copies will change from ${originalCopies} to ${updatedCopies}. This may affect borrowing availability.`
+      );
+    }
+
+    if (originalBorrowable !== updatedBorrowable) {
+      warnings.push(
+        `Borrowable status will change from ${
+          originalBorrowable ? "Borrowable" : "Reference Only"
+        } to ${
+          updatedBorrowable ? "Borrowable" : "Reference Only"
+        }. This may affect whether users can borrow this book.`
+      );
+    }
+
+    return warnings;
+  };
+
+  /*
     SYSTEM FUNCTION: Validation
   */
   const validateForm = () => {
-    if (!form.Title.trim()) {
+    const title = form.Title.trim();
+    const isbn = form.ISBN.trim();
+    const categoryId = Number(form.CategoryID);
+    const availableCopies = Number(form.AvailableCopies);
+
+    if (!title) {
       setError("Book title is required.");
       return false;
     }
 
-    if (!form.ISBN.trim()) {
+    if (title.length > 150) {
+      setError("Book title cannot be longer than 150 characters.");
+      return false;
+    }
+
+    if (!isbn) {
       setError("ISBN is required.");
       return false;
     }
 
-    if (form.ISBN.trim().length < 10 || form.ISBN.trim().length > 13) {
-      setError("ISBN must be between 10 and 13 characters.");
+    if (!/^\d+$/.test(isbn)) {
+      setError("ISBN must contain digits only.");
+      return false;
+    }
+
+    if (isbn.length !== 10 && isbn.length !== 13) {
+      setError("ISBN must be exactly 10 or 13 digits.");
       return false;
     }
 
@@ -164,9 +259,40 @@ function BookManagement() {
       return false;
     }
 
-    if (Number(form.AvailableCopies) < 0) {
-      setError("Available copies cannot be negative.");
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
+      setError("Category ID must be a valid whole number.");
       return false;
+    }
+
+    if (
+      form.AvailableCopies === "" ||
+      form.AvailableCopies === undefined ||
+      form.AvailableCopies === null
+    ) {
+      setError("Available copies is required.");
+      return false;
+    }
+
+    if (!Number.isInteger(availableCopies) || availableCopies < 0) {
+      setError("Available copies must be a whole number of 0 or more.");
+      return false;
+    }
+
+    if (form.PublicationDate) {
+      const publicationDate = new Date(form.PublicationDate);
+      const today = new Date();
+
+      today.setHours(0, 0, 0, 0);
+
+      if (Number.isNaN(publicationDate.getTime())) {
+        setError("Publication date must be a valid date.");
+        return false;
+      }
+
+      if (publicationDate > today) {
+        setError("Publication date cannot be in the future.");
+        return false;
+      }
     }
 
     return true;
@@ -197,11 +323,76 @@ function BookManagement() {
 
     try {
       if (editingId) {
+        /*
+          SYSTEM FUNCTION: Edit Book Impact Warning
+        */
+        const originalBook = books.find((book) => {
+          return Number(book.BookID) === Number(editingId);
+        });
+
+        const impactWarnings = buildEditImpactWarnings(originalBook, bookPayload);
+
+        if (impactWarnings.length > 0) {
+          const confirmEdit = window.confirm(
+            `You are changing important catalogue fields:\n\n- ${impactWarnings.join(
+              "\n- "
+            )}\n\nDo you want to continue with this update?`
+          );
+
+          if (!confirmEdit) {
+            setError("Update cancelled. No changes were saved.");
+            return;
+          }
+        }
+
         await updateBook(editingId, bookPayload);
         setMessage("Book record updated successfully.");
       } else {
-        await addBook(bookPayload);
-        setMessage("Book record added successfully.");
+        /*
+          SYSTEM FUNCTION: Duplicate ISBN Add Copy Check
+        */
+        const existingBook = books.find((book) => {
+          return String(book.ISBN).trim() === String(bookPayload.ISBN).trim();
+        });
+
+        if (existingBook) {
+          const copiesToAdd = Number(bookPayload.AvailableCopies);
+
+          if (copiesToAdd <= 0) {
+            setError(
+              "This ISBN already exists. Enter at least 1 available copy to add copies to the existing book."
+            );
+            return;
+          }
+
+          const confirmAddCopy = window.confirm(
+            `A book with this ISBN already exists: "${existingBook.Title}".\n\nDo you want to add ${copiesToAdd} ${
+              copiesToAdd === 1 ? "copy" : "copies"
+            } to the existing book instead of creating a duplicate record?`
+          );
+
+          if (!confirmAddCopy) {
+            setError(
+              "A book with this ISBN already exists. No duplicate record was created."
+            );
+            return;
+          }
+
+          const addCopyPayload = prepareExistingBookCopyPayload(
+            existingBook,
+            copiesToAdd
+          );
+
+          await updateBook(existingBook.BookID, addCopyPayload);
+          setMessage(
+            `Book already existed. Added ${copiesToAdd} ${
+              copiesToAdd === 1 ? "copy" : "copies"
+            } to "${existingBook.Title}".`
+          );
+        } else {
+          await addBook(bookPayload);
+          setMessage("Book record added successfully.");
+        }
       }
 
       resetForm();
@@ -209,7 +400,9 @@ function BookManagement() {
     } catch (err) {
       console.error("Error saving book:", err);
 
-      if (err.response && err.response.data && err.response.data.message) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
       } else {
         setError("Could not save the book record.");
@@ -267,13 +460,16 @@ function BookManagement() {
       setMessage("");
       setError("");
 
-      await deleteBook(bookId);
+      const deleteResponse = await deleteBook(bookId);
 
-      setMessage("Book record deleted successfully.");
+      setMessage(deleteResponse?.message || "Book record deleted successfully.");
       loadBooks();
     } catch (err) {
       console.error("Error deleting book:", err);
-      setError("Could not delete the book record.");
+      setError(
+        err.response?.data?.error ||
+          "Could not delete the book record."
+      );
     }
   };
 
@@ -562,6 +758,8 @@ function BookManagement() {
                   value={form.ISBN}
                   onChange={handleChange}
                   placeholder="Enter ISBN"
+                  inputMode="numeric"
+                  maxLength="13"
                 />
               </label>
 
@@ -570,6 +768,8 @@ function BookManagement() {
                 <input
                   name="CategoryID"
                   type="number"
+                  min="1"
+                  step="1"
                   value={form.CategoryID}
                   onChange={handleChange}
                   placeholder="Example: 800"
@@ -581,6 +781,7 @@ function BookManagement() {
                 <input
                   name="PublicationDate"
                   type="date"
+                  max={todayDate}
                   value={form.PublicationDate}
                   onChange={handleChange}
                 />
@@ -592,6 +793,7 @@ function BookManagement() {
                   name="AvailableCopies"
                   type="number"
                   min="0"
+                  step="1"
                   value={form.AvailableCopies}
                   onChange={handleChange}
                 />
