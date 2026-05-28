@@ -15,7 +15,7 @@
   8. Allow deleting a category, but only if the backend permits it.
   9. Show category details and assigned books inside a details modal.
   10. Show a special “Most Borrowed” view by calling a different backend service.
-  11. Handle optional category image upload, resizing, and preview.
+  11. Handle optional category image URL/path preview.
 
   This file is mostly a frontend/controller-style React component.
   It does not directly talk to the database. Instead, it uses service functions
@@ -38,6 +38,7 @@ import {
   getMostBorrowedBooks,
   getCategoryBooks,
   addCategory,
+  uploadCategoryImage,
   updateCategory,
   deleteCategory,
   toggleCategoryStatus,
@@ -60,6 +61,7 @@ import "./BookCategoryManagement.css";
 */
 const LOADING_DELAY_MS = 3500;
 const LOADING_SWITCH_MS = 2000;
+const DESCRIPTION_MAX_LENGTH = 1000;
 
 /*
   Dewey Decimal Classification code validation pattern.
@@ -96,15 +98,6 @@ const archiveReasons = [
   { value: "outdated", label: "Outdated" },
   { value: "temporary hidden", label: "Temporary hidden" },
 ];
-
-/*
-  Maximum allowed category image size after resizing/compression.
-  850 * 1024 means roughly 850 KB.
-
-  This protects the database and page performance because storing very large
-  base64 images can make API requests and rendering slow.
-*/
-const CATEGORY_IMAGE_MAX_SIZE = 850 * 1024;
 
 /*
   Small helper function that returns a Promise which resolves after a given delay.
@@ -208,6 +201,7 @@ function BookCategoryManagement() {
   const [isFetching, setIsFetching] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [busyAction, setBusyAction] = useState("");
   const [loadingOverlay, setLoadingOverlay] = useState(null);
 
@@ -470,35 +464,41 @@ function BookCategoryManagement() {
   };
 
   /*
-    handleCategoryImageFile runs when the user selects an image file.
-
-    Main steps:
-    1. Get the first selected file.
-    2. Resize/compress it using resizeCategoryImage().
-    3. Check if the final base64 image is still too large.
-    4. If valid, store the image string inside the form state.
-    5. If something fails, show an error message.
-
-    The image is saved in form.CategoryImage and later submitted to the backend.
+    Uploads the selected image to the backend.
+    The backend saves a real image file and returns a short URL.
+    Only that URL is stored in the BookCategory table.
   */
-  const handleCategoryImageFile = (event) => {
+  const handleCategoryImageFile = async (event) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
+
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      setError("Category image cannot be larger than 3MB.");
+      return;
+    }
 
-    resizeCategoryImage(file)
-      .then((image) => {
-        if (image.length > CATEGORY_IMAGE_MAX_SIZE) {
-          setError("Category image is still too large. Please choose a smaller image.");
-          return;
-        }
+    setIsUploadingImage(true);
+    setError("");
 
-        setForm((prev) => ({
-          ...prev,
-          CategoryImage: image,
-        }));
-        setError("");
-      })
-      .catch(() => setError("Could not read this image. Please try another file."));
+    try {
+      const imageData = await readFileAsDataUrl(file);
+      const result = await uploadCategoryImage(imageData, file.name);
+
+      setForm((prev) => ({
+        ...prev,
+        CategoryImage: result.imageUrl,
+      }));
+      setMessage("Category image uploaded. Save the category to keep it.");
+    } catch (err) {
+      setError(err.response?.data?.error || "Could not upload this image. Please try another file.");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   /*
@@ -529,7 +529,7 @@ function BookCategoryManagement() {
     This protects the user from accidentally closing the form during submit.
   */
   const closeForm = () => {
-    if (isSaving) return;
+    if (isSaving || isUploadingImage) return;
     resetForm();
     setIsFormOpen(false);
   };
@@ -546,7 +546,7 @@ function BookCategoryManagement() {
     - Dewey code is required, must not be too long, and must match the Dewey format.
     - Category color must be a valid hex color.
     - Archive reason is required if the category is inactive.
-    - Description is required and limited to 200 characters.
+    - Description is required and limited to DESCRIPTION_MAX_LENGTH characters.
   */
   const validateForm = () => {
     if (!form.CategoryName.trim()) return "Category name is required.";
@@ -555,9 +555,15 @@ function BookCategoryManagement() {
     if (form.DeweyCode.trim().length > 10) return "Dewey Code is too long.";
     if (!deweyPattern.test(form.DeweyCode.trim())) return "Dewey Code must look like 500 or 500.1.";
     if (!/^#[0-9a-fA-F]{6}$/.test(form.CategoryColor)) return "Category color must look like #2f6b52.";
+    if (form.CategoryImage.trim().length > 500) return "Category image path cannot be more than 500 characters.";
+    if (form.CategoryImage.trim().startsWith("data:image/")) {
+      return "Use an image URL or project file path instead of base64 image text.";
+    }
     if (!form.IsActive && !form.ArchiveReason) return "Archive reason is required when category is inactive.";
     if (!form.Description.trim()) return "Description is required.";
-    if (form.Description.trim().length > 200) return "Description cannot be more than 200 characters.";
+    if (form.Description.trim().length > DESCRIPTION_MAX_LENGTH) {
+      return `Description cannot be more than ${DESCRIPTION_MAX_LENGTH} characters.`;
+    }
     return "";
   };
 
@@ -951,6 +957,8 @@ function BookCategoryManagement() {
                       </button>
                     </th>
 
+                    <th>Image</th>
+
                     {/* Sortable table header for Dewey code / ISBN in Most Borrowed mode. */}
                     <th>
                       <button type="button" className="sort-header" onClick={() => handleSort("DeweyCode")}>
@@ -984,7 +992,7 @@ function BookCategoryManagement() {
                   {/* Show loading row when the first data load is running and no records are visible yet. */}
                   {isFetching && displayedCategories.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="book-empty">
+                      <td colSpan="10" className="book-empty">
                         <span className="book-inline-loading">
                           <span className="book-spinner" />
                           Fetching information<span className="book-loading-dots" />
@@ -1009,8 +1017,23 @@ function BookCategoryManagement() {
                           </span>
                         </td>
 
+                        <td>
+                          {cat.CategoryImage ? (
+                            <span
+                              className="category-table-image"
+                              style={{ backgroundImage: `url(${cat.CategoryImage})` }}
+                              aria-label={`${cat.CategoryName} category image`}
+                              role="img"
+                            />
+                          ) : (
+                            <span className="category-table-image empty">No image</span>
+                          )}
+                        </td>
+
                         <td><code>{cat.DeweyCode}</code></td>
-                        <td>{cat.Description || <em>No description</em>}</td>
+                        <td title={cat.Description || ""}>
+                          {cat.Description || <em>No description</em>}
+                        </td>
 
                         <td>
                           <span className="book-count-badge">
@@ -1086,7 +1109,7 @@ function BookCategoryManagement() {
                   ) : (
                     /* Empty state when search/filter returns no results. */
                     <tr>
-                      <td colSpan="9" className="book-empty">
+                      <td colSpan="10" className="book-empty">
                         {searchTerm ? "No categories found." : "No categories added yet."}
                       </td>
                     </tr>
@@ -1222,52 +1245,57 @@ function BookCategoryManagement() {
                     </div>
 
                     <div className="category-image-controls">
-                      {/* User can paste an image URL or base64 image string. */}
+                      {/* User stores an image URL or project file path. The database keeps this short text only. */}
                       <input
                         name="CategoryImage"
-                        placeholder="Paste an image URL, or choose a file below"
+                        placeholder="Paste an image URL or path, e.g. /images/categories/science.jpg"
                         value={form.CategoryImage}
                         onChange={handleChange}
-                        disabled={isSaving}
+                        maxLength="500"
+                        disabled={isSaving || isUploadingImage}
                       />
 
-                      {/* User can upload a local image file. */}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCategoryImageFile}
-                        disabled={isSaving}
-                      />
+                      <label className="category-image-upload-button">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          onChange={handleCategoryImageFile}
+                          disabled={isSaving || isUploadingImage}
+                        />
+                        <span>{isUploadingImage ? "Uploading image..." : "Upload Image"}</span>
+                      </label>
 
                       {form.CategoryImage && (
                         <button
                           type="button"
                           onClick={() => setForm((prev) => ({ ...prev, CategoryImage: "" }))}
                           className="book-ghost-button"
-                          disabled={isSaving}
+                          disabled={isSaving || isUploadingImage}
                         >
                           Remove Image
                         </button>
                       )}
                     </div>
                   </div>
-                  <small className="book-field-hint">Saved to the database when you submit the form.</small>
+                  <small className="book-field-hint">
+                    Upload JPG, PNG, WEBP, or GIF up to 3MB. The database stores only the image URL.
+                  </small>
                 </div>
 
                 <div className="book-field full">
                   <label>Description *</label>
                   <textarea
                     name="Description"
-                    placeholder="Short description of this category..."
+                    placeholder="Write a helpful category description for librarians and members..."
                     value={form.Description}
                     onChange={handleChange}
-                    maxLength="200"
-                    rows="4"
+                    maxLength={DESCRIPTION_MAX_LENGTH}
+                    rows="7"
                     required
                     disabled={isSaving}
                   />
                   <small className="book-field-hint">
-                    {form.Description.trim().length}/200 characters
+                    {form.Description.trim().length}/{DESCRIPTION_MAX_LENGTH} characters
                   </small>
                 </div>
 
@@ -1305,10 +1333,10 @@ function BookCategoryManagement() {
                 )}
 
                 <div className="book-actions">
-                  <button type="submit" className="book-primary-button" disabled={isSaving}>
+                  <button type="submit" className="book-primary-button" disabled={isSaving || isUploadingImage}>
                     {editingId ? "Update Category" : "Add Category"}
                   </button>
-                  <button type="button" onClick={closeForm} className="book-ghost-button" disabled={isSaving}>
+                  <button type="button" onClick={closeForm} className="book-ghost-button" disabled={isSaving || isUploadingImage}>
                     Cancel
                   </button>
                 </div>
@@ -1364,7 +1392,18 @@ function BookCategoryManagement() {
 
                 <div>
                   <dt>Image</dt>
-                  <dd>{detailCategory.CategoryImage ? "Added" : "No image"}</dd>
+                  <dd>
+                    {detailCategory.CategoryImage ? (
+                      <span
+                        className="category-detail-image"
+                        style={{ backgroundImage: `url(${detailCategory.CategoryImage})` }}
+                        aria-label={`${detailCategory.CategoryName} category image`}
+                        role="img"
+                      />
+                    ) : (
+                      "No image"
+                    )}
+                  </dd>
                 </div>
 
                 <div>
@@ -1556,66 +1595,14 @@ function compareCategories(a, b, sortConfig) {
 }
 
 /*
-  resizeCategoryImage converts an uploaded image file into a compressed base64 string.
-
-  Why this is needed:
-  - A raw image from a phone/camera can be very large.
-  - Large images slow down the frontend and backend.
-  - If images are stored as base64 in the database, size control becomes even more important.
-
-  Main process:
-  1. FileReader reads the selected file as a data URL.
-  2. A browser Image object loads that data URL.
-  3. A canvas is created.
-  4. The image is drawn on the canvas at a smaller size if needed.
-  5. The canvas exports a JPEG base64 string.
-  6. Quality is reduced step by step until the output is below the max size
-     or until the minimum quality limit is reached.
+  Converts a selected file to a data URL for the upload request.
+  The database does not store this data URL; the backend turns it into a saved file.
 */
-function resizeCategoryImage(file) {
+function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
+    reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
-    reader.onload = () => {
-      const source = typeof reader.result === "string" ? reader.result : "";
-      const image = new Image();
-
-      image.onerror = reject;
-      image.onload = () => {
-        const maxSide = 900;
-
-        /*
-          scale keeps the image proportional.
-          Math.min(1, ...) means small images are not enlarged.
-          Only images larger than maxSide are reduced.
-        */
-        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
-
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-        canvas.height = Math.max(1, Math.round(image.height * scale));
-
-        const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-        /*
-          Start with good image quality.
-          If the output is still too large, reduce quality little by little.
-        */
-        let quality = 0.78;
-        let output = canvas.toDataURL("image/jpeg", quality);
-        while (output.length > CATEGORY_IMAGE_MAX_SIZE && quality > 0.42) {
-          quality -= 0.08;
-          output = canvas.toDataURL("image/jpeg", quality);
-        }
-
-        resolve(output);
-      };
-
-      image.src = source;
-    };
-
     reader.readAsDataURL(file);
   });
 }

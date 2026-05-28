@@ -287,6 +287,188 @@
   gap: 22px;
 }
 
+.member-ai-widget {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+}
+
+.member-ai-popup {
+  position: absolute;
+  right: 0;
+  bottom: 82px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(680px, calc(100vh - 120px));
+  display: grid;
+  grid-template-rows: auto auto minmax(180px, 1fr) auto;
+  gap: 14px;
+  border: 1px solid var(--lp-border);
+  border-radius: 18px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(250, 247, 241, 0.96), rgba(255, 250, 242, 0.9)),
+    var(--lp-card);
+  box-shadow: 0 24px 70px rgba(20, 25, 15, 0.24);
+  animation: memberAiPop 180ms ease both;
+}
+
+.member-ai-popup-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.member-ai-popup-header h2 {
+  margin: 3px 0 0;
+  color: var(--lp-green-deep);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.55rem;
+}
+
+.member-ai-close {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(47, 59, 37, 0.1);
+  color: var(--lp-green-deep);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.member-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.member-ai-actions button,
+.member-ai-form button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lp-green);
+  color: var(--lp-cream);
+  font-weight: 800;
+}
+
+.member-ai-actions button:hover,
+.member-ai-form button:hover {
+  background: var(--lp-green-deep);
+}
+
+.member-ai-form {
+  display: grid;
+  gap: 8px;
+}
+
+.member-ai-form label {
+  color: var(--lp-muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.member-ai-form div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.member-ai-form input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--lp-border);
+  border-radius: 12px;
+  background: var(--lp-cream);
+  color: var(--lp-green-deep);
+  outline: none;
+}
+
+.member-ai-form input:focus {
+  border-color: var(--lp-orange);
+  box-shadow: 0 0 0 4px rgba(232, 121, 36, 0.13);
+}
+
+.member-ai-chat {
+  min-height: 0;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: grid;
+  gap: 12px;
+}
+
+.member-ai-message {
+  padding: 18px;
+  border: 1px solid rgba(216, 203, 184, 0.85);
+  border-radius: 14px;
+  background: rgba(255, 250, 242, 0.72);
+}
+
+.member-ai-message.user {
+  margin-left: min(80px, 12%);
+  border-color: rgba(232, 121, 36, 0.34);
+  background: rgba(232, 121, 36, 0.1);
+}
+
+.member-ai-message.assistant {
+  margin-right: min(80px, 12%);
+}
+
+.member-ai-message strong {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--lp-green-deep);
+}
+
+.member-ai-message pre {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--lp-green);
+  font-family: "DM Sans", Inter, system-ui, sans-serif;
+  line-height: 1.55;
+}
+
+.member-ai-launcher {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  border: 0;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 250, 242, 0.45), transparent 30%),
+    var(--lp-orange);
+  color: white;
+  box-shadow: 0 18px 42px rgba(232, 121, 36, 0.38);
+  font-weight: 900;
+}
+
+.member-ai-launcher span {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.member-ai-launcher strong {
+  margin-top: -10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.member-ai-launcher:hover {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 250, 242, 0.45), transparent 30%),
+    var(--lp-orange-hover);
+  transform: translateY(-3px);
+}
+
 .member-recent-card {
   padding: 24px;
 }
@@ -381,5 +563,30 @@
   .member-secondary-action,
   .member-nav-actions button {
     flex: 1;
+  }
+
+  .member-ai-form div {
+    grid-template-columns: 1fr;
+  }
+
+  .member-ai-widget {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .member-ai-popup {
+    bottom: 78px;
+  }
+}
+
+@keyframes memberAiPop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
