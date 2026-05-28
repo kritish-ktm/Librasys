@@ -5,3 +5,5 @@ frontend/dist/
 replit.md
 .local/
 attached_assets/
+*.log
+safe-backup-*/
