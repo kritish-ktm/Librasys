@@ -4,35 +4,37 @@ const jwt      = require('jsonwebtoken');
 const db       = require('../config/db');
 const JWT_SECRET = process.env.JWT_SECRET || 'librasys-local-dev-secret';
 
+/* ================================
+   SYSTEM SETUP: Router
+================================ */
 const router = express.Router();
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Basic email format check — rejects obviously malformed addresses. */
+/* ================================
+   SYSTEM FUNCTION: Validate Email
+================================ */
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-/**
- * Ensures a URL parameter is a positive integer before it touches the DB.
- * Prevents ugly DB errors (and potential surprises) from non-numeric IDs.
- * Returns the parsed integer, or NaN if invalid.
- */
+/* ================================
+   SYSTEM FUNCTION: Validate User ID
+================================ */
 const parseId = (param) => {
   const n = parseInt(param, 10);
   return Number.isFinite(n) && n > 0 ? n : NaN;
 };
 
-// ─── Middleware ────────────────────────────────────────────────────────────────
+/* ================================
+   SYSTEM FUNCTION: Check Active User
+================================ */
+const isActiveUser = (value) => {
+  if (value === null || value === undefined) return false;
+  if (Buffer.isBuffer(value)) return value[0] === 1;
+  if (typeof value === 'object' && Array.isArray(value.data)) return value.data[0] === 1;
+  return value === true || value === 1 || value === '1';
+};
 
-/**
- * auth — verifies the JWT in the Authorization header.
- *
- * Distinguishes between an EXPIRED token (TokenExpiredError) and a
- * TAMPERED / invalid token so the frontend can react differently if needed
- * (e.g. show "session expired" vs "access denied").
- *
- * On success, attaches the decoded payload to req.user:
- *   { id: UserID, role: 'Librarian' | 'Member', iat, exp }
- */
+/* ================================
+   SYSTEM FUNCTION: Authentication Check
+================================ */
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
 
@@ -44,19 +46,16 @@ function auth(req, res, next) {
     req.user = jwt.verify(token, JWT_SECRET);
     next();
   } catch (err) {
-    // JsonWebTokenError  → tampered or malformed
-    // TokenExpiredError  → valid structure but past expiry
     const expired = err.name === 'TokenExpiredError';
     return res.status(401).json({
-      error: expired ? 'Session expired. Please log in again.' : 'Invalid token.'
+      error: expired ? 'Session expired. Please log in again.' : 'Invalid token.',
     });
   }
 }
 
-/**
- * librarianOnly — restricts a route to users with the Librarian role.
- * Must be used AFTER the auth middleware so req.user is already set.
- */
+/* ================================
+   SYSTEM FUNCTION: Librarian Access Check
+================================ */
 function librarianOnly(req, res, next) {
   if (req.user.role !== 'Librarian') {
     return res.status(403).json({ error: 'Access denied. Librarians only.' });
@@ -64,13 +63,9 @@ function librarianOnly(req, res, next) {
   next();
 }
 
-// ─── GET /api/users/profile ────────────────────────────────────────────────────
-/**
- * Returns the profile of the currently logged-in user.
- *
- * We re-query the DB (rather than trusting the JWT payload) so that
- * deactivated accounts are blocked even if their token hasn't expired yet.
- */
+/* ================================
+   SYSTEM FUNCTION: View Profile
+================================ */
 router.get('/profile', auth, (req, res) => {
   const sql = `
     SELECT UserID, FullName, Email, Role, IsActive, DateRegistered
@@ -88,35 +83,22 @@ router.get('/profile', auth, (req, res) => {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    const user = results[0];
-
-    // Block deactivated users even if their JWT is still valid
-    if (!user.IsActive || Number(user.IsActive) === 0) {
+    if (!isActiveUser(results[0].IsActive)) {
       return res.status(403).json({
-        error: 'This account has been deactivated. Please contact a librarian.'
+        error: 'This account has been deactivated. Please contact a librarian.',
       });
     }
 
-    res.json(user);
+    res.json(results[0]);
   });
 });
 
-// ─── PUT /api/users/profile ────────────────────────────────────────────────────
-/**
- * Allows the logged-in user to update their own name and email.
- *
- * Validation:
- *  - fullName : required, 2–100 chars
- *  - email    : required, valid format, not already used by another account
- *
- * We intentionally do NOT allow role or password changes here —
- * role changes are librarian-only (PUT /:id) and passwords need
- * a dedicated change-password flow with current-password confirmation.
- */
+/* ================================
+   SYSTEM FUNCTION: Update Profile
+================================ */
 router.put('/profile', auth, (req, res) => {
   const { fullName, email } = req.body;
 
-  // ── Input validation ──────────────────────────────────────────────────────
   if (!fullName || fullName.trim().length < 2 || fullName.trim().length > 100) {
     return res.status(400).json({ error: 'Full name must be between 2 and 100 characters.' });
   }
@@ -125,7 +107,6 @@ router.put('/profile', auth, (req, res) => {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
 
-  // ── Check email isn't already taken by a different account ────────────────
   const checkSql = `SELECT UserID FROM user WHERE Email = ? AND UserID != ?`;
 
   db.query(checkSql, [email.trim().toLowerCase(), req.user.id], (checkErr, existing) => {
@@ -138,33 +119,26 @@ router.put('/profile', auth, (req, res) => {
       return res.status(409).json({ error: 'This email is already in use by another account.' });
     }
 
-    // ── Apply the update ──────────────────────────────────────────────────
     const updateSql = `UPDATE user SET FullName = ?, Email = ? WHERE UserID = ?`;
 
-    db.query(
-      updateSql,
-      [fullName.trim(), email.trim().toLowerCase(), req.user.id],
-      (err, result) => {
-        if (err) {
-          console.error('Profile update error:', err);
-          return res.status(500).json({ error: 'Failed to update profile.' });
-        }
-
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ error: 'User not found.' });
-        }
-
-        res.json({ message: 'Profile updated successfully.' });
+    db.query(updateSql, [fullName.trim(), email.trim().toLowerCase(), req.user.id], (err, result) => {
+      if (err) {
+        console.error('Profile update error:', err);
+        return res.status(500).json({ error: 'Failed to update profile.' });
       }
-    );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'User not found.' });
+      }
+
+      res.json({ message: 'Profile updated successfully.' });
+    });
   });
 });
 
-// ─── GET /api/users ────────────────────────────────────────────────────────────
-/**
- * Returns all user records. Librarians only.
- * Ordered newest-first so recently added users appear at the top.
- */
+/* ================================
+   SYSTEM FUNCTION: View Users
+================================ */
 router.get('/', auth, librarianOnly, (req, res) => {
   const sql = `
     SELECT UserID, FullName, Email, Role, IsActive, DateRegistered
@@ -182,24 +156,12 @@ router.get('/', auth, librarianOnly, (req, res) => {
   });
 });
 
-// ─── POST /api/users ───────────────────────────────────────────────────────────
-/**
- * Creates a new user account. Librarians only.
- *
- * Validation:
- *  - fullName : required, 2+ chars
- *  - email    : required, valid format, unique
- *  - password : required, 6+ chars
- *  - role     : must be 'Librarian' or 'Member'
- *
- * Passwords are hashed with bcrypt (cost 10) before storage.
- * We do an explicit email uniqueness check before inserting to return
- * a clear 409 error instead of a raw DB constraint violation.
- */
+/* ================================
+   SYSTEM FUNCTION: Add User
+================================ */
 router.post('/', auth, librarianOnly, async (req, res) => {
   const { fullName, email, password, role } = req.body;
 
-  // ── Input validation ──────────────────────────────────────────────────────
   if (!fullName || fullName.trim().length < 2) {
     return res.status(400).json({ error: 'Full name must be at least 2 characters.' });
   }
@@ -216,110 +178,86 @@ router.post('/', auth, librarianOnly, async (req, res) => {
     return res.status(400).json({ error: 'Role must be Librarian or Member.' });
   }
 
-  // ── Check for duplicate email ─────────────────────────────────────────────
-  db.query(
-    'SELECT UserID FROM user WHERE Email = ?',
-    [email.trim().toLowerCase()],
-    async (checkErr, existing) => {
-      if (checkErr) {
-        console.error('Add user email check error:', checkErr);
-        return res.status(500).json({ error: 'Failed to validate email.' });
-      }
-
-      if (existing.length > 0) {
-        return res.status(409).json({ error: 'An account with this email already exists.' });
-      }
-
-      // ── Hash password and insert ────────────────────────────────────────
-      try {
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        const insertSql = `
-          INSERT INTO user (FullName, Email, PasswordHash, Role, IsActive, DateRegistered)
-          VALUES (?, ?, ?, ?, 1, CURDATE())
-        `;
-
-        db.query(
-          insertSql,
-          [fullName.trim(), email.trim().toLowerCase(), passwordHash, role],
-          (insertErr) => {
-            if (insertErr) {
-              console.error('Add user insert error:', insertErr);
-              return res.status(500).json({ error: 'Failed to add user.' });
-            }
-
-            res.status(201).json({ message: 'User added successfully.' });
-          }
-        );
-      } catch (hashErr) {
-        console.error('Password hash error:', hashErr);
-        res.status(500).json({ error: 'Failed to secure password.' });
-      }
+  db.query('SELECT UserID FROM user WHERE Email = ?', [email.trim().toLowerCase()], async (checkErr, existing) => {
+    if (checkErr) {
+      console.error('Add user email check error:', checkErr);
+      return res.status(500).json({ error: 'Failed to validate email.' });
     }
-  );
+
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    try {
+      const passwordHash = await bcrypt.hash(password, 10);
+      const insertSql = `
+        INSERT INTO user (FullName, Email, PasswordHash, Role, IsActive, DateRegistered)
+        VALUES (?, ?, ?, ?, 1, CURDATE())
+      `;
+
+      db.query(insertSql, [fullName.trim(), email.trim().toLowerCase(), passwordHash, role], (insertErr) => {
+        if (insertErr) {
+          console.error('Add user insert error:', insertErr);
+          return res.status(500).json({ error: 'Failed to add user.' });
+        }
+
+        res.status(201).json({ message: 'User added successfully.' });
+      });
+    } catch (hashErr) {
+      console.error('Password hash error:', hashErr);
+      res.status(500).json({ error: 'Failed to secure password.' });
+    }
+  });
 });
 
-// ─── PUT /api/users/:id/status ─────────────────────────────────────────────────
-/**
- * Activates or deactivates a user account. Librarians only.
- *
- * Accepts isActive as 1, 0, true, false, "1", or "0" for flexibility.
- * Guards:
- *  - Librarians cannot deactivate their own account (would lock themselves out)
- *  - Non-numeric or missing IDs return 400 before touching the DB
- */
+/* ================================
+   SYSTEM FUNCTION: Activate or Deactivate User
+================================ */
 router.put('/:id/status', auth, librarianOnly, (req, res) => {
   const userId = parseId(req.params.id);
 
-  // Reject non-numeric IDs immediately
   if (isNaN(userId)) {
     return res.status(400).json({ error: 'Invalid user ID.' });
   }
 
   const requestedStatus = req.body.isActive;
-
-  // Normalise all truthy/falsy representations to a DB-safe 1 or 0
   let isActive;
-  if ([1, '1', true].includes(requestedStatus))       isActive = 1;
+
+  if ([1, '1', true].includes(requestedStatus)) isActive = 1;
   else if ([0, '0', false].includes(requestedStatus)) isActive = 0;
   else return res.status(400).json({ error: 'isActive must be 1 or 0.' });
 
-  // Prevent a librarian from locking themselves out
   if (userId === Number(req.user.id) && isActive === 0) {
     return res.status(400).json({ error: 'You cannot deactivate your own account.' });
   }
 
-  const sql = `UPDATE user SET IsActive = ? WHERE UserID = ?`;
-
-  db.query(sql, [isActive, userId], (err, result) => {
-    if (err) {
-      console.error('Status update error:', err);
-      return res.status(500).json({ error: 'Failed to update user status.' });
+  db.query('SELECT UserID FROM user WHERE UserID = ?', [userId], (findErr, existing) => {
+    if (findErr) {
+      console.error('Status user lookup error:', findErr);
+      return res.status(500).json({ error: 'Failed to validate user.' });
     }
 
-    if (result.affectedRows === 0) {
+    if (existing.length === 0) {
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    res.json({
-      message: isActive === 1 ? 'User activated successfully.' : 'User deactivated successfully.',
-      isActive
+    db.query('UPDATE user SET IsActive = ? WHERE UserID = ?', [isActive, userId], (err) => {
+      if (err) {
+        console.error('Status update error:', err);
+        return res.status(500).json({ error: 'Failed to update user status.' });
+      }
+
+      res.json({
+        message: isActive === 1 ? 'User activated successfully.' : 'User deactivated successfully.',
+        isActive,
+      });
     });
   });
 });
 
-// ─── PUT /api/users/:id ────────────────────────────────────────────────────────
-/**
- * Updates a user's name, email, and role. Librarians only.
- *
- * Validation:
- *  - fullName : required, 2–100 chars
- *  - email    : required, valid format, not taken by a different user
- *  - role     : must be 'Librarian' or 'Member'
- *
- * Note: Password changes are handled separately and require the current
- * password for confirmation. They are NOT part of this route.
- */
+/* ================================
+   SYSTEM FUNCTION: Edit User
+================================ */
 router.put('/:id', auth, librarianOnly, (req, res) => {
   const userId = parseId(req.params.id);
 
@@ -329,7 +267,6 @@ router.put('/:id', auth, librarianOnly, (req, res) => {
 
   const { fullName, email, role } = req.body;
 
-  // ── Input validation ──────────────────────────────────────────────────────
   if (!fullName || fullName.trim().length < 2 || fullName.trim().length > 100) {
     return res.status(400).json({ error: 'Full name must be between 2 and 100 characters.' });
   }
@@ -342,56 +279,48 @@ router.put('/:id', auth, librarianOnly, (req, res) => {
     return res.status(400).json({ error: 'Role must be Librarian or Member.' });
   }
 
-  // ── Check email isn't already used by a different account ─────────────────
-  const checkSql = `SELECT UserID FROM user WHERE Email = ? AND UserID != ?`;
-
-  db.query(checkSql, [email.trim().toLowerCase(), userId], (checkErr, existing) => {
-    if (checkErr) {
-      console.error('Edit user email check error:', checkErr);
-      return res.status(500).json({ error: 'Failed to validate email.' });
+  db.query('SELECT UserID FROM user WHERE UserID = ?', [userId], (findErr, found) => {
+    if (findErr) {
+      console.error('Edit user lookup error:', findErr);
+      return res.status(500).json({ error: 'Failed to validate user.' });
     }
 
-    if (existing.length > 0) {
-      return res.status(409).json({ error: 'This email is already in use by another account.' });
+    if (found.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
     }
 
-    // ── Apply update ──────────────────────────────────────────────────────
-    const updateSql = `
-      UPDATE user SET FullName = ?, Email = ?, Role = ?
-      WHERE UserID = ?
-    `;
+    const checkSql = `SELECT UserID FROM user WHERE Email = ? AND UserID != ?`;
 
-    db.query(
-      updateSql,
-      [fullName.trim(), email.trim().toLowerCase(), role, userId],
-      (err, result) => {
+    db.query(checkSql, [email.trim().toLowerCase(), userId], (checkErr, existing) => {
+      if (checkErr) {
+        console.error('Edit user email check error:', checkErr);
+        return res.status(500).json({ error: 'Failed to validate email.' });
+      }
+
+      if (existing.length > 0) {
+        return res.status(409).json({ error: 'This email is already in use by another account.' });
+      }
+
+      const updateSql = `
+        UPDATE user SET FullName = ?, Email = ?, Role = ?
+        WHERE UserID = ?
+      `;
+
+      db.query(updateSql, [fullName.trim(), email.trim().toLowerCase(), role, userId], (err) => {
         if (err) {
           console.error('Update user error:', err);
           return res.status(500).json({ error: 'Failed to update user.' });
         }
 
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ error: 'User not found.' });
-        }
-
         res.json({ message: 'User updated successfully.' });
-      }
-    );
+      });
+    });
   });
 });
 
-// ─── DELETE /api/users/:id ─────────────────────────────────────────────────────
-/**
- * Permanently deletes a user. Librarians only.
- *
- * Guards:
- *  - Librarians cannot delete their own account
- *  - Non-numeric IDs are rejected before touching the DB
- *
- * ⚠️  If your DB schema has foreign key constraints on UserID (e.g. Loans,
- *     Fines), deletion will fail with a FK error if the user has related
- *     records. Consider soft-delete (IsActive = 0) as a safer alternative.
- */
+/* ================================
+   SYSTEM FUNCTION: Delete User
+================================ */
 router.delete('/:id', auth, librarianOnly, (req, res) => {
   const userId = parseId(req.params.id);
 
@@ -399,21 +328,18 @@ router.delete('/:id', auth, librarianOnly, (req, res) => {
     return res.status(400).json({ error: 'Invalid user ID.' });
   }
 
-  // Prevent self-deletion — would orphan the current session
   if (userId === Number(req.user.id)) {
     return res.status(400).json({ error: 'You cannot delete your own account.' });
   }
 
-  const sql = `DELETE FROM user WHERE UserID = ?`;
-
-  db.query(sql, [userId], (err, result) => {
+  db.query('DELETE FROM user WHERE UserID = ?', [userId], (err, result) => {
     if (err) {
-      // FK constraint violation — user has linked loans or fines
       if (err.errno === 1451) {
         return res.status(409).json({
-          error: 'Cannot delete this user — they have active loans or fines. Deactivate them instead.'
+          error: 'Cannot delete this user because they have active loans or fines. Deactivate them instead.',
         });
       }
+
       console.error('Delete user error:', err);
       return res.status(500).json({ error: 'Failed to delete user.' });
     }

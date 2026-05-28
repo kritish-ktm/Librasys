@@ -180,11 +180,78 @@ router.post('/login', (req, res) => {
       // Return token + display info the frontend needs immediately
       res.json({
         token,
+        userId: user.UserID,
         role: user.Role,
         name: user.FullName
       });
     }
   );
 });
+// ─── POST /api/auth/member-login ──────────────────────────────────────────────
+// Member login only. Librarian/Admin accounts are blocked here.
+router.post('/memberlogin', (req, res) => {
+  const { email, password } = req.body;
 
+  // Validate email
+  if (!email || !isValidEmail(email.trim())) {
+    return res.status(400).json({ error: 'A valid email address is required.' });
+  }
+
+  // Validate password
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required.' });
+  }
+
+  db.query(
+    'SELECT * FROM user WHERE Email = ?',
+    [email.trim().toLowerCase()],
+    async (err, results) => {
+      if (err) {
+        console.error('Member login DB error:', err);
+        return res.status(500).json({ error: 'Login failed. Please try again.' });
+      }
+
+      if (results.length === 0) {
+        return res.status(401).json({ error: 'Invalid credentials.' });
+      }
+
+      const user = results[0];
+
+      // Block Librarian/Admin from member login
+      if (user.Role !== 'Member') {
+        return res.status(403).json({
+          error: 'Only members can log in from this page.'
+        });
+      }
+
+      // Block inactive members
+      if (!isActiveUser(user.IsActive)) {
+        return res.status(403).json({
+          error: 'This account has been deactivated. Please contact a librarian.'
+        });
+      }
+
+      // Check password
+      const match = await bcrypt.compare(password, user.PasswordHash);
+
+      if (!match) {
+        return res.status(401).json({ error: 'Invalid credentials.' });
+      }
+
+      // Create token
+      const token = jwt.sign(
+        { id: user.UserID, role: user.Role },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+
+      res.json({
+        token,
+        userId: user.UserID,
+        role: user.Role,
+        name: user.FullName
+      });
+    }
+  );
+});
 module.exports = router;

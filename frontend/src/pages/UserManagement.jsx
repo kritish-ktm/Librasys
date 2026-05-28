@@ -16,12 +16,14 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import Sidebar from "../components/Sidebar";
 import "./UserManagement.css";
 
+// ── Constants ────────────────────────────────────────────────────────────────
 const API_BASE_URL = "http://localhost:5000";
 const USERS_PER_PAGE_OPTIONS = [5, 10, 20];
-const ALERT_DURATION_MS = 3000;
-const ALERT_FADE_MS = 260;
-const MIN_LOADER_MS = 650;
+const ALERT_DURATION_MS = 3000;   // How long the alert stays visible
+const ALERT_FADE_MS = 260;        // Fade-out animation duration
+const MIN_LOADER_MS = 650;        // Prevents loader from flashing too briefly
 
+// Blank form used when opening create/edit modals
 const initialForm = {
   fullName: "",
   email: "",
@@ -29,6 +31,9 @@ const initialForm = {
   role: "Member",
 };
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Reads the JWT from localStorage and returns the Authorization header. */
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   return {
@@ -36,11 +41,16 @@ function getAuthHeaders() {
   };
 }
 
+/**
+ * Normalises a raw API user object into a consistent shape.
+ * Handles the MySQL Buffer format returned for boolean columns.
+ */
 function normalizeUser(user) {
   const activeValue = user.IsActive ?? user.isActive;
   let isActive = false;
 
   if (activeValue && typeof activeValue === "object" && Array.isArray(activeValue.data)) {
+    // MySQL returns TINYINT(1) as a Buffer – check the first byte
     isActive = activeValue.data[0] === 1;
   } else {
     isActive = activeValue === true || activeValue === 1 || activeValue === "1";
@@ -56,37 +66,44 @@ function normalizeUser(user) {
   };
 }
 
+// ── Main Component ────────────────────────────────────────────────────────────
 function UserManagement() {
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
+  // ── State ──────────────────────────────────────────────────────────────────
+  const [users, setUsers] = useState([]);             // Full user list from the API
+  const [search, setSearch] = useState("");           // Search input value
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(10);             // Rows per page
   const [error, setError] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [alertType, setAlertType] = useState("success");
   const [showAlert, setShowAlert] = useState(false);
-  const [isAlertLeaving, setIsAlertLeaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isAlertLeaving, setIsAlertLeaving] = useState(false); // Triggers fade-out CSS class
+  const [isLoading, setIsLoading] = useState(false);           // Initial/refresh fetches
+  const [isSaving, setIsSaving] = useState(false);             // Create/edit/delete actions
   const [isLoadingOverlayVisible, setIsLoadingOverlayVisible] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("Fetching users...");
   const [loadingSubtext, setLoadingSubtext] = useState("Please wait...");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editUser, setEditUser] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);     // Create modal visibility
+  const [editUser, setEditUser] = useState(null);              // User being edited (null = closed)
+  const [confirmAction, setConfirmAction] = useState(null);    // Pending status/delete confirmation
   const [form, setForm] = useState(initialForm);
 
-  const alertTimerRef = useRef(null);
-  const alertFadeTimerRef = useRef(null);
-  const loaderTimerRef = useRef(null);
-  const loaderStartedAtRef = useRef(0);
+  // ── Refs ───────────────────────────────────────────────────────────────────
+  const alertTimerRef = useRef(null);       // Auto-dismiss timer for alerts
+  const alertFadeTimerRef = useRef(null);   // Secondary timer that clears after fade
+  const loaderTimerRef = useRef(null);      // Ensures loader shows for MIN_LOADER_MS
+  const loaderStartedAtRef = useRef(0);     // Timestamp when loader was shown
+
+  // Disables interactive elements while any async operation is in progress
   const isBusy = isLoading || isSaving || isLoadingOverlayVisible;
 
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   useEffect(() => {
     fetchUsers();
 
+    // Clean up all pending timers on unmount
     return () => {
       clearTimeout(alertTimerRef.current);
       clearTimeout(alertFadeTimerRef.current);
@@ -94,6 +111,9 @@ function UserManagement() {
     };
   }, []);
 
+  // ── Derived Data ───────────────────────────────────────────────────────────
+
+  /** Aggregated counts shown in the summary cards. */
   const summary = useMemo(() => {
     const active = users.filter((user) => user.isActive).length;
     const librarians = users.filter((user) => user.role === "Librarian").length;
@@ -106,6 +126,7 @@ function UserManagement() {
     };
   }, [users]);
 
+  /** Users that match the current search text, role, and status filters. */
   const filteredUsers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
@@ -126,15 +147,20 @@ function UserManagement() {
     });
   }, [users, search, roleFilter, statusFilter]);
 
+  // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / limit));
   const visibleUsers = filteredUsers.slice((page - 1) * limit, page * limit);
   const firstRecord = filteredUsers.length ? (page - 1) * limit + 1 : 0;
   const lastRecord = Math.min(page * limit, filteredUsers.length);
 
+  // Clamp current page when filters reduce the total page count
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  // ── Alert Helpers ──────────────────────────────────────────────────────────
+
+  /** Shows a dismissible alert banner, replacing any currently visible one. */
   const showFeedback = (text, type = "success") => {
     clearTimeout(alertTimerRef.current);
     clearTimeout(alertFadeTimerRef.current);
@@ -143,6 +169,7 @@ function UserManagement() {
     setIsAlertLeaving(false);
     setShowAlert(true);
 
+    // Begin fade-out after the display duration, then fully hide
     alertTimerRef.current = setTimeout(() => {
       setIsAlertLeaving(true);
       alertFadeTimerRef.current = setTimeout(() => {
@@ -159,6 +186,9 @@ function UserManagement() {
     showFeedback(text, "error");
   };
 
+  // ── Loader Helpers ─────────────────────────────────────────────────────────
+
+  /** Shows the full-screen overlay loader with a custom message. */
   const showLoader = (message, subtext = "Please wait...") => {
     clearTimeout(loaderTimerRef.current);
     loaderStartedAtRef.current = Date.now();
@@ -167,6 +197,7 @@ function UserManagement() {
     setIsLoadingOverlayVisible(true);
   };
 
+  /** Hides the loader, but never before MIN_LOADER_MS to avoid a flash. */
   const hideLoader = () => {
     const elapsed = Date.now() - loaderStartedAtRef.current;
     const remaining = Math.max(MIN_LOADER_MS - elapsed, 0);
@@ -176,6 +207,9 @@ function UserManagement() {
     }, remaining);
   };
 
+  // ── API Calls ──────────────────────────────────────────────────────────────
+
+  /** Fetches the full user list from the API and updates state. */
   const fetchUsers = async (message = "Fetching users...") => {
     showLoader(message);
     setIsLoading(true);
@@ -183,7 +217,7 @@ function UserManagement() {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/users`, {
         ...getAuthHeaders(),
-        params: { t: Date.now() },
+        params: { t: Date.now() }, // Cache-busting timestamp
       });
       setUsers(Array.isArray(response.data) ? response.data.map(normalizeUser) : []);
       setError("");
@@ -195,12 +229,17 @@ function UserManagement() {
     }
   };
 
+  // ── Filter Actions ─────────────────────────────────────────────────────────
+
+  /** Resets all filters and search to their default values. */
   const resetFilters = () => {
     setSearch("");
     setRoleFilter("all");
     setStatusFilter("all");
     setPage(1);
   };
+
+  // ── Modal Controls ─────────────────────────────────────────────────────────
 
   const openCreateModal = () => {
     setForm(initialForm);
@@ -214,12 +253,13 @@ function UserManagement() {
     setError("");
   };
 
+  /** Pre-fills the edit form with the selected user's current data. */
   const openEditModal = (user) => {
     setEditUser(user);
     setForm({
       fullName: user.fullName,
       email: user.email,
-      password: "",
+      password: "",   // Password is not pre-filled for security
       role: user.role,
     });
     setError("");
@@ -231,13 +271,18 @@ function UserManagement() {
     setError("");
   };
 
+  // ── Event Handlers ─────────────────────────────────────────────────────────
+
+  /** Generic filter change handler — also resets to page 1. */
   const handleFilterChange = (setter) => (event) => {
     setter(event.target.value);
     setPage(1);
   };
 
+  /** Returns a validation error string, or an empty string if the form is valid. */
   const validateForm = (mode) => {
     if (!form.fullName.trim()) return "Full name is required.";
+    if (form.fullName.trim().length < 2) return "Full name must be at least 2 characters.";
     if (!form.email.trim()) return "Email is required.";
     if (!isValidEmail(form.email.trim())) return "Please enter a valid email address.";
     if (mode === "create" && !form.password) return "Password is required.";
@@ -246,6 +291,7 @@ function UserManagement() {
     return "";
   };
 
+  /** Submits the create-user form and refreshes the list on success. */
   const handleCreateUser = async (event) => {
     event.preventDefault();
     setError("");
@@ -282,6 +328,7 @@ function UserManagement() {
     }
   };
 
+  /** Submits the edit-user form and refreshes the list on success. */
   const handleEditUser = async (event) => {
     event.preventDefault();
     if (!editUser) return;
@@ -318,6 +365,7 @@ function UserManagement() {
     }
   };
 
+  /** Toggles a user's active/inactive status. */
   const handleStatusChange = async (user) => {
     const nextStatus = user.isActive ? 0 : 1;
     setError("");
@@ -342,6 +390,7 @@ function UserManagement() {
     }
   };
 
+  /** Permanently deletes a user account. */
   const handleDeleteUser = async (user) => {
     setError("");
     showLoader("Deleting user...");
@@ -360,12 +409,14 @@ function UserManagement() {
     }
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="um-page">
       <LoadingOverlay show={isBusy} message={loadingMessage} subtext={loadingSubtext} />
       <Sidebar />
 
       <section className="um-main">
+        {/* Summary cards */}
         <section className="um-stats" aria-label="User summary">
           <SummaryCard title="Total Users" value={summary.total} detail="All registered accounts" icon={Users} tone="total" />
           <SummaryCard title="Active Users" value={summary.active} detail="Can access LibraSys" icon={CheckCircle2} tone="active" />
@@ -373,6 +424,7 @@ function UserManagement() {
           <SummaryCard title="Librarians" value={summary.librarians} detail="Staff administrator roles" icon={ShieldCheck} tone="librarian" />
         </section>
 
+        {/* Feedback alert — shown after create/edit/delete/status actions */}
         {showAlert && (
           <div className={`um-alert ${alertType} ${isAlertLeaving ? "is-hiding" : ""}`}>
             {alertMessage}
@@ -382,6 +434,8 @@ function UserManagement() {
         <section className="um-workspace">
           <div className="um-grid">
             <section className="um-panel um-table-panel">
+
+              {/* Header: title + search + add button */}
               <div className="um-list-head">
                 <div className="um-section-heading">
                   <h2>User Management</h2>
@@ -408,6 +462,7 @@ function UserManagement() {
                 </div>
               </div>
 
+              {/* Dropdown filters + clear/apply buttons */}
               <div className="um-filter-row">
                 <select value={roleFilter} onChange={handleFilterChange(setRoleFilter)} disabled={isBusy}>
                   <option value="all">All Roles</option>
@@ -431,6 +486,7 @@ function UserManagement() {
                 </button>
               </div>
 
+              {/* Quick-filter tabs (All / Active / Inactive) */}
               <div className="um-tabs">
                 {["all", "active", "inactive"].map((status) => (
                   <button
@@ -449,6 +505,7 @@ function UserManagement() {
                 ))}
               </div>
 
+              {/* Users table */}
               <div className="um-table-wrap">
                 <table className="um-table">
                   <thead>
@@ -492,6 +549,7 @@ function UserManagement() {
                           <td>{renderStatus(user.isActive)}</td>
                           <td>{formatDate(user.createdAt)}</td>
                           <td className="um-row-actions">
+                            {/* Toggle active/inactive */}
                             <button
                               type="button"
                               disabled={isBusy}
@@ -501,6 +559,8 @@ function UserManagement() {
                             >
                               <CheckCircle2 size={16} />
                             </button>
+
+                            {/* Edit user details */}
                             <button
                               type="button"
                               disabled={isBusy}
@@ -510,6 +570,8 @@ function UserManagement() {
                             >
                               <Pencil size={16} />
                             </button>
+
+                            {/* Delete user (requires confirmation) */}
                             <button
                               type="button"
                               className="danger"
@@ -528,6 +590,7 @@ function UserManagement() {
                 </table>
               </div>
 
+              {/* Pagination controls */}
               <div className="um-pagination">
                 <span>
                   Showing {firstRecord} to {lastRecord} of {filteredUsers.length} users
@@ -569,6 +632,7 @@ function UserManagement() {
         </section>
       </section>
 
+      {/* Create user modal */}
       {isCreateOpen && (
         <UserFormModal
           title="Create User"
@@ -584,6 +648,7 @@ function UserManagement() {
         />
       )}
 
+      {/* Edit user modal — only mounted when a user is selected */}
       {editUser && (
         <UserFormModal
           title="Edit User"
@@ -599,6 +664,7 @@ function UserManagement() {
         />
       )}
 
+      {/* Confirmation modal for delete and status-toggle actions */}
       {confirmAction && (
         <ConfirmModal
           action={confirmAction}
@@ -617,6 +683,9 @@ function UserManagement() {
   );
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+/** Stat card shown in the summary strip at the top of the page. */
 function SummaryCard({ title, value, detail, icon: Icon, tone }) {
   return (
     <article className={`um-stat-card ${tone}`}>
@@ -632,6 +701,7 @@ function SummaryCard({ title, value, detail, icon: Icon, tone }) {
   );
 }
 
+/** Shared modal form used for both creating and editing users. */
 function UserFormModal({ title, description, submitLabel, form, setForm, error, isBusy, mode, onClose, onSubmit }) {
   return (
     <div className="um-modal-backdrop" role="presentation">
@@ -685,6 +755,7 @@ function UserFormModal({ title, description, submitLabel, form, setForm, error, 
             />
           </label>
 
+          {/* Password field only shown in create mode */}
           {mode === "create" && (
             <label>
               <span className="um-field-label">Password</span>
@@ -712,6 +783,7 @@ function UserFormModal({ title, description, submitLabel, form, setForm, error, 
   );
 }
 
+/** Confirmation dialog for destructive or irreversible actions (delete / status change). */
 function ConfirmModal({ action, isBusy, isSaving, error, onClose, onConfirm }) {
   const isDelete = action.type === "delete";
   const user = action.user;
@@ -758,33 +830,42 @@ function ConfirmModal({ action, isBusy, isSaving, error, onClose, onConfirm }) {
   );
 }
 
+// ── Pure Utility Functions ────────────────────────────────────────────────────
+
+/** Renders a colour-coded role badge. */
 function renderRole(role) {
   return <span className={`um-role ${role === "Librarian" ? "librarian" : "member"}`}>{role}</span>;
 }
 
+/** Renders a colour-coded active/inactive status badge. */
 function renderStatus(isActive) {
   return <span className={`um-status ${isActive ? "active" : "inactive"}`}>{isActive ? "Active" : "Inactive"}</span>;
 }
 
+/** Returns the record count that belongs to a given tab status. */
 function countForStatus(status, summary) {
   if (status === "all") return summary.total;
   return status === "active" ? summary.active : summary.inactive;
 }
 
+/** Capitalises the first letter of a status string for display. */
 function formatStatusLabel(status) {
   if (status === "all") return "All";
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+/** Strips the time portion from an ISO date string, returning YYYY-MM-DD. */
 function formatDate(value) {
   if (!value) return "-";
   return String(value).split("T")[0];
 }
 
+/** Basic email format check using a standard regex pattern. */
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+/** Derives up to two initials from a full name for the avatar placeholder. */
 function getInitials(name) {
   return String(name || "?")
     .split(" ")

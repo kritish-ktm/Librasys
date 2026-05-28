@@ -16,12 +16,21 @@ import MemberDashboard from './pages/MemberDashboard';
 import MyLoans from './pages/MyLoans';
 import MyFines from './pages/MyFines';
 import BookDetail from './pages/BookDetail';
+function getTokenPayload(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
 
-// Staff roles can open protected admin/librarian pages.
-const staffRoles = ['admin', 'librarian'];
-
-// Member roles can open protected member pages.
-const memberRoles = ['user', 'member', 'standard user'];
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('name');
+  localStorage.removeItem('fullName');
+  localStorage.removeItem('userId');
+}
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('token');
@@ -29,20 +38,17 @@ function PrivateRoute({ children, role }) {
   const normalizedRole = String(userRole || '').trim().toLowerCase();
   const requiredRole = String(role || '').trim().toLowerCase();
 
-  if (!token) return <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" replace />;
 
-  // Admin pages use role="Librarian", but both Admin and Librarian are allowed.
-  if (requiredRole === 'librarian' && !staffRoles.includes(normalizedRole)) {
-    return <Navigate to="/login" />;
+  const payload = getTokenPayload(token);
+  const isExpired = payload?.exp && payload.exp * 1000 <= Date.now();
+
+  if (!payload || isExpired || payload.role !== userRole) {
+    clearSession();
+    return <Navigate to="/login" replace />;
   }
 
-  // Member pages use role="Member", but similar member role names are allowed.
-  if (requiredRole === 'member' && !memberRoles.includes(normalizedRole)) {
-    return <Navigate to="/login" />;
-  }
-
-  // Fallback for any future route that requires one exact role.
-  if (role && requiredRole !== 'librarian' && requiredRole !== 'member' && normalizedRole !== requiredRole) {
+  if (role && userRole !== role) {
     return <Navigate to="/login" />;
   }
 
@@ -63,7 +69,14 @@ function App() {
         {/* Staff/admin login uses a separate AdminLogin page. */}
         <Route path="/admin-login" element={<AdminLogin />} />
 
-        <Route path="/MemberDashboard" element={<MemberDashboard />} />
+        <Route
+          path="/MemberDashboard"
+          element={
+            <PrivateRoute role="Member">
+              <MemberDashboard />
+            </PrivateRoute>
+          }
+        />
         <Route path="/register" element={<Register />} />
 
         <Route

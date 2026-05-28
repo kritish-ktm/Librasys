@@ -5,6 +5,19 @@ CREATE DATABASE IF NOT EXISTS librasys
 USE librasys;
  
 -- =============================================================================
+-- TABLE: User
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS user (
+    UserID INT AUTO_INCREMENT PRIMARY KEY,
+    FullName VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) NOT NULL UNIQUE,
+    PasswordHash VARCHAR(255) NOT NULL,
+    Role ENUM('Librarian', 'Member') NOT NULL DEFAULT 'Member',
+    IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+    DateRegistered DATE NOT NULL DEFAULT (CURRENT_DATE)
+);
+
+-- =============================================================================
 -- TABLE 1: BookCategory
 -- Developer: Kritish Upadhyaya
 -- =============================================================================
@@ -12,11 +25,11 @@ CREATE TABLE IF NOT EXISTS BookCategory (
 
     CategoryID INT AUTO_INCREMENT PRIMARY KEY,
     CategoryName VARCHAR(100) NOT NULL UNIQUE,
-    Description VARCHAR(200) NOT NULL,
+    Description TEXT NOT NULL,
     IsActive BOOLEAN NOT NULL DEFAULT TRUE,
     DeweyCode VARCHAR(10) NOT NULL UNIQUE,
     CategoryColor VARCHAR(7) NOT NULL DEFAULT '#2f6b52',
-    CategoryImage LONGTEXT NULL,
+    CategoryImage VARCHAR(500) NULL,
     ArchiveReason VARCHAR(80) NULL,
     CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     CreatedBy INT NULL,

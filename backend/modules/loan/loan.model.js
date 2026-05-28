@@ -326,7 +326,7 @@ const create = ({ UserID, BookID }, callback) => {
         The row lock helps prevent two requests from changing related borrowing
         data at the same time using stale information.
       */
-      const userSql = "SELECT UserID, IsActive FROM user WHERE UserID = ? FOR UPDATE";
+      const userSql = "SELECT UserID, Role, IsActive FROM user WHERE UserID = ? FOR UPDATE";
       connection.query(userSql, [UserID], (userError, users) => {
         if (userError) {
           rollback(connection, userError, callback);
@@ -340,6 +340,11 @@ const create = ({ UserID, BookID }, callback) => {
 
         if (!users[0].IsActive) {
           rollback(connection, validationError("Only active users can borrow books"), callback);
+          return;
+        }
+
+        if (users[0].Role !== "Member") {
+          rollback(connection, validationError("Only members can borrow books."), callback);
           return;
         }
 
@@ -481,6 +486,7 @@ const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callbac
           const memberChanged = Number(currentLoan.UserID) !== newUserId;
           const bookChanged = Number(currentLoan.BookID) !== newBookId;
           const isAlreadyReturned = Boolean(currentLoan.ReturnDate);
+          const willBeReturned = Boolean(ReturnDate);
 
           if (isAlreadyReturned && (memberChanged || bookChanged)) {
             rollback(connection, validationError("Member and book can only be changed for active loans"), callback);
@@ -602,39 +608,56 @@ const update = (id, { UserID, BookID, BorrowDate, DueDate, ReturnDate }, callbac
                           });
                         };
 
-                        if (!bookChanged) {
-                          finish();
-                          return;
+                        /*
+                          Editing ReturnDate can change whether a loan consumes
+                          an available copy. The normal return endpoint already
+                          restores stock, but this edit path must do the same
+                          inventory movement when a librarian corrects ReturnDate
+                          directly from the modal.
+                        */
+                        const inventoryUpdates = [];
+
+                        if (!isAlreadyReturned && willBeReturned) {
+                          inventoryUpdates.push({
+                            sql: "UPDATE book SET AvailableCopies = AvailableCopies + 1 WHERE BookID = ?",
+                            params: [currentLoan.BookID],
+                            error: "Unable to restore book availability for returned loan",
+                          });
+                        }
+
+                        if (isAlreadyReturned && !willBeReturned) {
+                          inventoryUpdates.push({
+                            sql: "UPDATE book SET AvailableCopies = AvailableCopies - 1 WHERE BookID = ? AND AvailableCopies > 0",
+                            params: [currentLoan.BookID],
+                            requireAffected: true,
+                            error: "Cannot reopen this loan because no available copies remain",
+                          });
                         }
 
                         /*
-                          If the librarian changes the book on an active loan,
-                          put one copy back on the old book and remove one copy
-                          from the new book so inventory remains balanced.
+                          If the librarian changes the book while the edited loan
+                          remains active, transfer the borrowed copy from the old
+                          book to the new book. Returned loans do not consume
+                          stock, and returned loan member/book changes are blocked
+                          above, so no book-transfer update is needed for them.
                         */
-                        connection.query(
-                          "UPDATE book SET AvailableCopies = AvailableCopies + 1 WHERE BookID = ?",
-                          [currentLoan.BookID],
-                          (oldBookError) => {
-                            if (oldBookError) {
-                              rollback(connection, oldBookError, callback);
-                              return;
+                        if (bookChanged && !willBeReturned) {
+                          inventoryUpdates.push(
+                            {
+                              sql: "UPDATE book SET AvailableCopies = AvailableCopies + 1 WHERE BookID = ?",
+                              params: [currentLoan.BookID],
+                              error: "Unable to restore availability on the previous book",
+                            },
+                            {
+                              sql: "UPDATE book SET AvailableCopies = AvailableCopies - 1 WHERE BookID = ? AND AvailableCopies > 0",
+                              params: [newBookId],
+                              requireAffected: true,
+                              error: "Selected book has no available copies",
                             }
+                          );
+                        }
 
-                            connection.query(
-                              "UPDATE book SET AvailableCopies = AvailableCopies - 1 WHERE BookID = ?",
-                              [newBookId],
-                              (newBookError) => {
-                                if (newBookError) {
-                                  rollback(connection, newBookError, callback);
-                                  return;
-                                }
-
-                                finish();
-                              }
-                            );
-                          }
-                        );
+                        runInventoryUpdates(connection, inventoryUpdates, finish, callback);
                       });
                     }
                   );
@@ -854,6 +877,28 @@ const remove = (id, callback) => {
     db.query("DELETE FROM loanedbook WHERE LoanID = ?", [id], callback);
   });
 };
+
+function runInventoryUpdates(connection, updates, finish, callback) {
+  if (!updates.length) {
+    finish();
+    return;
+  }
+
+  const [nextUpdate, ...remainingUpdates] = updates;
+  connection.query(nextUpdate.sql, nextUpdate.params, (error, result) => {
+    if (error) {
+      rollback(connection, error, callback);
+      return;
+    }
+
+    if (nextUpdate.requireAffected && result.affectedRows === 0) {
+      rollback(connection, validationError(nextUpdate.error), callback);
+      return;
+    }
+
+    runInventoryUpdates(connection, remainingUpdates, finish, callback);
+  });
+}
 
 function rollback(connection, error, callback) {
   // Any failed validation or query inside a transaction releases all partial work.

@@ -260,6 +260,16 @@ function Dashboard() {
     },
   ];
 
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("name");
+    localStorage.removeItem("fullName");
+    localStorage.removeItem("userId");
+    navigate("/login", { replace: true });
+  }
+
+
   return (
     <div className="dashboard-shell">
       <LoadingOverlay
