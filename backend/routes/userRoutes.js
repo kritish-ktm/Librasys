@@ -165,7 +165,9 @@ router.post('/', auth, librarianOnly, async (req, res) => {
   if (!fullName || fullName.trim().length < 2) {
     return res.status(400).json({ error: 'Full name must be at least 2 characters.' });
   }
-
+  if (fullName.trim().length > 100) {
+    return res.status(400).json({ error: 'Full name must not exceed 100 characters' });
+  }
   if (!email || !isValidEmail(email.trim())) {
     return res.status(400).json({ error: 'A valid email address is required.' });
   }
