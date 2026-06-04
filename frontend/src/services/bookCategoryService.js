@@ -32,6 +32,15 @@ export const addCategory = async (data) => {
   return response.data;
 };
 
+export const uploadCategoryImage = async (imageData, fileName) => {
+  const response = await axios.post(
+    `${API_URL}/upload-image`,
+    { imageData, fileName },
+    authConfig()
+  );
+  return response.data;
+};
+
 export const updateCategory = async (id, data) => {
   const response = await axios.put(`${API_URL}/${id}`, data, authConfig());
   return response.data;
