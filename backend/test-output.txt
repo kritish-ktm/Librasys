@@ -1,0 +1,26 @@
+[32m✔ accepts a valid category payload and trims stored text fields [90m(2.2112ms)[39m[39m
+[32m✔ matches category name validation table boundaries [90m(0.4777ms)[39m[39m
+[32m✔ rejects missing or whitespace-only required category fields [90m(0.3553ms)[39m[39m
+[32m✔ enforces category field length boundaries [90m(0.3488ms)[39m[39m
+[32m✔ matches description validation table boundaries [90m(0.3218ms)[39m[39m
+[32m✔ validates Dewey Code boundary formats [90m(0.2384ms)[39m[39m
+[32m✔ matches Dewey Code validation table boundaries [90m(0.2035ms)[39m[39m
+[32m✔ validates category color and image path rules [90m(0.1721ms)[39m[39m
+[32m✔ matches category color table boundaries and defaults [90m(0.2421ms)[39m[39m
+[32m✔ matches category image path validation table boundaries [90m(0.3376ms)[39m[39m
+[32m✔ requires an archive reason when creating or updating an inactive category [90m(0.1989ms)[39m[39m
+[32m✔ matches active status and archive reason table cases [90m(0.2383ms)[39m[39m
+[32m✔ validates standalone status updates [90m(0.3209ms)[39m[39m
+[32m✔ documents current prototype status boolean limitation [90m(0.1296ms)[39m[39m
+[32m✔ validates category image uploads without touching the file system [90m(9.5149ms)[39m[39m
+[32m✔ matches category image upload table file type cases [90m(0.3104ms)[39m[39m
+[32m✔ matches search, filter, sort, and pagination table behaviour [90m(7.7477ms)[39m[39m
+[32m✔ documents duplicate checks as backend/database constraint coverage [90m(0.1553ms)[39m[39m
+[34mℹ tests 18[39m
+[34mℹ suites 0[39m
+[34mℹ pass 18[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 110.2228[39m
