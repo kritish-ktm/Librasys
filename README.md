@@ -243,13 +243,7 @@ backend/tests/
 
 ## Author
 
-Udaya Bahadur Katuwal
-
-P Number: P2893808
-
-Team: LibraSys
-
-Individual Component: User Management / Member Management
+Kritish Upadhyaya
 
 ## Repository
 
